@@ -8,7 +8,8 @@ import GlobalFeed from "@/components/GlobalFeed";
 import { NostrProvider } from "nostr-react";
 
 const relayUrls = [
-  "wss://relay.damus.io"
+  "wss://relay.damus.io",
+  "wss://relay.nostr.band",
 ];
 
 export default function Home() {

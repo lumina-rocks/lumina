@@ -11,6 +11,7 @@ import { SectionIcon, GridIcon } from '@radix-ui/react-icons'
 
 const relayUrls = [
   "wss://relay.damus.io",
+  "wss://relay.nostr.band",
 ];
 
 export default function Home() {
