@@ -10,13 +10,14 @@ import {
     DrawerTrigger,
 } from "@/components/ui/drawer"
 import { Textarea } from "./ui/textarea";
+import { CodeIcon } from "@radix-ui/react-icons";
 
 
 export default function ViewRawButton(event: any) {
     return (
         <Drawer>
             <DrawerTrigger>
-                <Button variant="outline">View Raw</Button>
+                <Button variant="outline"><CodeIcon /></Button>
             </DrawerTrigger>
             <DrawerContent>
                 <DrawerHeader>
