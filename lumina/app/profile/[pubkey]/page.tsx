@@ -7,6 +7,7 @@ import ProfileFeed from "@/components/ProfileFeed";
 import { useParams } from 'next/navigation'
 import { nip19 } from "nostr-tools";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { SectionIcon, GridIcon } from '@radix-ui/react-icons'
 
 const relayUrls = [
   "wss://relay.damus.io",
@@ -38,8 +39,8 @@ export default function Home() {
           </div>
           <Tabs defaultValue="ProfileFeed">
             <TabsList>
-              <TabsTrigger value="ProfileFeed">Feed</TabsTrigger>
-              <TabsTrigger value="QuickView">QuickView</TabsTrigger>
+              <TabsTrigger value="ProfileFeed"><SectionIcon /></TabsTrigger>
+              <TabsTrigger value="QuickView"><GridIcon /></TabsTrigger>
             </TabsList>
             <TabsContent value="ProfileFeed">
               <ProfileFeed pubkey={pubkey.toString()} />
