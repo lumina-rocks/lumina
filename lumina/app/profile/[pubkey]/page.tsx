@@ -6,6 +6,7 @@ import ProfileInfoCard from "@/components/ProfileInfoCard";
 import ProfileFeed from "@/components/ProfileFeed";
 import { useParams } from 'next/navigation'
 import { nip19 } from "nostr-tools";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 const relayUrls = [
   "wss://relay.damus.io",
@@ -35,7 +36,16 @@ export default function Home() {
           <div className="pb-6">
             <ProfileInfoCard pubkey={pubkey.toString()} />
           </div>
-          <ProfileFeed pubkey={pubkey.toString()} />
+          <Tabs defaultValue="ProfileFeed">
+            <TabsList>
+              <TabsTrigger value="ProfileFeed">Feed</TabsTrigger>
+              <TabsTrigger value="QuickView">QuickView</TabsTrigger>
+            </TabsList>
+            <TabsContent value="ProfileFeed">
+              <ProfileFeed pubkey={pubkey.toString()} />
+            </TabsContent>
+            <TabsContent value="QuickView">QuickView coming soon.</TabsContent>
+          </Tabs>
         </div>
       </NostrProvider>
     </>

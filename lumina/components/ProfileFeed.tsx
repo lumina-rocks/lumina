@@ -26,7 +26,7 @@ const ProfileFeed: React.FC<ProfileFeedProps> = ({ pubkey }) => {
 
   return (
     <>
-      <h2>Profile Feed</h2>
+      {/* <h2>Profile Feed</h2> */}
 
       {filteredEvents.length === 0 ? (
         <div className="flex flex-col space-y-3">
