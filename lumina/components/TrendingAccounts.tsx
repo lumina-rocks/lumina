@@ -2,7 +2,7 @@ import { useRef } from "react";
 import { useNostrEvents, dateToUnix } from "nostr-react";
 import NoteCard from './NoteCard';
 
-const GlobalFeed: React.FC = () => {
+const TrendingAccounts: React.FC = () => {
   const now = useRef(new Date()); // Make sure current time isn't re-rendered
 
   const { events } = useNostrEvents({
@@ -21,7 +21,7 @@ const GlobalFeed: React.FC = () => {
   // now filter all events with a tag[0] == t and tag[1] == nsfw
   filteredEvents = filteredEvents.filter((event) => event.tags.map((tag) => tag[0] == "t" && tag[1] == "nsfw"));
   // filter out all replies
-  filteredEvents = filteredEvents.filter((event) => !event.tags.some((tag) => { return tag[0] == 'e' }));
+  filteredEvents = filteredEvents.filter((event) => event.tags.map((tag) => tag[0] == "e"));
 
   return (
     <>
@@ -36,4 +36,4 @@ const GlobalFeed: React.FC = () => {
   );
 }
 
-export default GlobalFeed;
+export default TrendingAccounts;
