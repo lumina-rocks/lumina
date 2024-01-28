@@ -90,19 +90,19 @@ const NoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tags, event 
                 <CarouselContent>
                   {imageSrc.map((src, index) => (
                     <CarouselItem key={index}>
-                      {/* <img
+                      <img
                         key={index}
                         src={src}
                         style={{ maxWidth: '100%', maxHeight: '100vh', objectFit: 'contain', margin: 'auto'}}
-                      /> */}
-                      <Image
+                      />
+                      {/* <Image
                         key={index}
                         src={src}
                         alt={textWithoutImage}
                         width={500}
                         height={500}
                         layout="responsive"
-                        objectFit="contain" />
+                        objectFit="contain" /> */}
                     </CarouselItem>
                   ))}
                 </CarouselContent>
@@ -110,14 +110,14 @@ const NoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tags, event 
                 <CarouselNext />
               </Carousel>
             ) : (
-              // imageSrc ? <img src={imageSrc[0]} style={{ maxWidth: '100%', maxHeight: '100vh', objectFit: 'contain', margin: 'auto'}} /> : ""
-              imageSrc ? <Image
-                src={imageSrc[0]}
-                alt={textWithoutImage}
-                width={500}
-                height={500}
-                layout="responsive"
-                objectFit="contain" /> : ""
+              imageSrc ? <img src={imageSrc[0]} style={{ maxWidth: '100%', maxHeight: '100vh', objectFit: 'contain', margin: 'auto'}} /> : ""
+              // imageSrc ? <Image
+              //   src={imageSrc[0]}
+              //   alt={textWithoutImage}
+              //   width={500}
+              //   height={500}
+              //   layout="responsive"
+              //   objectFit="contain" /> : ""
             )}
           </div>
           }
