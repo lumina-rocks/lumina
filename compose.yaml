@@ -1,0 +1,7 @@
+version: '3'
+services:
+  lumina:
+    build: .
+    # image: ghcr.io/lumina-rocks/lumina:latest
+    ports:
+      - "8080:3000"
