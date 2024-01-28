@@ -19,7 +19,8 @@ const GlobalFeed: React.FC = () => {
   let filteredEvents = events.filter((event) => event.content.match(/https?:\/\/.*\.(?:png|jpg|gif)/g)?.[0]);
 
   // now filter all events with a tag[0] == t and tag[1] == nsfw
-  filteredEvents = filteredEvents.filter((event) => event.tags.map((tag) => tag[0] == "t" && tag[1] == "nsfw"));
+  // filteredEvents = filteredEvents.filter((event) => event.tags.map((tag) => tag[0] == "t" && tag[1] == "nsfw"));
+  filteredEvents = filteredEvents.filter((event) => !event.tags.some((tag) => { return tag[0] == 't' && tag[1] == 'nsfw'}));
   // filter out all replies
   filteredEvents = filteredEvents.filter((event) => !event.tags.some((tag) => { return tag[0] == 'e' }));
 

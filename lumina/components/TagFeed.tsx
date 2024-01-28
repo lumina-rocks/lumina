@@ -26,7 +26,7 @@ const TagFeed: React.FC<TagFeedProps> = ({tag}) => {
   // now filter all events with a tag[0] == t and tag[1] == nsfw
   filteredEvents = filteredEvents.filter((event) => event.tags.map((tag) => tag[0] == "t" && tag[1] == "nsfw"));
   // filter out all replies
-  // filteredEvents = filteredEvents.filter((event) => !event.tags.some((tag) => { return tag[0] == 'e' }));
+  filteredEvents = filteredEvents.filter((event) => !event.tags.some((tag) => { return tag[0] == 'e' }));
 
   return (
     <>
