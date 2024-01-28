@@ -82,27 +82,27 @@ const NoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tags, event 
         <div className='py-4'>
           {
             // imageSrc ? imageSrc.map((src, index) => <img key={index} src={src} style={{ maxWidth: '100%' }} />) : ""
-            <div className='py-10 px-10'>
-              {imageSrc && imageSrc.length > 1 ? (
-                <Carousel>
-                  <CarouselContent>
-                    {imageSrc.map((src, index) => (
-                      <CarouselItem key={index}>
-                        <img
-                          key={index}
-                          src={src}
-                          style={{ maxWidth: '100%', maxHeight: '100vh', objectFit: 'contain'}}
-                        />
-                      </CarouselItem>
-                    ))}
-                  </CarouselContent>
-                  <CarouselPrevious />
-                  <CarouselNext />
-                </Carousel>
-              ) : (
-                imageSrc ? <img src={imageSrc[0]} style={{ maxWidth: '100%', maxHeight: '100vh', objectFit: 'contain'}} /> : ""
-              )}
-            </div>
+            <div className='d-flex justify-content-center align-items-center py-10 px-10'>
+            {imageSrc && imageSrc.length > 1 ? (
+              <Carousel>
+                <CarouselContent>
+                  {imageSrc.map((src, index) => (
+                    <CarouselItem key={index}>
+                      <img
+                        key={index}
+                        src={src}
+                        style={{ maxWidth: '100%', maxHeight: '100vh', objectFit: 'contain', margin: 'auto'}}
+                      />
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious />
+                <CarouselNext />
+              </Carousel>
+            ) : (
+              imageSrc ? <img src={imageSrc[0]} style={{ maxWidth: '100%', maxHeight: '100vh', objectFit: 'contain', margin: 'auto'}} /> : ""
+            )}
+          </div>
           }
           <br />
           {textWithoutImage}
