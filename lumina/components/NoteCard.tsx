@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/carousel"
 import ReactionButton from '@/components/ReactionButton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import ViewRawButton from '@/components/ViewRawButton';
 
 interface NoteCardProps {
   pubkey: string;
@@ -108,8 +109,9 @@ const NoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tags, event 
           {textWithoutImage}
         </div>
         <hr />
-        <div className='py-4'>
+        <div className='py-4 space-x-4 flex justify-between'>
           <ReactionButton event={event} />
+          <ViewRawButton event={event} />
         </div>
       </CardContent>
       <CardFooter>
