@@ -1,7 +1,6 @@
 'use client';
 
 import Head from "next/head";
-import { NostrProvider } from "nostr-react";
 import ProfileInfoCard from "@/components/ProfileInfoCard";
 import ProfileFeed from "@/components/ProfileFeed";
 import { useParams } from 'next/navigation'
@@ -9,11 +8,7 @@ import { nip19 } from "nostr-tools";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SectionIcon, GridIcon } from '@radix-ui/react-icons'
 import TagFeed from "@/components/TagFeed";
-
-const relayUrls = [
-  "wss://relay.damus.io",
-  "wss://relay.nostr.band",
-];
+import { NostrProvider } from "nostr-react";
 
 export default function Home() {
 
@@ -26,9 +21,13 @@ export default function Home() {
   //   pubkey = nip19.decode(pubkey.toString()).data.toString()
   // }
 
+  const relayUrls = [
+    "wss://relay.lumina.rocks",
+  ];
+
   return (
     <>
-      <NostrProvider relayUrls={relayUrls}>
+      <NostrProvider relayUrls={relayUrls} debug={false}>
         <Head>
           <title>LUMINA.rocks - {tag}</title>
           <meta name="description" content="Yet another nostr web ui" />

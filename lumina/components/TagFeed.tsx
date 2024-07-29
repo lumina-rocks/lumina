@@ -21,7 +21,7 @@ const TagFeed: React.FC<TagFeedProps> = ({tag}) => {
 
   // const filteredEvents = events.filter((event) => event.content.includes(".jpg"));
   // filter events with regex that checks for png, jpg, or gif
-  let filteredEvents = events.filter((event) => event.content.match(/https?:\/\/.*\.(?:png|jpg|gif)/g)?.[0]);
+  let filteredEvents = events.filter((event) => event.content.match(/https?:\/\/.*\.(?:png|jpg|gif|mp4|webm)/g)?.[0]);
 
   // now filter all events with a tag[0] == t and tag[1] == nsfw
   filteredEvents = filteredEvents.filter((event) => event.tags.map((tag) => tag[0] == "t" && tag[1] == "nsfw"));
@@ -34,7 +34,7 @@ const TagFeed: React.FC<TagFeedProps> = ({tag}) => {
       {filteredEvents.map((event) => (
         // <p key={event.id}>{event.pubkey} posted: {event.content}</p>
         <div key={event.id} className="py-6">
-          <NoteCard key={event.id} pubkey={event.pubkey} text={event.content} eventId={event.id} tags={event.tags} event={event} />
+          <NoteCard key={event.id} pubkey={event.pubkey} text={event.content} eventId={event.id} tags={event.tags} event={event} showViewNoteCardButton={true} />
         </div>
       ))}
     </>

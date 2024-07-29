@@ -1,20 +1,16 @@
 'use client';
 
-import Head from "next/head";
-import { NostrProvider } from "nostr-react";
 import ProfileInfoCard from "@/components/ProfileInfoCard";
 import ProfileFeed from "@/components/ProfileFeed";
 import { useParams } from 'next/navigation'
 import { nip19 } from "nostr-tools";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SectionIcon, GridIcon } from '@radix-ui/react-icons'
+import ProfileQuickViewFeed from "@/components/ProfileQuickViewFeed";
+import ProfileTextFeed from "@/components/ProfileTextFeed";
+import { NostrProvider } from "nostr-react";
 
-const relayUrls = [
-  "wss://relay.damus.io",
-  "wss://relay.nostr.band",
-];
-
-export default function Home() {
+export default function ProfilePage() {
 
   const params = useParams()
   let pubkey = params.pubkey
@@ -25,28 +21,32 @@ export default function Home() {
     pubkey = nip19.decode(pubkey.toString()).data.toString()
   }
 
+  const relayUrls = [
+    "wss://relay.lumina.rocks",
+  ];
+  
   return (
     <>
-      <NostrProvider relayUrls={relayUrls}>
-        <Head>
-          <title>LUMINA.rocks - {pubkey}</title>
-          <meta name="description" content="Yet another nostr web ui" />
-          <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <link rel="icon" href="/favicon.ico" />
-        </Head>
-        <div className="py-6 px-6">
-          <div className="pb-6">
+      <NostrProvider relayUrls={relayUrls} debug={false}>
+        <div className="md:px-6">
+          <div>
             <ProfileInfoCard pubkey={pubkey.toString()} />
           </div>
-          <Tabs defaultValue="ProfileFeed">
-            <TabsList>
-              <TabsTrigger value="ProfileFeed"><SectionIcon /></TabsTrigger>
+          <Tabs className="w-full" defaultValue="QuickView">
+            <TabsList className="w-full grid grid-cols-3">
               <TabsTrigger value="QuickView"><GridIcon /></TabsTrigger>
+              <TabsTrigger value="ProfileFeed"><SectionIcon /></TabsTrigger>
+              <TabsTrigger value="ProfileTextFeed">Notes</TabsTrigger>
             </TabsList>
+            <TabsContent value="QuickView">
+              <ProfileQuickViewFeed pubkey={pubkey.toString()} />
+            </TabsContent>
             <TabsContent value="ProfileFeed">
               <ProfileFeed pubkey={pubkey.toString()} />
             </TabsContent>
-            <TabsContent value="QuickView">QuickView coming soon.</TabsContent>
+            <TabsContent value="ProfileTextFeed">
+              <ProfileTextFeed pubkey={pubkey.toString()} />
+            </TabsContent>
           </Tabs>
         </div>
       </NostrProvider>

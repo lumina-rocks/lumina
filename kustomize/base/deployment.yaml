@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lumina-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lumina
+  template:
+    metadata:
+      labels:
+        app: lumina
+    spec:
+      containers:
+      - name: lumina
+        image: ghcr.io/lumina-rocks/lumina:latest
+        ports:
+        - containerPort: 80

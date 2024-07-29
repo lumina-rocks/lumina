@@ -11,9 +11,13 @@ import {
 } from "@/components/ui/drawer"
 import { Textarea } from "./ui/textarea";
 import { CodeIcon } from "@radix-ui/react-icons";
+import { Event as NostrEvent } from "nostr-tools";
 
+interface ViewRawButtonProps {
+    event: NostrEvent;
+}
 
-export default function ViewRawButton(event: any) {
+export default function ViewRawButton({ event }: ViewRawButtonProps) {
     return (
         <Drawer>
             <DrawerTrigger>

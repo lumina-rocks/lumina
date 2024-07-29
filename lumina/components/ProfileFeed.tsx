@@ -20,7 +20,7 @@ const ProfileFeed: React.FC<ProfileFeedProps> = ({ pubkey }) => {
     },
   });
 
-  let filteredEvents = events.filter((event) => event.content.match(/https?:\/\/.*\.(?:png|jpg|gif)/g)?.[0]);
+  let filteredEvents = events.filter((event) => event.content.match(/https?:\/\/.*\.(?:png|jpg|gif|mp4|webm|mov)/g)?.[0]);
   // filter out all replies (tag[0] == e)
   filteredEvents = filteredEvents.filter((event) => !event.tags.some((tag) => { return tag[0] == 'e' }));
 
@@ -40,7 +40,7 @@ const ProfileFeed: React.FC<ProfileFeedProps> = ({ pubkey }) => {
         // <p key={event.id}>{event.pubkey} posted: {event.content}</p>
         // <ProfileNoteCard key={event.id} pubkey={event.pubkey} text={event.content} event={event} tags={event.tags} />
         <div key={event.id} className="py-6">
-          <NoteCard key={event.id} pubkey={event.pubkey} text={event.content} event={event} tags={event.tags} eventId={event.id} />
+          <NoteCard key={event.id} pubkey={event.pubkey} text={event.content} event={event} tags={event.tags} eventId={event.id} showViewNoteCardButton={true}/>
         </div>
       )))}
     </>

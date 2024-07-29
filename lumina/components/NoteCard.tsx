@@ -1,14 +1,11 @@
 import React from 'react';
-// import Button from 'react-bootstrap/Button';
-import { Button } from '@/components/ui/button';
-import { useNostrEvents, useProfile } from "nostr-react";
+import { useProfile } from "nostr-react";
 import {
   nip19,
 } from "nostr-tools";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -27,113 +24,135 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel"
 import ReactionButton from '@/components/ReactionButton';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarImage } from '@/components/ui/avatar';
 import ViewRawButton from '@/components/ViewRawButton';
-import Image from 'next/image';
+import ViewNoteButton from './ViewNoteButton';
+import Link from 'next/link';
+import ViewCopyButton from './ViewCopyButton';
+import { Event as NostrEvent } from "nostr-tools";
+import ZapButton from './ZapButton';
 
 interface NoteCardProps {
   pubkey: string;
   text: string;
   eventId: string;
   tags: string[][];
-  event: any;
+  event: NostrEvent;
+  showViewNoteCardButton: boolean;
 }
 
-const NoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tags, event }) => {
+const NoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tags, event, showViewNoteCardButton }) => {
   const { data: userData } = useProfile({
     pubkey,
   });
 
   const title = userData?.username || userData?.display_name || userData?.name || userData?.npub || nip19.npubEncode(pubkey);
-  // const imageSrc = text.match(/https?:\/\/.*\.(?:png|jpg|gif)/g)?.[0];
-  const imageSrc = text.match(/https?:\/\/.*\.(?:png|jpg|gif)/g)?.[0].split(' ');
-  const textWithoutImage = text.replace(/https?:\/\/.*\.(?:png|jpg|gif)/g, '');
-  // const textWithoutImage = text.replace(/https?:\/\/.*\.(?:png|jpg|gif)(\?.*)?/g, '');
+  // text = text.replaceAll('\n', '<br />');
+  text = text.replaceAll('\n', ' ');
+  const imageSrc = text.match(/https?:\/\/[^ ]*\.(png|jpg|gif)/g);
+  const videoSrc = text.match(/https?:\/\/[^ ]*\.(mp4|webm|mov)/g);
+  const textWithoutImage = text.replace(/https?:\/\/.*\.(?:png|jpg|gif|mp4|webm|mov)/g, '');
   const createdAt = new Date(event.created_at * 1000);
   const hrefProfile = `/profile/${nip19.npubEncode(pubkey)}`;
-  // const profileImageSrc = userData?.picture || "https://via.placeholder.com/150";
   const profileImageSrc = userData?.picture || "https://robohash.org/" + pubkey;
 
   return (
     <>
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          <a href={hrefProfile} target='blank' style={{ textDecoration: 'none', color: 'white' }}>
-            {/* <Avatar>
-              <AvatarImage src={profileImageSrc} />
-            </Avatar> */}
-            {/* {title} */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger>
-                  <Avatar>
-                    <AvatarImage src={profileImageSrc} />
-                  </Avatar>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{title}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </a>
-        </CardTitle>
-        {/* <CardDescription>Card Description</CardDescription> */}
-      </CardHeader>
-      <CardContent>
-        <div className='py-4'>
-          {
-            // imageSrc ? imageSrc.map((src, index) => <img key={index} src={src} style={{ maxWidth: '100%' }} />) : ""
-            <div className='d-flex justify-content-center align-items-center py-10 px-10'>
-            {imageSrc && imageSrc.length > 1 ? (
-              <Carousel>
-                <CarouselContent>
-                  {imageSrc.map((src, index) => (
-                    <CarouselItem key={index}>
-                      <img
-                        key={index}
-                        src={src}
-                        style={{ maxWidth: '100%', maxHeight: '100vh', objectFit: 'contain', margin: 'auto'}}
-                      />
-                      {/* <Image
-                        key={index}
-                        src={src}
-                        alt={textWithoutImage}
-                        width={500}
-                        height={500}
-                        layout="responsive"
-                        objectFit="contain" /> */}
-                    </CarouselItem>
-                  ))}
-                </CarouselContent>
-                <CarouselPrevious />
-                <CarouselNext />
-              </Carousel>
-            ) : (
-              imageSrc ? <img src={imageSrc[0]} style={{ maxWidth: '100%', maxHeight: '100vh', objectFit: 'contain', margin: 'auto'}} /> : ""
-              // imageSrc ? <Image
-              //   src={imageSrc[0]}
-              //   alt={textWithoutImage}
-              //   width={500}
-              //   height={500}
-              //   layout="responsive"
-              //   objectFit="contain" /> : ""
-            )}
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <Link href={hrefProfile} style={{ textDecoration: 'none' }}>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <Avatar>
+                        <AvatarImage src={profileImageSrc} />
+                      </Avatar>
+                      <span className='break-all' style={{ marginLeft: '10px' }}>{title}</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{title}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </Link>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className='py-4'>
+            {
+              <div>
+                <div className='w-full h-full px-10'>
+                  {imageSrc && imageSrc.length > 1 ? (
+                    <Carousel>
+                      <CarouselContent>
+                        {imageSrc.map((src, index) => (
+                          <CarouselItem key={index}>
+                            <img
+                              key={index}
+                              src={src}
+                              className='rounded lg:rounded-lg'
+                              style={{ maxWidth: '100%', maxHeight: '66vh', objectFit: 'contain', margin: 'auto' }}
+                            />
+                          </CarouselItem>
+                        ))}
+                      </CarouselContent>
+                      <CarouselPrevious />
+                      <CarouselNext />
+                    </Carousel>
+                  ) : (
+                    imageSrc ? <img src={imageSrc[0]} className='rounded lg:rounded-lg' style={{ maxWidth: '100%', maxHeight: '66vh', objectFit: 'contain', margin: 'auto' }} /> : ""
+                  )}
+                </div>
+                <div className='w-full h-full px-10'>
+                  {videoSrc && videoSrc.length > 1 ? (
+                    <Carousel>
+                      <CarouselContent>
+                        {videoSrc.map((src, index) => (
+                          <CarouselItem key={index}>
+                            <video
+                              key={index}
+                              src={src}
+                              controls
+                              className='rounded lg:rounded-lg'
+                              style={{ maxWidth: '100%', maxHeight: '66vh', objectFit: 'contain', margin: 'auto' }}
+                            />
+                          </CarouselItem>
+                        ))}
+                      </CarouselContent>
+                      <CarouselPrevious />
+                      <CarouselNext />
+                    </Carousel>
+                  ) : (
+                    videoSrc ? <video src={videoSrc[0]} controls className='rounded lg:rounded-lg' style={{ maxWidth: '100%', maxHeight: '66vh', objectFit: 'contain', margin: 'auto' }} /> : ""
+                  )}
+                </div>
+              </div>
+            }
+            <br />
+            <div className='break-word overflow-hidden'>
+              {textWithoutImage}
+            </div>
           </div>
-          }
-          <br />
-          {textWithoutImage}
-        </div>
-        <hr />
-        <div className='py-4 space-x-4 flex justify-between'>
-          <ReactionButton event={event} />
-          <ViewRawButton event={event} />
-        </div>
-      </CardContent>
-      <CardFooter>
-        <small className="text-muted">{createdAt.toLocaleString()}</small>
-      </CardFooter>
-    </Card>
+          <hr />
+          <div className='py-4 space-x-4 flex justify-between items-start'>
+            <div className='flex space-x-4'>
+              <ReactionButton event={event} />
+              <ZapButton event={event} />
+              {showViewNoteCardButton && <ViewNoteButton event={event} />}
+            </div>
+            <div className='flex space-x-2'>
+              <ViewCopyButton event={event} />
+              <ViewRawButton event={event} />
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter>
+          <small className="text-muted">{createdAt.toLocaleString()}</small>
+        </CardFooter>
+      </Card>
     </>
   );
 }

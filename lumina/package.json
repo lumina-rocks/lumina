@@ -9,36 +9,48 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@hookform/resolvers": "^3.4.0",
+    "@radix-ui/react-accordion": "^1.1.2",
     "@radix-ui/react-avatar": "^1.0.4",
     "@radix-ui/react-dialog": "^1.0.5",
     "@radix-ui/react-dropdown-menu": "^2.0.6",
     "@radix-ui/react-icons": "^1.3.0",
+    "@radix-ui/react-label": "^2.0.2",
     "@radix-ui/react-navigation-menu": "^1.1.4",
+    "@radix-ui/react-scroll-area": "^1.0.5",
     "@radix-ui/react-slot": "^1.0.2",
     "@radix-ui/react-tabs": "^1.0.4",
+    "@radix-ui/react-toast": "^1.1.5",
     "@radix-ui/react-tooltip": "^1.0.7",
+    "bolt11": "^1.4.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "embla-carousel-react": "^8.0.0-rc21",
+    "light-bolt11-decoder": "^3.1.1",
     "lucide-react": "^0.316.0",
     "next": "14.1.0",
+    "next-pwa": "^5.6.0",
     "next-themes": "^0.2.1",
     "nostr-react": "^0.7.0",
+    "nostr-tools": "^2.4.0",
     "react": "^18",
     "react-dom": "^18",
+    "react-hook-form": "^7.51.4",
+    "react-icons": "^5.1.0",
     "tailwind-merge": "^2.2.1",
     "tailwindcss-animate": "^1.0.7",
-    "vaul": "^0.8.9"
+    "vaul": "^0.8.9",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
-    "typescript": "^5",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.0.1",
+    "eslint": "^8",
+    "eslint-config-next": "14.1.0",
     "postcss": "^8",
     "tailwindcss": "^3.3.0",
-    "eslint": "^8",
-    "eslint-config-next": "14.1.0"
+    "typescript": "^5"
   }
 }
