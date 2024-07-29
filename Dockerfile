@@ -1,4 +1,4 @@
-FROM node:21-alpine3.18 as builder
+FROM node:lts-alpine3.20 as builder
 WORKDIR /app
 
 COPY lumina/package.json lumina/package-lock.json ./
@@ -6,7 +6,7 @@ RUN npm ci
 COPY ./lumina/ .
 RUN npm run build
 
-FROM node:21-alpine3.18 as runner
+FROM node:lts-alpine3.20 as runner
 WORKDIR /app
 COPY --from=builder /app/package.json .
 COPY --from=builder /app/package-lock.json .
