@@ -21,7 +21,7 @@ const ProfileTextFeed: React.FC<ProfileTextFeedProps> = ({ pubkey }) => {
   });
 
   // filter out all images since we only want text messages
-  let filteredEvents = events.filter((event) => !event.content.match(/https?:\/\/.*\.(?:png|jpg|gif)/g)?.[0]);
+  let filteredEvents = events.filter((event) => !event.content.match(/https?:\/\/.*\.(?:png|jpg|gif|jpeg)/g)?.[0]);
   // filter out all replies (tag[0] == e)
   filteredEvents = filteredEvents.filter((event) => !event.tags.some((tag) => { return tag[0] == 'e' }));
 
