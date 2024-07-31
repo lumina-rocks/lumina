@@ -85,5 +85,5 @@ jobs:
         ssh -o StrictHostKeyChecking=no ${{ env.MAIN_HOST_USERNAME }}@${{ env.MAIN_HOST }} '
           cd lumina &&
           git pull origin main &&
-          docker compose up -d --build
+          docker compose up -d
         '
