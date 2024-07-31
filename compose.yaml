@@ -1,6 +1,6 @@
 version: '3'
 services:
-  lumina-rocks-website:
+  lumina:
     build: .
     # image: ghcr.io/mroxso/lumina-rocks-website:latest
     ports:
