@@ -39,9 +39,9 @@ export default function RootLayout({
           <TopNavigation />
           <Toaster />
           <Script
-            src={`${process.env.NEXT_PUBLIC_UMAMI_URL}/script.js`}
+            src="https://umami.softwerk.cloud/script.js"
             strategy="afterInteractive"
-            data-website-id={process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID}
+            data-website-id="d0495d49-1f04-4501-8711-3bdcb4f7f7bd"
             defer
           />
           <div className="main-content pb-14">
