@@ -20,7 +20,7 @@ const ProfileFeed: React.FC<ProfileFeedProps> = ({ pubkey }) => {
     },
   });
 
-  let filteredEvents = events.filter((event) => event.content.match(/https?:\/\/.*\.(?:png|jpg|gif|mp4|webm|mov)/g)?.[0]);
+  let filteredEvents = events.filter((event) => event.content.match(/https?:\/\/.*\.(?:png|jpg|gif|mp4|webm|mov|jpeg)/g)?.[0]);
   // filter out all replies (tag[0] == e)
   filteredEvents = filteredEvents.filter((event) => !event.tags.some((tag) => { return tag[0] == 'e' }));
 

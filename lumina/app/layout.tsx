@@ -7,6 +7,8 @@ import { TopNavigation } from "@/components/headerComponents/TopNavigation";
 import BottomBar from "@/components/BottomBar";
 import { Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/toaster"
+import Script from "next/script";
+import Umami from "@/components/Umami";
 
 export const metadata: Metadata = {
   title: "LUMINA",
@@ -36,6 +38,7 @@ export default function RootLayout({
         >
           <TopNavigation />
           <Toaster />
+          <Umami />
           <div className="main-content pb-14">
             {children}
           </div>

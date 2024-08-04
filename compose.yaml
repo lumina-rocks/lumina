@@ -2,6 +2,6 @@ version: '3'
 services:
   lumina:
     build: .
-    # image: ghcr.io/mroxso/lumina-rocks-website:latest
+    # image: ghcr.io/lumina-rocks/lumina:latest
     ports:
       - "8080:3000"

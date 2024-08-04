@@ -1,17 +1,16 @@
-name: Continous Deplyoment
+name: Continous Deplyoment Beta
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - main
-      - master
+      - beta
 
 env:
   REGISTRY_NAME: ghcr.io
   IMAGE_NAME: lumina
-  MAIN_HOST: ${{ secrets.MAIN_HOST }}
-  MAIN_HOST_USERNAME: ${{ secrets.MAIN_HOST_USERNAME }}
+  BETA_HOST: ${{ secrets.BETA_HOST }}
+  BETA_HOST_USERNAME: ${{ secrets.BETA_HOST_USERNAME }}
 
 jobs:
   # ci:
@@ -76,14 +75,14 @@ jobs:
         mkdir -p ~/.ssh
         echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H ${{ env.MAIN_HOST }} >> ~/.ssh/known_hosts
+        ssh-keyscan -H ${{ env.BETA_HOST }} >> ~/.ssh/known_hosts
       env:
         SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
 
     - name: Deploy 🚀
       run: |
-        ssh -o StrictHostKeyChecking=no ${{ env.MAIN_HOST_USERNAME }}@${{ env.MAIN_HOST }} '
+        ssh -o StrictHostKeyChecking=no ${{ env.BETA_HOST_USERNAME }}@${{ env.BETA_HOST }} '
           cd lumina &&
-          git pull origin main &&
+          git pull origin beta &&
           docker compose up -d --build
         '
