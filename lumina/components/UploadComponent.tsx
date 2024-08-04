@@ -127,8 +127,6 @@ const UploadComponent: React.FC = () => {
             let responseText = await res.text();
             let responseJson = JSON.parse(responseText);
             console.log(responseJson['data']);
-            alert(responseJson['data'][0]['url']);
-            // finalFileUrl = responseJson.data.url;
             finalFileUrl = responseJson['data'][0]['url']
           } else {
             alert(await res.text());
