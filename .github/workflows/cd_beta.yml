@@ -83,6 +83,6 @@ jobs:
       run: |
         ssh -o StrictHostKeyChecking=no ${{ env.BETA_HOST_USERNAME }}@${{ env.BETA_HOST }} '
           cd lumina &&
-          git pull origin main &&
+          git pull origin beta &&
           docker compose up -d
         '
