@@ -113,7 +113,6 @@ const UploadComponent: React.FC = () => {
         }
         console.log(authEventSigned);
 
-
         let formBodyWithFile = new FormData();
         formBodyWithFile.append('file', file);
 
