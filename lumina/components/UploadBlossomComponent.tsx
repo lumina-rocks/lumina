@@ -14,7 +14,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 
-const UploadComponent: React.FC = () => {
+const UploadBlossomComponent: React.FC = () => {
 
   const { publish } = useNostr();
   const { createHash } = require('crypto');
@@ -81,15 +81,15 @@ const UploadComponent: React.FC = () => {
         const pubkey = window.localStorage.getItem('pubkey');
         const createdAt = Math.floor(Date.now() / 1000);
 
-        // Create auth event (NIP-98)
+        // Create auth event for blossom auth via nostr
         let authEvent = {
-          kind: 27235,
-          content: "",
+          kind: 24242,
+          content: desc,
           created_at: createdAt,
           tags: [
-            ['u', 'https://nostr.build/api/v2/upload/files'],
-            ['method', "POST"],
-            ['payload', sha256],
+            ['t', 'upload'],
+            ['x', sha256],
+            ['expiration', newExpirationValue()],
           ],
         };
 
@@ -113,24 +113,16 @@ const UploadComponent: React.FC = () => {
         }
         console.log(authEventSigned);
 
-
-        let formBodyWithFile = new FormData();
-        formBodyWithFile.append('file', file);
-
-
         // Actually upload the file
-        await fetch('https://nostr.build/api/v2/upload/files', {
-          method: 'POST',
-          body: formBodyWithFile,
+        await fetch('https://media.lumina.rocks/upload', {
+          method: 'PUT',
+          body: file,
           headers: { authorization: 'Nostr ' + btoa(JSON.stringify(authEventSigned)) },
         }).then(async (res) => {
           if (res.ok) {
             let responseText = await res.text();
             let responseJson = JSON.parse(responseText);
-            console.log(responseJson['data']);
-            alert(responseJson['data'][0]['url']);
-            // finalFileUrl = responseJson.data.url;
-            finalFileUrl = responseJson['data'][0]['url']
+            finalFileUrl = responseJson.url;
           } else {
             alert(await res.text());
           }
@@ -236,4 +228,4 @@ const UploadComponent: React.FC = () => {
   );
 }
 
-export default UploadComponent;
+export default UploadBlossomComponent;
