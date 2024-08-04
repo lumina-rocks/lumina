@@ -26,6 +26,7 @@ export default function RootLayout({
       <Head>
         <link rel="icon" href="/icon?<generated>" type="image/png" sizes="32x32" />
         <link rel="manifest" href="/manifest.json" />
+        <script defer src="https://umami.softwerk.cloud/script.js" data-website-id="d0495d49-1f04-4501-8711-3bdcb4f7f7bd"></script>
       </Head>
       <body className={inter.className}>
         <ThemeProvider
