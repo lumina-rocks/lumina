@@ -24,7 +24,7 @@ export default function ReactionButtonReactionListItem({ event }: { event: Nostr
     const profileImageSrc = userData?.picture || "https://robohash.org/" + pubkey;
     const content = event.content;
 
-    console.log("event", event.content);
+    // console.log("event", event.content);
 
     return (
         <Link href={hrefProfile}>
