@@ -8,7 +8,7 @@ import { NostrProvider } from "nostr-react";
 export default function OnboardingHome() {
 
   const relayUrls = [
-    "wss://relay.lumina.rocks",
+    "wss://relay.nostr.band",
   ];
 
   return (
