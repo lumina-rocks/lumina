@@ -25,7 +25,7 @@ import { useEffect, useRef } from "react"
 import { getPublicKey, generateSecretKey, nip19 } from 'nostr-tools'
 import { InfoIcon } from "lucide-react";
 import Link from "next/link";
-import { bytesToHex, hexToBytes } from '@noble/hashes/utils' 
+import { bytesToHex, hexToBytes } from '@noble/hashes/utils'
 
 export function LoginForm() {
 
@@ -47,7 +47,6 @@ export function LoginForm() {
 
     const handleAmber = async () => {
         const hostname = window.location.host;
-        console.log(hostname);
         if (!hostname) {
             throw new Error("Hostname is null or undefined");
         }
@@ -89,7 +88,7 @@ export function LoginForm() {
         if (nsecInput.current !== null) {
             try {
                 let input = nsecInput.current.value;
-                if(input.includes("nsec")) {
+                if (input.includes("nsec")) {
                     input = bytesToHex(nip19.decode(input).data as Uint8Array);
                     console.log('decoded nsec: ' + input);
                 }
@@ -114,7 +113,7 @@ export function LoginForm() {
                 let input = npubInput.current.value;
                 let npub = null;
                 let pubkey = null;
-                if(input.startsWith("npub1")) {
+                if (input.startsWith("npub1")) {
                     npub = input;
                     pubkey = nip19.decode(input).data.toString();
                 } else {
@@ -142,14 +141,14 @@ export function LoginForm() {
                 </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4">
-            <div className="grid grid-cols-8 gap-2">
-                    <Button className="w-full col-span-7" onClick={handleExtensionLogin}>Sign in with Extension (NIP-07)</Button>
+                <div className="grid grid-cols-8 gap-2">
+                    <Button className="w-full col-span-7" data-umami-event="SignIn with Extension Button" onClick={handleExtensionLogin}>Sign in with Extension (NIP-07)</Button>
                     <Link target="_blank" href="https://www.getflamingo.org/">
                         <Button variant={"outline"}><InfoIcon /></Button>
                     </Link>
                 </div>
                 <div className="grid grid-cols-8 gap-2">
-                    <Button className="w-full col-span-7" onClick={handleAmber}>Sign in with Amber</Button>
+                    <Button className="w-full col-span-7" data-umami-event="SignIn with Amber Button" onClick={handleAmber}>Sign in with Amber</Button>
                     <Link target="_blank" href="https://github.com/greenart7c3/Amber">
                         <Button variant={"outline"}><InfoIcon /></Button>
                     </Link>
@@ -163,8 +162,8 @@ export function LoginForm() {
                             <div className="grid gap-2">
                                 <Label htmlFor="npub">npub</Label>
                                 <Input placeholder="npub1..." id="npub" ref={npubInput} type="text" />
-                                <Button className="w-full" onClick={handleNpubLogin}>Sign in</Button>
-                                </div>
+                                <Button className="w-full" data-umami-event="SignIn with npub Button" onClick={handleNpubLogin}>Sign in</Button>
+                            </div>
                         </AccordionContent>
                     </AccordionItem>
                 </Accordion>
@@ -176,8 +175,8 @@ export function LoginForm() {
                             <div className="grid gap-2">
                                 <Label htmlFor="nsec">nsec</Label>
                                 <Input placeholder="nsecabcdefghijklmnopqrstuvwxyz" id="nsec" ref={nsecInput} type="password" />
-                                <Button className="w-full" onClick={handleNsecLogin}>Sign in</Button>
-                                </div>
+                                <Button className="w-full" data-umami-event="SignIn with nsec Button" onClick={handleNsecLogin}>Sign in</Button>
+                            </div>
                         </AccordionContent>
                     </AccordionItem>
                 </Accordion>

@@ -81,15 +81,15 @@ const UploadComponent: React.FC = () => {
         const pubkey = window.localStorage.getItem('pubkey');
         const createdAt = Math.floor(Date.now() / 1000);
 
-        // Create auth event for blossom auth via nostr
+        // Create auth event (NIP-98)
         let authEvent = {
-          kind: 24242,
-          content: desc,
+          kind: 27235,
+          content: "",
           created_at: createdAt,
           tags: [
-            ['t', 'upload'],
-            ['x', sha256],
-            ['expiration', newExpirationValue()],
+            ['u', 'https://nostr.build/api/v2/upload/files'],
+            ['method', "POST"],
+            ['payload', sha256],
           ],
         };
 
@@ -113,16 +113,21 @@ const UploadComponent: React.FC = () => {
         }
         console.log(authEventSigned);
 
+        let formBodyWithFile = new FormData();
+        formBodyWithFile.append('file', file);
+
+
         // Actually upload the file
-        await fetch('https://media.lumina.rocks/upload', {
-          method: 'PUT',
-          body: file,
+        await fetch('https://nostr.build/api/v2/upload/files', {
+          method: 'POST',
+          body: formBodyWithFile,
           headers: { authorization: 'Nostr ' + btoa(JSON.stringify(authEventSigned)) },
         }).then(async (res) => {
           if (res.ok) {
             let responseText = await res.text();
             let responseJson = JSON.parse(responseText);
-            finalFileUrl = responseJson.url;
+            console.log(responseJson['data']);
+            finalFileUrl = responseJson['data'][0]['url']
           } else {
             alert(await res.text());
           }

@@ -10,11 +10,13 @@ import { useRouter } from 'next/navigation';
 export function Search() {
   const router = useRouter();
 
-  const [inputValue, setInputValue] = useState('');
+  let [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false); // Neuer Zustand für das Laden
 
   const calculateAndRedirect = async () => {
     setIsLoading(true);
+
+    inputValue = inputValue.replace('nostr://','');
 
     if (inputValue.startsWith('npub')) { // npub Search
       // window.location.href = `/profile/${inputValue}`;
