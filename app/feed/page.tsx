@@ -28,7 +28,7 @@ export default function FeedPage() {
   // }
 
   const relayUrls = [
-    "wss://relay.lumina.rocks",
+    "wss://relay.nostr.band",
   ];
 
   return (

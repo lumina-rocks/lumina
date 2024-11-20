@@ -33,7 +33,7 @@ export default function SearchPage() {
   // }
 
   const relayUrls = [
-    "wss://relay.lumina.rocks",
+    "wss://relay.nostr.band",
   ];
 
   return (

@@ -9,7 +9,7 @@ import { NostrProvider } from "nostr-react";
 export default function Home() {
 
   const relayUrls = [
-    "wss://relay.lumina.rocks",
+    "wss://relay.nostr.band",
   ];
   
   return (
