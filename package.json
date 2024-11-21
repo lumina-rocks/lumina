@@ -25,6 +25,7 @@
     "bolt11": "^1.4.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
+    "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.0.0-rc21",
     "light-bolt11-decoder": "^3.1.1",
     "lucide-react": "^0.316.0",
