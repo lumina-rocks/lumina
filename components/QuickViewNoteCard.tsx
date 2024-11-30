@@ -1,15 +1,12 @@
 import React from 'react';
 import { useProfile } from "nostr-react";
-import {
-  nip19,
-} from "nostr-tools";
-import {
-  Card,
-  SmallCardContent,
-} from "@/components/ui/card"
+import { nip19 } from "nostr-tools";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Image from 'next/image';
 import Link from 'next/link';
-import { PlayIcon, StackIcon, VideoIcon } from '@radix-ui/react-icons';
+import { PlayIcon, SquareStackIcon as StackIcon, VideoIcon } from 'lucide-react'
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { formatDistanceToNow } from 'date-fns'
 
 interface NoteCardProps {
   pubkey: string;
@@ -21,66 +18,71 @@ interface NoteCardProps {
 }
 
 const QuickViewNoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tags, event, linkToNote }) => {
-  const { data: userData } = useProfile({
-    pubkey,
-  });
+  const { data: userData } = useProfile({ pubkey });
 
-  const title = userData?.username || userData?.display_name || userData?.name || userData?.npub || nip19.npubEncode(pubkey);
-  text = text.replaceAll('\n', ' ');
-  const imageSrc = text.match(/https?:\/\/[^ ]*\.(png|jpg|gif|jpeg)/g);
-  const videoSrc = text.match(/https?:\/\/[^ ]*\.(mp4|webm|mov)/g);
-  const textWithoutImage = text.replace(/https?:\/\/.*\.(?:png|jpg|gif|mp4|webm|mov|jpeg)/g, '');
+  const username = userData?.username || userData?.display_name || userData?.name || userData?.npub || nip19.npubEncode(pubkey);
+  const cleanText = text.replaceAll('\n', ' ');
+  const imageSrc = cleanText.match(/https?:\/\/[^ ]*\.(png|jpg|gif|jpeg)/g);
+  const videoSrc = cleanText.match(/https?:\/\/[^ ]*\.(mp4|webm|mov)/g);
+  const textWithoutMedia = cleanText.replace(/https?:\/\/.*\.(?:png|jpg|gif|mp4|webm|mov|jpeg)/g, '').trim();
   const createdAt = new Date(event.created_at * 1000);
   const hrefProfile = `/profile/${nip19.npubEncode(pubkey)}`;
-  const profileImageSrc = userData?.picture || "https://robohash.org/" + pubkey;
-  const encodedNoteId = nip19.noteEncode(event.id)
+  const profileImageSrc = userData?.picture || `https://robohash.org/${pubkey}`;
+  const encodedNoteId = nip19.noteEncode(event.id);
 
-  const card = (
-    <Card>
-    <SmallCardContent>
-      <div>
-        <div className='d-flex justify-content-center align-items-center'>
-          {imageSrc && imageSrc.length > 1 && !videoSrc ? (
-            <div style={{ position: 'relative' }}>
-              <div className="absolute top-2 right-2 w-7 h-7 lg:w-12 lg:h-12 bg-black bg-opacity-40 rounded-lg flex items-center justify-center">
-                <StackIcon className='absolute w-7 h-7 lg:w-12 lg:h-12'/>
-              </div>
-              <img src={imageSrc[0]} className='rounded lg:rounded-lg' style={{ maxWidth: '100%', maxHeight: '75vh', objectFit: 'contain', margin: 'auto' }} alt={text} />
-            </div>
-          ) : imageSrc && imageSrc.length > 0 ? (
-            <div style={{ position: 'relative' }}>
-              {videoSrc && videoSrc.length > 0 && 
-                <div className="absolute top-2 right-2 w-7 h-7 lg:w-12 lg:h-12 bg-black bg-opacity-40 rounded-lg flex items-center justify-center">
-                  <PlayIcon className='absolute w-7 h-7 lg:w-12 lg:h-12' />
-                </div>
-              }
-              <img src={imageSrc[0]} className='rounded lg:rounded-lg' style={{ maxWidth: '100%', maxHeight: '75vh', objectFit: 'contain', margin: 'auto' }} alt={text} />
-            </div>
-          ) : videoSrc && videoSrc.length > 0 ? (
-            <div style={{ position: 'relative' }}>
-              <div className="absolute top-2 right-2 w-7 h-7 lg:w-12 lg:h-12 bg-black bg-opacity-40 rounded-lg flex items-center justify-center">
-                <PlayIcon className='absolute w-7 h-7 lg:w-12 lg:h-12' />
-              </div>
-              <video src={videoSrc[0] + "#t=0.5"} className='rounded lg:rounded-lg' style={{ maxWidth: '100%', maxHeight: '75vh', objectFit: 'contain', margin: 'auto' }} />
-            </div>
-          ) : null}
-        </div>
-      </div>
-    </SmallCardContent>
-  </Card>
+  const MediaContent = () => (
+    <div className="relative w-full aspect-video">
+      {imageSrc && imageSrc.length > 1 && !videoSrc ? (
+        <>
+          <Image src={imageSrc[0]} layout="fill" objectFit="cover" className="rounded-md" alt={textWithoutMedia} />
+          <div className="absolute top-2 right-2 w-8 h-8 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+            <StackIcon className="w-5 h-5 text-white" />
+          </div>
+        </>
+      ) : imageSrc && imageSrc.length > 0 ? (
+        <Image src={imageSrc[0]} layout="fill" objectFit="cover" className="rounded-md" alt={textWithoutMedia} />
+      ) : videoSrc && videoSrc.length > 0 ? (
+        <>
+          <video src={`${videoSrc[0]}#t=0.5`} className="w-full h-full object-cover rounded-md" />
+          <div className="absolute top-2 right-2 w-8 h-8 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+            <PlayIcon className="w-5 h-5 text-white" />
+          </div>
+        </>
+      ) : null}
+    </div>
   );
 
-  return (
-    <>
-      {linkToNote ? (
-        <Link href={`/note/${encodedNoteId}`}>
-          {card}
-        </Link>
-      ) : (
-        card
-      )}
-    </>
+  const card = (
+    <Card className="overflow-hidden">
+      <CardHeader className="flex flex-row items-center gap-4 pb-2">
+        <Avatar>
+          <AvatarImage src={profileImageSrc} alt={username} />
+          <AvatarFallback>{username.slice(0, 2).toUpperCase()}</AvatarFallback>
+        </Avatar>
+        <div className="flex flex-col">
+          <CardTitle className="text-base">{username}</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            {formatDistanceToNow(createdAt, { addSuffix: true })}
+          </p>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <MediaContent />
+        {textWithoutMedia && (
+          <p className="mt-4 text-sm line-clamp-3">{textWithoutMedia}</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+
+  return linkToNote ? (
+    <Link href={`/note/${encodedNoteId}`} className="block hover:opacity-90 transition-opacity">
+      {card}
+    </Link>
+  ) : (
+    card
   );
 }
 
 export default QuickViewNoteCard;
+
