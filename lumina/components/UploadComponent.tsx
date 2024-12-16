@@ -215,7 +215,7 @@ const UploadComponent: React.FC = () => {
                 <div className="grid w-full max-w-sm items-center gap-1.5">
                   <Input id="file" name='file' type="file" accept='image/*' onChange={handleFileChange} />
                 </div>
-                {previewUrl && <img src={previewUrl} alt="Preview" className="w-full pt-4" />}
+                {previewUrl.startsWith('blob:') && <img src={previewUrl} alt="Preview" className="w-full pt-4" />}
               </AccordionContent>
             </AccordionItem>
           </Accordion>
