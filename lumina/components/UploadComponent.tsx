@@ -27,7 +27,9 @@ const UploadComponent: React.FC = () => {
     const file = event.target.files?.[0];
     if (file) {
       const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
+      if (url.startsWith('blob:')) {
+        setPreviewUrl(url);
+      }
 
       // Optional: Bereinigung alter URLs
       return () => URL.revokeObjectURL(url);
