@@ -38,7 +38,8 @@ export function LoginForm() {
         const urlParams = new URLSearchParams(window.location.search);
         const amberResponse = urlParams.get('amberResponse');
         if (amberResponse !== null) {
-            localStorage.setItem("pubkey", nip19.decode(amberResponse).data.toString());
+            // localStorage.setItem("pubkey", nip19.npubEncode(amberResponse).toString());
+            localStorage.setItem("pubkey", amberResponse);
             localStorage.setItem("loginType", "amber");
             window.location.href = `/profile/${amberResponse}`;
         }
@@ -53,6 +54,7 @@ export function LoginForm() {
         }
         const intent = `intent:#Intent;scheme=nostrsigner;S.compressionType=none;S.returnType=signature;S.type=get_public_key;S.callbackUrl=http://${hostname}/login?amberResponse=;end`;
         window.location.href = intent;
+        // window.location.href = `nostrsigner:?compressionType=none&returnType=signature&type=get_public_key&callbackUrl=http://${hostname}/login?amberResponse=`;
     }
 
     const handleExtensionLogin = async () => {
