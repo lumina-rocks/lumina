@@ -29,6 +29,7 @@ export default function FeedPage() {
 
   const relayUrls = [
     "wss://relay.nostr.band",
+    "wss://relay.damus.io",
   ];
 
   return (

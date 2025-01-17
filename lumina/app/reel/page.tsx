@@ -6,6 +6,7 @@ import { NostrProvider } from "nostr-react";
 export default function ReelPage() {
   const relayUrls = [
     "wss://relay.nostr.band",
+    "wss://relay.damus.io",
   ];
 
   return (

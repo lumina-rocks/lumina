@@ -10,6 +10,7 @@ export default function SearchMainPage() {
 
   const relayUrls = [
     "wss://relay.nostr.band",
+    "wss://relay.damus.io",
   ];
   
   return (
