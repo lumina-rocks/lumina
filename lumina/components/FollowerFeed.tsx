@@ -1,6 +1,8 @@
 import { useRef } from "react";
 import { useNostrEvents, dateToUnix } from "nostr-react";
 import NoteCard from './NoteCard';
+import KIND20Card from "./KIND20Card";
+import { getImageUrl } from "@/utils/utils";
 
 interface FollowerFeedProps {
   pubkey: string;
@@ -25,26 +27,17 @@ const FollowerFeed: React.FC<FollowerFeedProps> = ({ pubkey }) => {
       // since: dateToUnix(now.current), // all new events from now
       // since: 0,
       limit: 1000,
-      kinds: [1],
+      kinds: [20],
       authors: followingPubkeys,
     },
   });
 
-  // const filteredEvents = events.filter((event) => event.content.includes(".jpg"));
-  // filter events with regex that checks for png, jpg, or gif
-  let filteredEvents = events.filter((event) => event.content.match(/https?:\/\/.*\.(?:png|jpg|gif|mp4|webm|jpeg)/g)?.[0]);
-
-  // now filter all events with a tag[0] == t and tag[1] == nsfw
-  filteredEvents = filteredEvents.filter((event) => event.tags.map((tag) => tag[0] == "t" && tag[1] == "nsfw"));
-  // filter out all replies
-  filteredEvents = filteredEvents.filter((event) => !event.tags.some((tag) => { return tag[0] == 'e' }));
-
   return (
     <>
-      {filteredEvents.map((event) => (
+      {events.map((event) => (
         // <p key={event.id}>{event.pubkey} posted: {event.content}</p>
         <div key={event.id} className="py-6">
-          <NoteCard key={event.id} pubkey={event.pubkey} text={event.content} eventId={event.id} tags={event.tags} event={event} showViewNoteCardButton={true} />
+          <KIND20Card key={event.id} pubkey={event.pubkey} text={event.content} image={getImageUrl(event.tags)} eventId={event.id} tags={event.tags} event={event} showViewNoteCardButton={true} />
         </div>
       ))}
     </>
