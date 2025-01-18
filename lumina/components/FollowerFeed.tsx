@@ -34,12 +34,14 @@ const FollowerFeed: React.FC<FollowerFeedProps> = ({ pubkey }) => {
 
   return (
     <>
-      {events.map((event) => (
-        // <p key={event.id}>{event.pubkey} posted: {event.content}</p>
-        <div key={event.id} className="py-6">
-          <KIND20Card key={event.id} pubkey={event.pubkey} text={event.content} image={getImageUrl(event.tags)} eventId={event.id} tags={event.tags} event={event} showViewNoteCardButton={true} />
-        </div>
-      ))}
+      <div className="grid sm:grid-cols-1 md:grid-cols-2 space-x-2">
+        {events.map((event) => (
+          // <p key={event.id}>{event.pubkey} posted: {event.content}</p>
+          <div key={event.id} className="py-6">
+            <KIND20Card key={event.id} pubkey={event.pubkey} text={event.content} image={getImageUrl(event.tags)} eventId={event.id} tags={event.tags} event={event} showViewNoteCardButton={true} />
+          </div>
+        ))}
+      </div>
     </>
   );
 }
