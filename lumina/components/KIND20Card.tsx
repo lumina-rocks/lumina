@@ -31,6 +31,8 @@ import Link from 'next/link';
 import ViewCopyButton from './ViewCopyButton';
 import { Event as NostrEvent } from "nostr-tools";
 import ZapButton from './ZapButton';
+import Image from 'next/image';
+import { extractDimensions } from '@/utils/utils';
 
 interface KIND20CardProps {
   pubkey: string;
@@ -52,6 +54,8 @@ const KIND20Card: React.FC<KIND20CardProps> = ({ pubkey, text, image, eventId, t
   const createdAt = new Date(event.created_at * 1000);
   const hrefProfile = `/profile/${nip19.npubEncode(pubkey)}`;
   const profileImageSrc = userData?.picture || "https://robohash.org/" + pubkey;
+
+  const { width, height } = extractDimensions(event);
 
   return (
     <>
@@ -81,8 +85,11 @@ const KIND20Card: React.FC<KIND20CardProps> = ({ pubkey, text, image, eventId, t
           <div className='py-4'>
             <div className='w-full h-full px-10'>
               {image && (
-                <img
-                  src={image}
+                <Image
+                  src={image || "/placeholder.svg"}
+                  alt={text}
+                  width={width}
+                  height={height}
                   className='rounded lg:rounded-lg'
                   style={{ maxWidth: '100%', maxHeight: '66vh', objectFit: 'contain', margin: 'auto' }}
                 />
