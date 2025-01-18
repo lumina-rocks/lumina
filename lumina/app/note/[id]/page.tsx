@@ -13,7 +13,7 @@ export default function NotePage() {
   if (id.includes("note1")) {
     id = nip19.decode(id.toString()).data.toString()
   }
-
+  
   return (
     <>
         <Head>

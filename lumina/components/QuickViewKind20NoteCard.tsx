@@ -8,6 +8,8 @@ import {
   SmallCardContent,
 } from "@/components/ui/card"
 import Link from 'next/link';
+import Image from 'next/image';
+import { extractDimensions } from '@/utils/utils';
 
 interface QuickViewKind20NoteCardProps {
   pubkey: string;
@@ -24,13 +26,22 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubke
   text = text.replaceAll('\n', ' ');
   const encodedNoteId = nip19.noteEncode(event.id)
 
+  const { width, height } = extractDimensions(event);
+
   const card = (
     <Card>
     <SmallCardContent>
       <div>
         <div className='d-flex justify-content-center align-items-center'>
             <div style={{ position: 'relative' }}>
-              <img src={image} className='rounded lg:rounded-lg' style={{ maxWidth: '100%', maxHeight: '75vh', objectFit: 'contain', margin: 'auto' }} alt={text} />
+              <Image 
+                src={image || "/placeholder.svg"} 
+                alt={text}
+                width={width}
+                height={height}
+                className='rounded lg:rounded-lg' 
+                style={{ maxWidth: '100%', maxHeight: '75vh', objectFit: 'contain', margin: 'auto' }} 
+              />
             </div>
         </div>
       </div>
