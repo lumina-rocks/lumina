@@ -6,19 +6,19 @@ import QuickViewKind20NoteCard from "./QuickViewKind20NoteCard";
 const GlobalFeed: React.FC = () => {
   const { events } = useNostrEvents({
     filter: {
-      limit: 100,
+      limit: 20,
       kinds: [20],
     },
   });
 
   return (
     <>
-      <h2>Global Feed</h2>
-      <div className="grid sm:grid-cols-1 md:grid-cols-2 space-x-2">
+      <h2 className="text-2xl font-bold mb-4 px-2 md:px-4">Global Feed</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-2 md:px-4">
         {events.map((event) => {
           const imageUrl = getImageUrl(event.tags);
           return (
-            <div key={event.id} className="py-6">
+            <div key={event.id} className="mb-4 md:mb-6">
               <KIND20Card
                 key={event.id}
                 pubkey={event.pubkey}
@@ -48,4 +48,3 @@ const GlobalFeed: React.FC = () => {
 }
 
 export default GlobalFeed;
-

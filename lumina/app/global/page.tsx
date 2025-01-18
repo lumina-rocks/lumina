@@ -4,7 +4,7 @@ import GlobalFeed from "@/components/GlobalFeed";
 
 export default function GlobalFeedPage() {
   return (
-    <div className="py-6 px-6">
+    <div className="py-4 px-2 md:py-6 md:px-6">
       <GlobalFeed />
     </div>
   );

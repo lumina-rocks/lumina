@@ -13,7 +13,6 @@ import ProfileQuickViewFeed from "@/components/ProfileQuickViewFeed";
 import FollowerQuickViewFeed from "@/components/FollowerQuickViewFeed";
 
 export default function FeedPage() {
-
   let pubkey = null;
   if (typeof window !== 'undefined') {
     pubkey = window.localStorage.getItem('pubkey');
@@ -34,10 +33,10 @@ export default function FeedPage() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <div className="py-6 px-6">
-        <h2>Follower Feed</h2>
+      <div className="py-4 px-2 md:py-6 md:px-6">
+        <h2 className="text-2xl font-bold mb-4 px-2 md:px-4">Follower Feed</h2>
         <Tabs defaultValue="QuickView">
-          <TabsList>
+          <TabsList className="mb-4">
             <TabsTrigger value="QuickView"><GridIcon /></TabsTrigger>
             <TabsTrigger value="ProfileFeed"><SectionIcon /></TabsTrigger>
           </TabsList>

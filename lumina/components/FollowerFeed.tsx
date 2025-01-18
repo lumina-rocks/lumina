@@ -9,7 +9,7 @@ interface FollowerFeedProps {
 }
 
 const FollowerFeed: React.FC<FollowerFeedProps> = ({ pubkey }) => {
-  const now = useRef(new Date()); // Make sure current time isn't re-rendered
+  const now = useRef(new Date());
 
   const { events: following, isLoading: followingLoading } = useNostrEvents({
     filter: {
@@ -18,31 +18,34 @@ const FollowerFeed: React.FC<FollowerFeedProps> = ({ pubkey }) => {
       limit: 1,
     },
   });
-  // let followingPubkeys = following.map((event) => event.tags[event.tags.length - 1][1]);
-  // let followingPubkeys = following.flatMap((event) => event.tags.map(tag => tag[1])).slice(0, 50);
+
   let followingPubkeys = following.flatMap((event) => event.tags.map(tag => tag[1])).slice(0, 500);
 
   const { events } = useNostrEvents({
     filter: {
-      // since: dateToUnix(now.current), // all new events from now
-      // since: 0,
-      limit: 1000,
+      limit: 20,
       kinds: [20],
       authors: followingPubkeys,
     },
   });
 
   return (
-    <>
-      <div className="grid sm:grid-cols-1 md:grid-cols-2 space-x-2">
-        {events.map((event) => (
-          // <p key={event.id}>{event.pubkey} posted: {event.content}</p>
-          <div key={event.id} className="py-6">
-            <KIND20Card key={event.id} pubkey={event.pubkey} text={event.content} image={getImageUrl(event.tags)} eventId={event.id} tags={event.tags} event={event} showViewNoteCardButton={true} />
-          </div>
-        ))}
-      </div>
-    </>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-2 md:px-4">
+      {events.map((event) => (
+        <div key={event.id} className="mb-4 md:mb-6">
+          <KIND20Card 
+            key={event.id} 
+            pubkey={event.pubkey} 
+            text={event.content} 
+            image={getImageUrl(event.tags)} 
+            eventId={event.id} 
+            tags={event.tags} 
+            event={event} 
+            showViewNoteCardButton={true} 
+          />
+        </div>
+      ))}
+    </div>
   );
 }
 
