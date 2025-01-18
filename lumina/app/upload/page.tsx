@@ -26,6 +26,7 @@ export default function UploadPage() {
   
   const relayUrls = [
     "wss://relay.nostr.band",
+    "wss://relay.damus.io",
   ];
   
   return (

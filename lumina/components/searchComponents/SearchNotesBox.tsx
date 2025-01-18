@@ -30,6 +30,8 @@ import Link from 'next/link';
 import { Event as NostrEvent } from "nostr-tools";
 import ProfileInfoCard from '../ProfileInfoCard';
 import NoteCard from '../NoteCard';
+import KIND20Card from '../KIND20Card';
+import { getImageUrl } from '@/utils/utils';
 
 interface SearchNotesBoxProps {
   searchTag: string;
@@ -38,7 +40,7 @@ interface SearchNotesBoxProps {
 const SearchNotesBox: React.FC<SearchNotesBoxProps> = ({ searchTag }) => {
   const { events: notes } = useNostrEvents({
     filter: {
-      kinds: [1],
+      kinds: [1, 20],
       search: searchTag,
       limit: 10,
     },
@@ -53,7 +55,11 @@ const SearchNotesBox: React.FC<SearchNotesBoxProps> = ({ searchTag }) => {
         <CardContent>
           <div className="grid grid-cols-1 gap-6">
             {notes.map((event: NostrEvent) => (
-              <NoteCard event={event} eventId={event.id} pubkey={event.pubkey} showViewNoteCardButton={true} tags={event.tags} text={event.content} key={event.id} />
+              event.kind === 1 ? (
+                <NoteCard event={event} eventId={event.id} pubkey={event.pubkey} showViewNoteCardButton={true} tags={event.tags} text={event.content} key={event.id} />
+              ) : event.kind === 20 ? (
+                <KIND20Card key={event.id} pubkey={event.pubkey} text={event.content} image={getImageUrl(event.tags)} event={event} tags={event.tags} eventId={event.id} showViewNoteCardButton={true}/>
+              ) : null
             ))}
           </div>
         </CardContent>

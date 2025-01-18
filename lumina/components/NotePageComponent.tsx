@@ -2,6 +2,8 @@ import { useRef } from "react";
 import { useNostrEvents } from "nostr-react";
 import NoteCard from '@/components/NoteCard';
 import CommentsCompontent from "@/components/CommentsCompontent";
+import KIND20Card from "./KIND20Card";
+import { getImageUrl } from "@/utils/utils";
 
 interface NotePageComponentProps {
   id: string;
@@ -12,23 +14,45 @@ const NotePageComponent: React.FC<NotePageComponentProps> = ({ id }) => {
 
   const { events } = useNostrEvents({
     filter: {
-      // since: dateToUnix(now.current), // all new events from now
-      // since: 0,
       ids: [id],
       limit: 1,
-      kinds: [1],
     },
   });
 
   // filter out all events that also have another e tag with another id
-  const filteredEvents = events.filter((event) => { return event.tags.filter((tag) => { return tag[0] === '#e' && tag[1] !== id }).length === 0 });
+  const filteredEvents = events.filter((event) => {
+    return event.tags.filter((tag) => {
+      return tag[0] === '#e' && tag[1] !== id;
+    }).length === 0;
+  });
 
   return (
     <>
-      {events.map((event) => (
-        // <p key={event.id}>{event.pubkey} posted: {event.content}</p>
+      {filteredEvents.map((event) => (
         <div key={event.id} className="py-6">
-          <NoteCard key={event.id} pubkey={event.pubkey} text={event.content} eventId={event.id} tags={event.tags} event={event} showViewNoteCardButton={false} />
+        {event.kind === 1 && (
+          <NoteCard
+            key={event.id}
+            pubkey={event.pubkey}
+            text={event.content}
+            eventId={event.id}
+            tags={event.tags}
+            event={event}
+            showViewNoteCardButton={false}
+          />
+        )}
+        {event.kind === 20 && (
+          <KIND20Card
+            key={event.id}
+            pubkey={event.pubkey}
+            text={event.content}
+            image={getImageUrl(event.tags)}
+            eventId={event.id}
+            tags={event.tags}
+            event={event}
+            showViewNoteCardButton={false}
+          />
+        )}
           <div className="py-6 px-6">
             <CommentsCompontent pubkey={event.pubkey} event={event} />
           </div>

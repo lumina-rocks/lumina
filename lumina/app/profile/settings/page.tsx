@@ -20,6 +20,7 @@ export default function ProfileSettingsPage() {
 
   const relayUrls = [
     "wss://relay.nostr.band",
+    "wss://relay.damus.io",
   ];
 
   return (

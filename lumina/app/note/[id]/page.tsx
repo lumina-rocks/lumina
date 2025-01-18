@@ -17,6 +17,7 @@ export default function NotePage() {
 
   const relayUrls = [
     "wss://relay.nostr.band",
+    "wss://relay.damus.io",
   ];
 
   return (

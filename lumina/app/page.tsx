@@ -9,7 +9,8 @@ import { NostrProvider } from "nostr-react";
 export default function Home() {
 
   const relayUrls = [
-    "wss://relay.nostr.band",
+    // "wss://relay.nostr.band",
+    "wss://relay.damus.io",
   ];
   
   return (

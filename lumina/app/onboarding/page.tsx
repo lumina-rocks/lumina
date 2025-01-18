@@ -9,6 +9,7 @@ export default function OnboardingHome() {
 
   const relayUrls = [
     "wss://relay.nostr.band",
+    "wss://relay.damus.io",
   ];
 
   return (

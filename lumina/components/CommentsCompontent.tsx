@@ -14,7 +14,7 @@ const CommentsCompontent: React.FC<CommentsCompontentProps> = ({ pubkey, event }
 
     const { events } = useNostrEvents({
         filter: {
-            kinds: [1],
+            // kinds: [1],
             '#e': [event.id],
         },
     });

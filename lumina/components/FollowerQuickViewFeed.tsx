@@ -2,6 +2,8 @@ import { useRef } from "react";
 import { useNostrEvents, dateToUnix } from "nostr-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import QuickViewNoteCard from "./QuickViewNoteCard";
+import QuickViewKind20NoteCard from "./QuickViewKind20NoteCard";
+import { getImageUrl } from "@/utils/utils";
 
 interface FollowerQuickViewFeedProps {
   pubkey: string;
@@ -26,19 +28,15 @@ const FollowerQuickViewFeed: React.FC<FollowerQuickViewFeedProps> = ({ pubkey })
       // since: dateToUnix(now.current), // all new events from now
       // since: 0,
       limit: 1000,
-      kinds: [1],
+      kinds: [20],
       authors: followingPubkeys,
     },
   });
 
-  let filteredEvents = events.filter((event) => event.content.match(/https?:\/\/.*\.(?:png|jpg|gif|jpeg)/g)?.[0]);
-  // filter out all replies (tag[0] == e)
-  filteredEvents = filteredEvents.filter((event) => !event.tags.some((tag) => { return tag[0] == 'e' }));
-
   return (
     <>
       <div className="grid grid-cols-3 gap-2">
-        {filteredEvents.length === 0 ? (
+        {events.length === 0 ? (
           <>
           <div>
             <Skeleton className="h-[125px] rounded-xl" />
@@ -62,8 +60,8 @@ const FollowerQuickViewFeed: React.FC<FollowerQuickViewFeedProps> = ({ pubkey })
             </div>
           </div>
           </>
-        ) : (filteredEvents.map((event) => (
-          <QuickViewNoteCard key={event.id} pubkey={event.pubkey} text={event.content} event={event} tags={event.tags} eventId={event.id} linkToNote={true} />
+        ) : (events.map((event) => (
+          <QuickViewKind20NoteCard key={event.id} pubkey={event.pubkey} text={event.content} image={getImageUrl(event.tags)} event={event} tags={event.tags} eventId={event.id} linkToNote={true} />
         )))}
       </div>
     </>

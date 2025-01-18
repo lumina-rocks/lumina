@@ -8,6 +8,7 @@ export default function OnboardingCreateProfile() {
 
   const relayUrls = [
     "wss://relay.nostr.band",
+    "wss://relay.damus.io",
   ];
 
   return (
