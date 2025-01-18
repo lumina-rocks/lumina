@@ -8,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SectionIcon, GridIcon } from '@radix-ui/react-icons'
 import ProfileQuickViewFeed from "@/components/ProfileQuickViewFeed";
 import ProfileTextFeed from "@/components/ProfileTextFeed";
-import { NostrProvider } from "nostr-react";
 import ProfileGalleryViewFeed from "@/components/ProfileGalleryViewFeed";
 
 export default function ProfilePage() {
@@ -22,14 +21,8 @@ export default function ProfilePage() {
     pubkey = nip19.decode(pubkey.toString()).data.toString()
   }
 
-  const relayUrls = [
-    "wss://relay.nostr.band",
-    "wss://relay.damus.io",
-  ];
-
   return (
     <>
-      <NostrProvider relayUrls={relayUrls} debug={false}>
         <div className="md:px-6">
           <div>
             <ProfileInfoCard pubkey={pubkey.toString()} />
@@ -55,7 +48,6 @@ export default function ProfilePage() {
             </TabsContent> */}
           </Tabs>
         </div>
-      </NostrProvider>
     </>
   );
 }
