@@ -4,7 +4,6 @@ import Head from "next/head";
 import { useParams } from 'next/navigation'
 import NotePageComponent from "@/components/NotePageComponent";
 import { nip19 } from "nostr-tools";
-import { NostrProvider } from "nostr-react";
 
 export default function NotePage() {
 
@@ -15,14 +14,8 @@ export default function NotePage() {
     id = nip19.decode(id.toString()).data.toString()
   }
 
-  const relayUrls = [
-    "wss://relay.nostr.band",
-    "wss://relay.damus.io",
-  ];
-
   return (
     <>
-      <NostrProvider relayUrls={relayUrls} debug={false}>
         <Head>
           <title>LUMINA.rocks - {id}</title>
           <meta name="description" content="Yet another nostr web ui" />
@@ -34,7 +27,6 @@ export default function NotePage() {
             <NotePageComponent id={id.toString()} />
           </div>
         </div>
-      </NostrProvider>
     </>
   );
 }

@@ -8,7 +8,6 @@ import { Event, NostrEvent, finalizeEvent, nip19 } from "nostr-tools";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SectionIcon, GridIcon } from '@radix-ui/react-icons'
 import TagFeed from "@/components/TagFeed";
-import { NostrProvider, useNostr } from "nostr-react";
 import { FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,25 +22,18 @@ export default function UploadPage() {
   //   // convert npub to pubkey
   //   pubkey = nip19.decode(pubkey.toString()).data.toString()
   // }
-  
-  const relayUrls = [
-    "wss://relay.nostr.band",
-    "wss://relay.damus.io",
-  ];
-  
+
   return (
     <>
-      <NostrProvider relayUrls={relayUrls} debug={false}>
-        <Head>
-          <title>LUMINA.rocks</title>
-          <meta name="description" content="Yet another nostr web ui" />
-          <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <link rel="icon" href="/favicon.ico" />
-        </Head>
-        <div className="py-6 px-6">
-          <UploadComponent />
-        </div>
-      </NostrProvider>
+      <Head>
+        <title>LUMINA.rocks</title>
+        <meta name="description" content="Yet another nostr web ui" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
+      <div className="py-6 px-6">
+        <UploadComponent />
+      </div>
     </>
   );
 }

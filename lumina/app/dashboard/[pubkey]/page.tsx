@@ -2,10 +2,9 @@
 
 import { useParams } from 'next/navigation'
 import { nip19 } from "nostr-tools";
-import { NostrProvider } from "nostr-react";
 import Statistics from '@/components/dashboard/Statistics';
 
-const DashboardPage: React.FC= ({ }) => {
+const DashboardPage: React.FC = ({ }) => {
 
   const params = useParams()
   let pubkey = params.pubkey
@@ -16,16 +15,9 @@ const DashboardPage: React.FC= ({ }) => {
     pubkey = nip19.decode(pubkey.toString()).data.toString()
   }
 
-  const relayUrls = [
-    "wss://relay.nostr.band",
-    "wss://relay.damus.io",
-  ];
-
   return (
     <>
-      <NostrProvider relayUrls={relayUrls} debug={false}>
-        <Statistics pubkey={pubkey.toString()} />
-      </NostrProvider>
+      <Statistics pubkey={pubkey.toString()} />
     </>
   );
 }

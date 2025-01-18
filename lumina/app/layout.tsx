@@ -1,7 +1,8 @@
+'use client';
+
 import { Metadata } from "next";
 import "./globals.css";
 import { NostrProvider } from "nostr-react";
-import Head from "next/head";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TopNavigation } from "@/components/headerComponents/TopNavigation";
 import BottomBar from "@/components/BottomBar";
@@ -10,12 +11,6 @@ import { Toaster } from "@/components/ui/toaster"
 import Script from "next/script";
 import Umami from "@/components/Umami";
 
-export const metadata: Metadata = {
-  title: "LUMINA",
-  description: "An effortless, enjoyable, and innovative way to capture, enhance, and share moments with everyone, decentralized and boundless.",
-  manifest: "/manifest.json",
-};
-
 const inter = Inter({ subsets: ["latin"] });
 
 export default function RootLayout({
@@ -23,12 +18,20 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
+  const relayUrls = [
+    "wss://relay.nostr.band",
+    "wss://relay.damus.io",
+  ];
+
   return (
     <html lang="en">
-      <Head>
+      <head>
         <link rel="icon" href="/icon?<generated>" type="image/png" sizes="32x32" />
         <link rel="manifest" href="/manifest.json" />
-      </Head>
+        <title>LUMINA</title>
+        <meta name="description" content="An effortless, enjoyable, and innovative way to capture, enhance, and share moments with everyone, decentralized and boundless." />
+      </head>
       <body className={inter.className}>
         <ThemeProvider
           attribute="class"
@@ -40,7 +43,9 @@ export default function RootLayout({
           <Toaster />
           <Umami />
           <div className="main-content pb-14">
-            {children}
+            <NostrProvider relayUrls={relayUrls} debug={false}>
+              {children}
+            </NostrProvider>
           </div>
           <BottomBar />
         </ThemeProvider>

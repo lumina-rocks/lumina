@@ -1,14 +1,13 @@
 'use client';
 
 import { nip19 } from "nostr-tools";
-import { NostrProvider } from "nostr-react";
 import Notifications from '@/components/Notifications';
 
-const NotificationsPage: React.FC= ({ }) => {
+const NotificationsPage: React.FC = ({ }) => {
   let pubkey = '';
 
   if (typeof window !== 'undefined') {
-      pubkey = window.localStorage.getItem("pubkey") ?? '';
+    pubkey = window.localStorage.getItem("pubkey") ?? '';
   }
 
   // check if pubkey contains "npub"
@@ -18,16 +17,9 @@ const NotificationsPage: React.FC= ({ }) => {
     pubkey = nip19.decode(pubkey.toString()).data.toString()
   }
 
-  const relayUrls = [
-    "wss://relay.nostr.band",
-    "wss://relay.damus.io",
-  ];
-
   return (
     <>
-      <NostrProvider relayUrls={relayUrls} debug={false}>
-        <Notifications pubkey={pubkey.toString()} />
-      </NostrProvider>
+      <Notifications pubkey={pubkey.toString()} />
     </>
   );
 }
