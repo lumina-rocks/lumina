@@ -2,8 +2,13 @@
 
 import { nip19 } from "nostr-tools";
 import Notifications from '@/components/Notifications';
+import { useEffect } from "react";
 
 const NotificationsPage: React.FC = ({ }) => {
+  useEffect(() => {
+    document.title = `Notifications | LUMINA`;
+  }, []);
+
   let pubkey = '';
 
   if (typeof window !== 'undefined') {

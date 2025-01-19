@@ -8,11 +8,18 @@ import { nip19 } from "nostr-tools";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SectionIcon, GridIcon } from '@radix-ui/react-icons'
 import TagFeed from "@/components/TagFeed";
+import { useEffect } from "react";
 
 export default function Home() {
 
   const params = useParams()
   let tag = params.tag
+
+  useEffect(() => {
+    document.title = `#${tag} | LUMINA`;
+  }, [tag]);
+
+
   // check if pubkey contains "npub"
   // if so, then we need to convert it to a pubkey
   // if (pubkey.includes("npub")) {

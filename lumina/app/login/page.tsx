@@ -2,8 +2,14 @@
 
 import Head from "next/head";
 import { LoginForm } from "@/components/LoginForm";
+import { useEffect } from "react";
 
 export default function LoginPage() {
+
+    useEffect(() => {
+        document.title = `Login | LUMINA`;
+    }, []);
+
     return (
         <>
             <Head>

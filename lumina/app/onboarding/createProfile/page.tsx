@@ -1,8 +1,13 @@
 "use client";
 
 import { UpdateProfileForm } from "@/components/UpdateProfileForm";
+import { useEffect } from "react";
 
 export default function OnboardingCreateProfile() {
+  useEffect(() => {
+    document.title = `Create Profile | LUMINA`;
+  }, []);
+
   return (
     <>
       <div className="flex flex-col items-center py-6 px-6">

@@ -4,8 +4,12 @@ import Head from "next/head";
 import { useParams } from 'next/navigation'
 import NotePageComponent from "@/components/NotePageComponent";
 import { nip19 } from "nostr-tools";
+import { useEffect } from "react";
 
 export default function NotePage() {
+  useEffect(() => {
+    document.title = `Note | LUMINA`;
+  }, []);
 
   const params = useParams()
   let id = params.id

@@ -1,8 +1,13 @@
 "use client";
 
 import { CreateSecretKeyForm } from "@/components/onboarding/createSecretKeyForm";
+import { useEffect } from "react";
 
 export default function OnboardingHome() {
+  useEffect(() => {
+    document.title = `Omboarding | LUMINA`;
+  }, []);
+
   return (
     <>
       <div className="flex flex-col items-center py-6 px-6">

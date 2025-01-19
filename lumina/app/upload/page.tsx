@@ -8,7 +8,7 @@ import { Event, NostrEvent, finalizeEvent, nip19 } from "nostr-tools";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SectionIcon, GridIcon } from '@radix-ui/react-icons'
 import TagFeed from "@/components/TagFeed";
-import { FormEvent } from "react";
+import { FormEvent, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils'
@@ -16,6 +16,10 @@ import UploadComponent from "@/components/UploadComponent";
 
 export default function UploadPage() {
 
+  useEffect(() => {
+    document.title = `Upload | LUMINA`;
+  }, []);
+  
   // check if pubkey contains "npub"
   // if so, then we need to convert it to a pubkey
   // if (pubkey.includes("npub")) {

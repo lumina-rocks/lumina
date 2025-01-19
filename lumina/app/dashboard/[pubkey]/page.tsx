@@ -3,9 +3,14 @@
 import { useParams } from 'next/navigation'
 import { nip19 } from "nostr-tools";
 import Statistics from '@/components/dashboard/Statistics';
+import { useEffect } from 'react';
 
 const DashboardPage: React.FC = ({ }) => {
 
+  useEffect(() => {
+    document.title = `Dashboard | LUMINA`;
+  }, []);
+  
   const params = useParams()
   let pubkey = params.pubkey
   // check if pubkey contains "npub"

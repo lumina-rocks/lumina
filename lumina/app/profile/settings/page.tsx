@@ -3,8 +3,13 @@
 import { useParams } from 'next/navigation'
 import { nip19 } from "nostr-tools";
 import { UpdateProfileForm } from "@/components/UpdateProfileForm";
+import { useEffect } from 'react';
 
 export default function ProfileSettingsPage() {
+    useEffect(() => {
+        document.title = `Settings | LUMINA`;
+    }, []);
+  
 
   let pubkey = null;
   if (typeof window !== 'undefined') {

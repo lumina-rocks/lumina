@@ -9,17 +9,34 @@ import { SectionIcon, GridIcon } from '@radix-ui/react-icons'
 import ProfileQuickViewFeed from "@/components/ProfileQuickViewFeed";
 import ProfileTextFeed from "@/components/ProfileTextFeed";
 import ProfileGalleryViewFeed from "@/components/ProfileGalleryViewFeed";
+import { useProfile } from "nostr-react";
+import { useMemo, useEffect } from "react";
 
 export default function ProfilePage() {
 
   const params = useParams()
-  let pubkey = params.pubkey
+  let pubkey = Array.isArray(params.pubkey) ? params.pubkey[0] : params.pubkey;
   // check if pubkey contains "npub"
   // if so, then we need to convert it to a pubkey
   if (pubkey.includes("npub")) {
     // convert npub to pubkey
     pubkey = nip19.decode(pubkey.toString()).data.toString()
   }
+  
+  const npubShortened = useMemo(() => {
+    let encoded = nip19.npubEncode(pubkey);
+    let parts = encoded.split('npub');
+    return 'npub' + parts[1].slice(0, 4) + ':' + parts[1].slice(-3);
+  }, [pubkey]);
+
+  const { data: userData, isLoading } = useProfile({ pubkey });
+  const title = userData?.username || userData?.display_name || userData?.name || userData?.npub || npubShortened;
+
+  useEffect(() => {
+    if (title) {
+      document.title = `${title} | LUMINA`;
+    }
+  }, [title]);
 
   return (
     <>

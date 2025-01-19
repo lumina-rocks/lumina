@@ -11,8 +11,14 @@ import TagFeed from "@/components/TagFeed";
 import FollowerFeed from "@/components/FollowerFeed";
 import ProfileQuickViewFeed from "@/components/ProfileQuickViewFeed";
 import FollowerQuickViewFeed from "@/components/FollowerQuickViewFeed";
+import { useEffect } from "react";
 
 export default function FeedPage() {
+
+  useEffect(() => {
+    document.title = `Feed | LUMINA`;
+  }, []);
+
   let pubkey = null;
   if (typeof window !== 'undefined') {
     pubkey = window.localStorage.getItem('pubkey');

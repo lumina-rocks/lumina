@@ -13,6 +13,7 @@ import ProfileQuickViewFeed from "@/components/ProfileQuickViewFeed";
 import FollowerQuickViewFeed from "@/components/FollowerQuickViewFeed";
 import SearchProfilesBox from "@/components/searchComponents/SearchProfilesBox";
 import SearchNotesBox from "@/components/searchComponents/SearchNotesBox";
+import { useEffect } from "react";
 
 export default function SearchPage() {
 
@@ -23,6 +24,10 @@ export default function SearchPage() {
 
   const params = useParams()
   let searchTag = params.searchTag
+
+  useEffect(() => {
+    document.title = `Search: ${searchTag} | LUMINA`;
+  }, [searchTag]);
 
   // check if pubkey contains "npub"
   // if so, then we need to convert it to a pubkey
