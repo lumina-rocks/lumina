@@ -1,15 +1,23 @@
 import { useNostrEvents } from "nostr-react";
 import KIND20Card from "./KIND20Card";
 import { getImageUrl } from "@/utils/utils";
-import QuickViewKind20NoteCard from "./QuickViewKind20NoteCard";
+import { useState, useRef } from "react";
+import { Button } from "@/components/ui/button";
 
 const GlobalFeed: React.FC = () => {
-  const { events } = useNostrEvents({
+  const now = useRef(new Date());
+  const [limit, setLimit] = useState(20);
+
+  const { events, isLoading } = useNostrEvents({
     filter: {
-      limit: 20,
+      limit: limit,
       kinds: [20],
     },
   });
+
+  const loadMore = () => {
+    setLimit(prevLimit => prevLimit + 20);
+  };
 
   return (
     <>
@@ -29,20 +37,15 @@ const GlobalFeed: React.FC = () => {
                 event={event}
                 showViewNoteCardButton={true}
               />
-              {/* <QuickViewKind20NoteCard
-                key={event.id}
-                pubkey={event.pubkey}
-                text={event.content}
-                image={imageUrl}
-                eventId={event.id}
-                tags={event.tags}
-                event={event}
-                linkToNote={true}
-                /> */}
             </div>
           );
         })}
       </div>
+      {!isLoading && (
+        <div className="flex justify-center p-4">
+          <Button className="w-full md:w-auto" onClick={loadMore}>Load More</Button>
+        </div>
+      )}
     </>
   );
 }
