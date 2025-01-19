@@ -11,7 +11,7 @@ interface ProfileQuickViewFeedProps {
 
 const ProfileQuickViewFeed: React.FC<ProfileQuickViewFeedProps> = ({ pubkey }) => {
   const now = useRef(new Date()); // Make sure current time isn't re-rendered
-  const [limit, setLimit] = useState(100);
+  const [limit, setLimit] = useState(20);
 
   const { isLoading, events } = useNostrEvents({
     filter: {
