@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import Link, { LinkProps } from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import * as React from "react";
+import { Suspense } from "react";
 
 interface Context {
 	defaultValue: string;
@@ -14,45 +15,53 @@ interface Context {
 const TabsContext = React.createContext<Context>(null as any);
 
 export function Tabs(props: {
-	children: React.ReactNode;
-	className?: string;
-	/**
-	 * The default tab
-	 */
-	defaultValue: string;
-	/**
-	 * Which search param to use
-	 * @default "tab"
-	 */
-	searchParam?: string;
+    children: React.ReactNode;
+    className?: string;
+    defaultValue: string;
+    searchParam?: string;
 }) {
-	const { children, className, searchParam = "tab", ...other } = props;
-	const searchParams = useSearchParams()!;
+    const { children, className, searchParam = "tab", ...other } = props;
 
-	const selected = searchParams.get(searchParam) || props.defaultValue;
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <TabsContentWrapper {...props} />
+        </Suspense>
+    );
+}
 
-	const pathname = usePathname();
-	const hrefFor: Context["hrefFor"] = React.useCallback(
-		(value) => {
-			const params = new URLSearchParams(searchParams);
-			if (value === props.defaultValue) {
-				params.delete(searchParam);
-			} else {
-				params.set(searchParam, value);
-			}
+function TabsContentWrapper(props: {
+    children: React.ReactNode;
+    className?: string;
+    defaultValue: string;
+    searchParam?: string;
+}) {
+    const { children, className, searchParam = "tab", ...other } = props;
+    const searchParams = useSearchParams()!;
 
-			const asString = params.toString();
+    const selected = searchParams.get(searchParam) || props.defaultValue;
 
-			return pathname + (asString ? "?" + asString : "");
-		},
-		[searchParams, props.searchParam],
-	);
+    const pathname = usePathname();
+    const hrefFor: Context["hrefFor"] = React.useCallback(
+        (value) => {
+            const params = new URLSearchParams(searchParams);
+            if (value === props.defaultValue) {
+                params.delete(searchParam);
+            } else {
+                params.set(searchParam, value);
+            }
 
-	return (
-		<TabsContext.Provider value={{ ...other, hrefFor, searchParam, selected }}>
-			<div className={className}>{children}</div>
-		</TabsContext.Provider>
-	);
+            const asString = params.toString();
+
+            return pathname + (asString ? "?" + asString : "");
+        },
+        [searchParams, props.searchParam],
+    );
+
+    return (
+        <TabsContext.Provider value={{ ...other, hrefFor, searchParam, selected }}>
+            <div className={className}>{children}</div>
+        </TabsContext.Provider>
+    );
 }
 
 const useContext = () => {
