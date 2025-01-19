@@ -1,6 +1,7 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useNostrEvents, dateToUnix } from "nostr-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import QuickViewNoteCard from "./QuickViewNoteCard";
 import QuickViewKind20NoteCard from "./QuickViewKind20NoteCard";
 import { getImageUrl } from "@/utils/utils";
@@ -11,6 +12,7 @@ interface FollowerQuickViewFeedProps {
 
 const FollowerQuickViewFeed: React.FC<FollowerQuickViewFeedProps> = ({ pubkey }) => {
   const now = useRef(new Date()); // Make sure current time isn't re-rendered
+  const [limit, setLimit] = useState(25);
 
   const { events: following, isLoading: followingLoading } = useNostrEvents({
     filter: {
@@ -19,51 +21,65 @@ const FollowerQuickViewFeed: React.FC<FollowerQuickViewFeedProps> = ({ pubkey })
       limit: 1,
     },
   });
-  // let followingPubkeys = following.map((event) => event.tags[event.tags.length - 1][1]);
-  // let followingPubkeys = following.flatMap((event) => event.tags.map(tag => tag[1])).slice(0, 50);
+
   let followingPubkeys = following.flatMap((event) => event.tags.map(tag => tag[1])).slice(0, 500);
 
-  const { events } = useNostrEvents({
+  const { events, isLoading } = useNostrEvents({
     filter: {
-      // since: dateToUnix(now.current), // all new events from now
-      // since: 0,
-      limit: 25,
+      limit: limit,
       kinds: [20],
       authors: followingPubkeys,
     },
   });
 
+  const loadMore = () => {
+    setLimit(prevLimit => prevLimit + 25);
+  };
+
   return (
     <>
       <div className="grid grid-cols-3 gap-2">
-        {events.length === 0 ? (
+        {events.length === 0 && isLoading ? (
           <>
-          <div>
-            <Skeleton className="h-[125px] rounded-xl" />
-            <div className="space-y-2 py-2">
-              <Skeleton className="h-4 w-1/3" />
-              <Skeleton className="h-4 w-1/3" />
+            <div>
+              <Skeleton className="h-[33vh] rounded-xl" />
             </div>
-          </div>
-          <div>
-            <Skeleton className="h-[125px] rounded-xl" />
-            <div className="space-y-2 py-2">
-              <Skeleton className="h-4 w-1/3" />
-              <Skeleton className="h-4 w-1/3" />
+            <div>
+              <Skeleton className="h-[33vh] rounded-xl" />
             </div>
-          </div>
-          <div>
-            <Skeleton className="h-[125px] rounded-xl" />
-            <div className="space-y-2 py-2">
-              <Skeleton className="h-4 w-1/3" />
-              <Skeleton className="h-4 w-1/3" />
+            <div>
+              <Skeleton className="h-[33vh] rounded-xl" />
             </div>
-          </div>
+            <div>
+              <Skeleton className="h-[33vh] rounded-xl" />
+            </div>
+            <div>
+              <Skeleton className="h-[33vh] rounded-xl" />
+            </div>
+            <div>
+              <Skeleton className="h-[33vh] rounded-xl" />
+            </div>
           </>
-        ) : (events.map((event) => (
-          <QuickViewKind20NoteCard key={event.id} pubkey={event.pubkey} text={event.content} image={getImageUrl(event.tags)} event={event} tags={event.tags} eventId={event.id} linkToNote={true} />
-        )))}
+        ) : (
+          events.map((event) => (
+            <QuickViewKind20NoteCard
+              key={event.id}
+              pubkey={event.pubkey}
+              text={event.content}
+              image={getImageUrl(event.tags)}
+              event={event}
+              tags={event.tags}
+              eventId={event.id}
+              linkToNote={true}
+            />
+          ))
+        )}
       </div>
+      {!isLoading && (
+        <div className="flex justify-center p-4">
+          <Button className="w-full md:w-auto" onClick={loadMore}>Load More</Button>
+        </div>
+      )}
     </>
   );
 }
