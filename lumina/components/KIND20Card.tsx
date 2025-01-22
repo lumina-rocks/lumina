@@ -72,16 +72,18 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
         </CardHeader>
         <CardContent className="p-0">
           <div className="px-2 sm:px-4">
-            <div className="relative w-full" style={{ paddingBottom: "66.67%" }}>
-              {image && (
-                <Image
-                  src={image || "/placeholder.svg"}
-                  alt={text}
-                  fill
-                  className="rounded-lg object-cover"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                />
-              )}
+            <div className="w-full">
+              <div className="relative w-full" style={{ paddingBottom: "100%" }}>
+                {image && (
+                  <Image
+                    src={image || "/placeholder.svg"}
+                    alt={text}
+                    fill
+                    className="rounded-lg object-contain"
+                    // sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  />
+                )}
+              </div>
             </div>
           </div>
           <div className="p-4">
