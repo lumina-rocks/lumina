@@ -47,16 +47,16 @@ export default function BottomBar() {
           <span className="sr-only">Follower Feed</span>
         </Link>
       )}
+      <Link className={`flex flex-col items-center justify-center w-full text-xs gap-1 px-4 ${isActive('/global', pathname)}`} href="/global">
+        <GlobeIcon className={`h-6 w-6`} />
+        <span className="sr-only">Global</span>
+      </Link>
       {pubkey && window.localStorage.getItem('loginType') != 'readOnly_npub' && (
         <Link className={`flex flex-col items-center justify-center w-full text-xs gap-1 px-4 ${isActive('/upload', pathname)}`} href="/upload">
           <UploadIcon className={`h-6 w-6`} />
           <span className="sr-only">Upload</span>
         </Link>
       )}
-      <Link className={`flex flex-col items-center justify-center w-full text-xs gap-1 px-4 ${isActive('/global', pathname)}`} href="/global">
-        <GlobeIcon className={`h-6 w-6`} />
-        <span className="sr-only">Global</span>
-      </Link>
       <Link className={`flex flex-col items-center justify-center w-full text-xs gap-1 px-4 ${isActive('/search', pathname)}`} href="/search">
         <SearchIcon className={`h-6 w-6`} />
         <span className="sr-only">Search</span>
