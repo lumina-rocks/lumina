@@ -159,7 +159,7 @@ const UploadComponent: React.FC = () => {
       const image = new Image();
       image.src = URL.createObjectURL(file);
 
-      finalNoteContent = finalFileUrl + ' ' + desc;
+      finalNoteContent = desc;
       noteTags.push(['imeta', 'url ' + finalFileUrl, 'm ' + file.type, 'x ' + sha256, 'ox ' + sha256]);
     }
 
