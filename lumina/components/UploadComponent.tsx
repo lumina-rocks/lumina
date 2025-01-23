@@ -11,6 +11,25 @@ import { Input } from "./ui/input"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { encode } from "blurhash"
 
+async function signEvent(loginType: string | null, authEvent: string) {
+  let authEventSigned = {}
+  if (loginType === "extension") {
+    authEventSigned = await window.nostr.signEvent(JSON.parse(authEvent))
+  } else if (loginType === "amber") {
+    // TODO: Sign event with amber
+    alert("Signing with Amber is not implemented yet, sorry!")
+  } else if (loginType === "raw_nsec") {
+    if (typeof window !== "undefined") {
+      let nsecStr = null
+      nsecStr = window.localStorage.getItem("nsec")
+      if (nsecStr != null) {
+        authEventSigned = finalizeEvent(JSON.parse(authEvent), hexToBytes(nsecStr))
+      }
+    }
+  }
+  return authEventSigned;
+}
+
 async function calculateBlurhash(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const canvas = document.createElement("canvas")
@@ -115,22 +134,24 @@ const UploadComponent: React.FC = () => {
         console.log(authEvent)
 
         // Sign auth event
-        let authEventSigned = {}
-        if (loginType === "extension") {
-          authEventSigned = await window.nostr.signEvent(authEvent)
-        } else if (loginType === "amber") {
-          // TODO: Sign event with amber
-          alert("Signing with Amber is not implemented yet, sorry!")
-        } else if (loginType === "raw_nsec") {
-          if (typeof window !== "undefined") {
-            let nsecStr = null
-            nsecStr = window.localStorage.getItem("nsec")
-            if (nsecStr != null) {
-              authEventSigned = finalizeEvent(authEvent, hexToBytes(nsecStr))
-            }
-          }
-        }
-        console.log(authEventSigned)
+        let authEventSigned = await signEvent(loginType, JSON.stringify(authEvent))
+        // ----
+        // let authEventSigned = {}
+        // if (loginType === "extension") {
+        //   authEventSigned = await window.nostr.signEvent(authEvent)
+        // } else if (loginType === "amber") {
+        //   // TODO: Sign event with amber
+        //   alert("Signing with Amber is not implemented yet, sorry!")
+        // } else if (loginType === "raw_nsec") {
+        //   if (typeof window !== "undefined") {
+        //     let nsecStr = null
+        //     nsecStr = window.localStorage.getItem("nsec")
+        //     if (nsecStr != null) {
+        //       authEventSigned = finalizeEvent(authEvent, hexToBytes(nsecStr))
+        //     }
+        //   }
+        // }
+        // console.log(authEventSigned)
 
         // Actually upload the file
         await fetch("https://void.cat/upload", {
@@ -212,20 +233,21 @@ const UploadComponent: React.FC = () => {
     let signedEvent: NostrEvent | null = null
 
     // Sign the actual note
-    if (loginType === "extension") {
-      signedEvent = await window.nostr.signEvent(noteEvent)
-    } else if (loginType === "amber") {
-      // TODO: Sign event with amber
-      alert("Signing with Amber is not implemented yet, sorry!")
-    } else if (loginType === "raw_nsec") {
-      if (typeof window !== "undefined") {
-        let nsecStr = null
-        nsecStr = window.localStorage.getItem("nsec")
-        if (nsecStr != null) {
-          signedEvent = finalizeEvent(noteEvent, hexToBytes(nsecStr))
-        }
-      }
-    }
+    signedEvent = await signEvent(loginType, JSON.stringify(noteEvent)) as NostrEvent
+    // if (loginType === "extension") {
+    //   signedEvent = await window.nostr.signEvent(noteEvent)
+    // } else if (loginType === "amber") {
+    //   // TODO: Sign event with amber
+    //   alert("Signing with Amber is not implemented yet, sorry!")
+    // } else if (loginType === "raw_nsec") {
+    //   if (typeof window !== "undefined") {
+    //     let nsecStr = null
+    //     nsecStr = window.localStorage.getItem("nsec")
+    //     if (nsecStr != null) {
+    //       signedEvent = finalizeEvent(noteEvent, hexToBytes(nsecStr))
+    //     }
+    //   }
+    // }
 
     // If the got a signed event, publish it to nostr
     if (signedEvent) {
