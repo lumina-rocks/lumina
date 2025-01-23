@@ -116,13 +116,15 @@ const UploadComponent: React.FC = () => {
         console.log(authEventSigned);
 
         // Actually upload the file
-        await fetch('https://media.lumina.rocks/upload', {
+        await fetch('https://void.cat/upload', {
           method: 'PUT',
           body: file,
           headers: { authorization: 'Nostr ' + btoa(JSON.stringify(authEventSigned)) },
         }).then(async (res) => {
           if (res.ok) {
+            // alert('File uploaded successfully');
             let responseText = await res.text();
+            // alert(responseText);
             let responseJson = JSON.parse(responseText);
             finalFileUrl = responseJson.url;
           } else {
@@ -130,6 +132,7 @@ const UploadComponent: React.FC = () => {
           }
         });
       } catch (error) {
+        alert('Error: ' + error);
         console.error('Error reading file:', error);
       }
     }
@@ -165,7 +168,7 @@ const UploadComponent: React.FC = () => {
 
     // Create the actual note
     let noteEvent = {
-      kind: 1,
+      kind: 20,
       content: finalNoteContent,
       created_at: createdAt,
       tags: noteTags,
