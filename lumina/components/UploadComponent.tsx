@@ -27,6 +27,7 @@ async function signEvent(loginType: string | null, authEvent: string) {
   } else if (loginType === "amber") {
     // TODO: Sign event with amber
     alert("Signing with Amber is not implemented yet, sorry!")
+    return null
   } else if (loginType === "raw_nsec") {
     if (typeof window !== "undefined") {
       let nsecStr = null
