@@ -19,26 +19,7 @@ import {
   DrawerFooter,
 } from "@/components/ui/drawer"
 import { Spinner } from "@/components/spinner"
-
-async function signEvent(loginType: string | null, authEvent: string) {
-  let authEventSigned = {}
-  if (loginType === "extension") {
-    authEventSigned = await window.nostr.signEvent(JSON.parse(authEvent))
-  } else if (loginType === "amber") {
-    // TODO: Sign event with amber
-    alert("Signing with Amber is not implemented yet, sorry!")
-    return null
-  } else if (loginType === "raw_nsec") {
-    if (typeof window !== "undefined") {
-      let nsecStr = null
-      nsecStr = window.localStorage.getItem("nsec")
-      if (nsecStr != null) {
-        authEventSigned = finalizeEvent(JSON.parse(authEvent), hexToBytes(nsecStr))
-      }
-    }
-  }
-  return authEventSigned
-}
+import { signEvent } from "@/utils/utils"
 
 async function calculateBlurhash(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -175,7 +156,7 @@ const UploadComponent: React.FC = () => {
         const createdAt = Math.floor(Date.now() / 1000)
 
         // Create auth event for blossom auth via nostr
-        const authEvent = {
+        const authEvent: NostrEvent = {
           kind: 24242,
           content: desc,
           created_at: createdAt,
@@ -184,12 +165,15 @@ const UploadComponent: React.FC = () => {
             ["x", sha256],
             ["expiration", newExpirationValue()],
           ],
+          pubkey: "", // Add a placeholder for pubkey
+          id: "", // Add a placeholder for id
+          sig: "", // Add a placeholder for sig
         }
 
         console.log(authEvent)
 
         // Sign auth event
-        const authEventSigned = await signEvent(loginType, JSON.stringify(authEvent))
+        let authEventSigned = (await signEvent(loginType, authEvent)) as NostrEvent
 
         // Actually upload the file
         await fetch("https://void.cat/upload", {
@@ -244,17 +228,20 @@ const UploadComponent: React.FC = () => {
     const createdAt = Math.floor(Date.now() / 1000)
 
     // Create the actual note
-    const noteEvent = {
+    const noteEvent: NostrEvent = {
       kind: 20,
       content: finalNoteContent,
       created_at: createdAt,
       tags: noteTags,
+      pubkey: "", // Add a placeholder for pubkey
+      id: "", // Add a placeholder for id
+      sig: "", // Add a placeholder for sig
     }
 
     let signedEvent: NostrEvent | null = null
 
     // Sign the actual note
-    signedEvent = (await signEvent(loginType, JSON.stringify(noteEvent))) as NostrEvent
+    signedEvent = (await signEvent(loginType, noteEvent)) as NostrEvent
 
     // If we got a signed event, publish it to nostr
     if (signedEvent) {
