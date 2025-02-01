@@ -176,7 +176,7 @@ const UploadComponent: React.FC = () => {
         let authEventSigned = (await signEvent(loginType, authEvent)) as NostrEvent
 
         // Actually upload the file
-        await fetch("https://void.cat/upload", {
+        await fetch("https://nostr.download/upload", {
           method: "PUT",
           body: file,
           headers: { authorization: "Nostr " + btoa(JSON.stringify(authEventSigned)) },
