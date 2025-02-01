@@ -217,6 +217,10 @@ const UploadComponent: React.FC = () => {
 
             const createdAt = Math.floor(Date.now() / 1000)
 
+            // NIP-89
+            // ["client","lumina","31990:ff363e4afc398b7dd8ceb0b2e73e96fe9621ababc22ab150ffbb1aa0f34df8b2:1731850618505"]
+            noteTags.push(["client", "lumina", "31990:" + "ff363e4afc398b7dd8ceb0b2e73e96fe9621ababc22ab150ffbb1aa0f34df8b2" + ":" + createdAt])
+            
             // Create the actual note
             const noteEvent: NostrEvent = {
               kind: 20,
