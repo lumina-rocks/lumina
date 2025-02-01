@@ -1,14 +1,11 @@
 import { useNostr, useNostrEvents } from "nostr-react"
-import { finalizeEvent, nip19, type NostrEvent } from "nostr-tools"
+import { nip19, type NostrEvent } from "nostr-tools"
 import type React from "react"
 import { type ChangeEvent, type FormEvent, useState, useEffect, useCallback } from "react"
 import { Button } from "./ui/button"
 import { Textarea } from "./ui/textarea"
-import { bytesToHex, hexToBytes } from "@noble/hashes/utils"
 import { ReloadIcon } from "@radix-ui/react-icons"
-import { Label } from "./ui/label"
 import { Input } from "./ui/input"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { encode } from "blurhash"
 import {
   Drawer,
@@ -173,13 +170,15 @@ const UploadComponent: React.FC = () => {
         console.log(authEvent)
 
         // Sign auth event
-        let authEventSigned = (await signEvent(loginType, authEvent)) as NostrEvent
+        const authEventSigned = (await signEvent(loginType, authEvent)) as NostrEvent
+        // authEventSigned as base64 encoded string
+        let authString = Buffer.from(JSON.stringify(authEventSigned)).toString('base64')
 
         // Actually upload the file
         await fetch("https://nostr.download/upload", {
           method: "PUT",
           body: file,
-          headers: { authorization: "Nostr " + btoa(JSON.stringify(authEventSigned)) },
+          headers: { authorization: "Nostr " + authString },
         }).then(async (res) => {
           if (res.ok) {
             const responseText = await res.text()
