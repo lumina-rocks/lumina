@@ -61,28 +61,28 @@ jobs:
       - name: Image digest 📋
         run: echo ${{ steps.docker_build.outputs.digest }}
 
-  deploy:
-    needs: [build_and_push]
-    name: Deployment
-    runs-on: ubuntu-latest
+  # deploy:
+  #   needs: [build_and_push]
+  #   name: Deployment
+  #   runs-on: ubuntu-latest
 
-    steps:
-    - name: Checkout code 🛎️
-      uses: actions/checkout@v4
+  #   steps:
+  #   - name: Checkout code 🛎️
+  #     uses: actions/checkout@v4
 
-    - name: Setup SSH 🔑
-      run: |
-        mkdir -p ~/.ssh
-        echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H ${{ env.BETA_HOST }} >> ~/.ssh/known_hosts
-      env:
-        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+  #   - name: Setup SSH 🔑
+  #     run: |
+  #       mkdir -p ~/.ssh
+  #       echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+  #       chmod 600 ~/.ssh/id_rsa
+  #       ssh-keyscan -H ${{ env.BETA_HOST }} >> ~/.ssh/known_hosts
+  #     env:
+  #       SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
 
-    - name: Deploy 🚀
-      run: |
-        ssh -o StrictHostKeyChecking=no ${{ env.BETA_HOST_USERNAME }}@${{ env.BETA_HOST }} '
-          cd lumina &&
-          git pull origin beta &&
-          docker compose up -d --build
-        '
+  #   - name: Deploy 🚀
+  #     run: |
+  #       ssh -o StrictHostKeyChecking=no ${{ env.BETA_HOST_USERNAME }}@${{ env.BETA_HOST }} '
+  #         cd lumina &&
+  #         git pull origin beta &&
+  #         docker compose up -d --build
+  #       '
