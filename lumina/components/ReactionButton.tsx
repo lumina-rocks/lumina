@@ -19,8 +19,13 @@ import {
 } from "@/components/ui/drawer"
 import { ReloadIcon } from "@radix-ui/react-icons";
 import ReactionButtonReactionList from "./ReactionButtonReactionList";
+import { signEvent } from "@/utils/utils";
 
 export default function ReactionButton({ event }: { event: any }) {
+    const { publish } = useNostr()
+
+    const loginType = typeof window !== "undefined" ? window.localStorage.getItem("loginType") : null
+
     const { events, isLoading } = useNostrEvents({
         filter: {
             // since: dateToUnix(now.current), // all new events from now
@@ -35,38 +40,38 @@ export default function ReactionButton({ event }: { event: any }) {
     // this will filter out likes that are made on comments and not on the note itself
     const filteredEvents = events.filter((event) => { return event.tags.filter((tag) => { return tag[0] === '#e' && tag[1] !== event.id }).length === 0 });
 
-    // const { publish } = useNostr();
+    const onPost = async (icon: string) => {
+        let message = icon;
+        if (icon) {
+            message = icon;
+        } else {
+            message = "+";
+        }
 
-    // const onPost = async () => {
-    //     const privKey = prompt("Paste your private key:");
 
-    //     if (!privKey) {
-    //         alert("no private key provided");
-    //         return;
-    //     }
+        const likeEvent: NostrEvent = {
+            content: message,
+            kind: 7,
+            tags: [],
+            created_at: Math.floor(Date.now() / 1000),
+            pubkey: "",
+            id: "",
+            sig: ""
+        };
 
-    //     const message = prompt("Enter the message you want to send:");
+        likeEvent.tags.push(["e", event.id])
+        likeEvent.tags.push(["p", event.pubkey])
+        likeEvent.tags.push(["k", event.kind.toString()])
 
-    //     if (!message) {
-    //         alert("no message provided");
-    //         return;
-    //     }
+        let signedEvent = await signEvent(loginType, likeEvent);
 
-    //     const event: NostrEvent = {
-    //         content: message,
-    //         kind: 1,
-    //         tags: [],
-    //         created_at: dateToUnix(),
-    //         pubkey: getPublicKey(privKey),
-    //         id: "",
-    //         sig: ""
-    //     };
-
-    //     event.id = getEventHash(event);
-    //     event.sig = getSignature(event, privKey);
-
-    //     publish(event);
-    // };
+        if (signedEvent) {
+            publish(signedEvent);
+        } else {
+            console.error("Failed to sign event");
+            alert("Failed to sign event");
+        }
+    };
 
     return (
         <Drawer>
@@ -84,9 +89,9 @@ export default function ReactionButton({ event }: { event: any }) {
                 </DrawerHeader>
                 {/* TODO: Create Reaction Event on Click */}
                 <div className="px-4 grid grid-cols-3">
-                    <Button variant={"outline"} className="mx-1" disabled>💜</Button>
-                    <Button variant={"outline"} className="mx-1" disabled>👍</Button>
-                    <Button variant={"outline"} className="mx-1" disabled>👎</Button>
+                    <Button variant={"outline"} className="mx-1" onClick={() => onPost("💜")}>💜</Button>
+                    <Button variant={"outline"} className="mx-1" onClick={() => onPost("👍")}>👍</Button>
+                    <Button variant={"outline"} className="mx-1" onClick={() => onPost("👎")}>👎</Button>
                 </div>
                 <hr className="my-4" />
                 <ReactionButtonReactionList filteredEvents={filteredEvents} />
