@@ -55,10 +55,10 @@ const UploadComponent: React.FC = () => {
   const { events, isLoading: isNoteLoading } = useNostrEvents({
     filter: shouldFetch
       ? {
-          ids: uploadedNoteId ? [uploadedNoteId] : [],
-          kinds: [20],
-          limit: 1,
-        }
+        ids: uploadedNoteId ? [uploadedNoteId] : [],
+        kinds: [20],
+        limit: 1,
+      }
       : { ids: [], kinds: [20], limit: 1 },
     enabled: shouldFetch,
   })
@@ -184,77 +184,80 @@ const UploadComponent: React.FC = () => {
             const responseText = await res.text()
             const responseJson = JSON.parse(responseText)
             finalFileUrl = responseJson.url
+
+            const noteTags = hashtags.map((tag) => ["t", tag])
+
+            let blurhash = ""
+            if (file && file.type.startsWith("image/")) {
+              try {
+                blurhash = await calculateBlurhash(file)
+              } catch (error) {
+                console.error("Error calculating blurhash:", error)
+              }
+            }
+
+            if (finalFileUrl) {
+              const image = new Image()
+              image.src = URL.createObjectURL(file)
+              await new Promise((resolve) => {
+                image.onload = resolve
+              })
+
+              finalNoteContent = desc
+              noteTags.push([
+                "imeta",
+                "url " + finalFileUrl,
+                "m " + file.type,
+                "x " + sha256,
+                "ox " + sha256,
+                "blurhash " + blurhash,
+                `dim ${image.width}x${image.height}`,
+              ])
+            }
+
+            const createdAt = Math.floor(Date.now() / 1000)
+
+            // Create the actual note
+            const noteEvent: NostrEvent = {
+              kind: 20,
+              content: finalNoteContent,
+              created_at: createdAt,
+              tags: noteTags,
+              pubkey: "", // Add a placeholder for pubkey
+              id: "", // Add a placeholder for id
+              sig: "", // Add a placeholder for sig
+            }
+
+            let signedEvent: NostrEvent | null = null
+
+            // Sign the actual note
+            signedEvent = (await signEvent(loginType, noteEvent)) as NostrEvent
+
+            // If we got a signed event, publish it to nostr
+            if (signedEvent) {
+              console.log("final Event: ")
+              console.log(signedEvent)
+              publish(signedEvent)
+            }
+
+            setIsLoading(false)
+            if (signedEvent != null) {
+              setUploadedNoteId(signedEvent.id)
+              setIsDrawerOpen(true)
+              setShouldFetch(true)
+              setRetryCount(0)
+            }
+
           } else {
-            alert(await res.text())
+            // alert(await res.text())
+            throw new Error("Failed to upload file: " + await res.text())
           }
         })
       } catch (error) {
-        alert("Error: " + error)
+        alert(error)
         console.error("Error reading file:", error)
+        setIsLoading(false)
       }
-    }
-
-    const noteTags = hashtags.map((tag) => ["t", tag])
-
-    let blurhash = ""
-    if (file && file.type.startsWith("image/")) {
-      try {
-        blurhash = await calculateBlurhash(file)
-      } catch (error) {
-        console.error("Error calculating blurhash:", error)
-      }
-    }
-
-    if (finalFileUrl) {
-      const image = new Image()
-      image.src = URL.createObjectURL(file)
-      await new Promise((resolve) => {
-        image.onload = resolve
-      })
-
-      finalNoteContent = desc
-      noteTags.push([
-        "imeta",
-        "url " + finalFileUrl,
-        "m " + file.type,
-        "x " + sha256,
-        "ox " + sha256,
-        "blurhash " + blurhash,
-        `dim ${image.width}x${image.height}`,
-      ])
-    }
-
-    const createdAt = Math.floor(Date.now() / 1000)
-
-    // Create the actual note
-    const noteEvent: NostrEvent = {
-      kind: 20,
-      content: finalNoteContent,
-      created_at: createdAt,
-      tags: noteTags,
-      pubkey: "", // Add a placeholder for pubkey
-      id: "", // Add a placeholder for id
-      sig: "", // Add a placeholder for sig
-    }
-
-    let signedEvent: NostrEvent | null = null
-
-    // Sign the actual note
-    signedEvent = (await signEvent(loginType, noteEvent)) as NostrEvent
-
-    // If we got a signed event, publish it to nostr
-    if (signedEvent) {
-      console.log("final Event: ")
-      console.log(signedEvent)
-      publish(signedEvent)
-    }
-
-    setIsLoading(false)
-    if (signedEvent != null) {
-      setUploadedNoteId(signedEvent.id)
-      setIsDrawerOpen(true)
-      setShouldFetch(true)
-      setRetryCount(0)
     }
   }
 
