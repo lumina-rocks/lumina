@@ -5,7 +5,7 @@ import { useEffect } from "react";
 
 export default function OnboardingHome() {
   useEffect(() => {
-    document.title = `Omboarding | LUMINA`;
+    document.title = `Onboarding | LUMINA`;
   }, []);
 
   return (
