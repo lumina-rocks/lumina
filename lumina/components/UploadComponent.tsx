@@ -18,6 +18,11 @@ import {
 import { Spinner } from "@/components/spinner"
 import { signEvent } from "@/utils/utils"
 
+const isValidFileType = (file: File): boolean => {
+  const validTypes = ["image/apng", "image/avif", "image/gif", "image/jpeg", "image/png", "image/webp"]
+  return validTypes.includes(file.type)
+}
+
 async function calculateBlurhash(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const canvas = document.createElement("canvas")
@@ -40,9 +45,15 @@ async function calculateBlurhash(file: File): Promise<string> {
   })
 }
 
+async function generateSHA256(file: File): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer()
+  const hashBuffer = await crypto.subtle.digest("SHA-256", arrayBuffer)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("")
+}
+
 const UploadComponent: React.FC = () => {
   const { publish } = useNostr()
-  const { createHash } = require("crypto")
   const loginType = typeof window !== "undefined" ? window.localStorage.getItem("loginType") : null
   const [previewUrl, setPreviewUrl] = useState("")
 
@@ -55,10 +66,10 @@ const UploadComponent: React.FC = () => {
   const { events, isLoading: isNoteLoading } = useNostrEvents({
     filter: shouldFetch
       ? {
-        ids: uploadedNoteId ? [uploadedNoteId] : [],
-        kinds: [20],
-        limit: 1,
-      }
+          ids: uploadedNoteId ? [uploadedNoteId] : [],
+          kinds: [20],
+          limit: 1,
+        }
       : { ids: [], kinds: [20], limit: 1 },
     enabled: shouldFetch,
   })
@@ -96,13 +107,14 @@ const UploadComponent: React.FC = () => {
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      const url = URL.createObjectURL(file)
-      if (url.startsWith("blob:")) {
+      if (isValidFileType(file)) {
+        const url = URL.createObjectURL(file)
         setPreviewUrl(url)
+      } else {
+        alert("Invalid file type. Please select an image in APNG, AVIF, GIF, JPEG, PNG or WEBP format.")
+        event.target.value = "" // Clear the file input
+        setPreviewUrl("")
       }
-
-      // Optional: Bereinigung alter URLs
-      return () => URL.revokeObjectURL(url)
     }
   }
 
@@ -112,14 +124,19 @@ const UploadComponent: React.FC = () => {
 
     const formData = new FormData(event.currentTarget)
     const desc = formData.get("description") as string
-    const file = formData.get("file") as File
+    let file = formData.get("file") as File
     let sha256 = ""
     let finalNoteContent = desc
     let finalFileUrl = ""
-    console.log("File:", file)
 
     if (!desc && !file.size) {
       alert("Please enter a description and/or upload a file")
+      setIsLoading(false)
+      return
+    }
+
+    if (file && !isValidFileType(file)) {
+      alert("Invalid file type. Please select an image in APNG, AVIF, GIF, JPEG, PNG or WEBP format.")
       setIsLoading(false)
       return
     }
@@ -132,19 +149,13 @@ const UploadComponent: React.FC = () => {
 
     // If file is present, upload it to the media server
     if (file) {
-      const readFileAsArrayBuffer = (file: File): Promise<ArrayBuffer> => {
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader()
-          reader.onload = () => resolve(reader.result as ArrayBuffer)
-          reader.onerror = () => reject(reader.error)
-          reader.readAsArrayBuffer(file)
-        })
-      }
-
       try {
-        const arrayBuffer = await readFileAsArrayBuffer(file)
-        const hashBuffer = createHash("sha256").update(Buffer.from(arrayBuffer)).digest()
-        sha256 = hashBuffer.toString("hex")
+        sha256 = await generateSHA256(file)
+
+        // Rename the file to its SHA256 hash
+        const fileExtension = file.name.split(".").pop()
+        const newFileName = `${sha256}.${fileExtension}`
+        file = new File([file], newFileName, { type: file.type })
 
         const unixNow = () => Math.floor(Date.now() / 1000)
         const newExpirationValue = () => (unixNow() + 60 * 5).toString()
@@ -172,7 +183,7 @@ const UploadComponent: React.FC = () => {
         // Sign auth event
         const authEventSigned = (await signEvent(loginType, authEvent)) as NostrEvent
         // authEventSigned as base64 encoded string
-        let authString = Buffer.from(JSON.stringify(authEventSigned)).toString('base64')
+        const authString = Buffer.from(JSON.stringify(authEventSigned)).toString("base64")
 
         // Actually upload the file
         await fetch("https://nostr.download/upload", {
@@ -247,10 +258,8 @@ const UploadComponent: React.FC = () => {
               setShouldFetch(true)
               setRetryCount(0)
             }
-
           } else {
-            // alert(await res.text())
-            throw new Error("Failed to upload file: " + await res.text())
+            throw new Error("Failed to upload file: " + (await res.text()))
           }
         })
       } catch (error) {
@@ -273,7 +282,13 @@ const UploadComponent: React.FC = () => {
             className="w-full"
           ></Textarea>
           <div className="grid w-full max-w-sm items-center gap-1.5">
-            <Input id="file" name="file" type="file" accept="image/*" onChange={handleFileChange} />
+            <Input
+              id="file"
+              name="file"
+              type="file"
+              accept="image/apng,image/avif,image/gif,image/jpeg,image/png,image/webp"
+              onChange={handleFileChange}
+            />
           </div>
           {previewUrl && <img src={previewUrl || "/placeholder.svg"} alt="Preview" className="w-full pt-4" />}
           {isLoading ? (
