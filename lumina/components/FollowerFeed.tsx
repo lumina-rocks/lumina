@@ -20,7 +20,7 @@ const FollowerFeed: React.FC<FollowerFeedProps> = ({ pubkey }) => {
     },
   });
 
-  let followingPubkeys = following.flatMap((event) => event.tags.map(tag => tag[1])).slice(0, 500);
+  let followingPubkeys = following.flatMap((event) => event.tags.map(tag => tag[1]));
 
   const { events, isLoading } = useNostrEvents({
     filter: {
