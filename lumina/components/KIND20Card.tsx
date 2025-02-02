@@ -43,6 +43,7 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
   const createdAt = new Date(event.created_at * 1000)
   const hrefProfile = `/profile/${nip19.npubEncode(pubkey)}`
   const profileImageSrc = userData?.picture || "https://robohash.org/" + pubkey
+  const uploadedVia = tags.find((tag) => tag[0] === "client")?.[1]
 
   return (
     <>
@@ -103,7 +104,10 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
           </div>
         </CardContent>
         <CardFooter>
-          <small className="text-muted">{createdAt.toLocaleString()}</small>
+          <div className="grid grid-cols-1">
+            <small className="text-muted">{createdAt.toLocaleString()}</small>
+            {uploadedVia && <small className="text-muted">Uploaded via {uploadedVia}</small>}
+          </div>
         </CardFooter>
       </Card>
     </>
