@@ -28,6 +28,10 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubke
 
   const { width, height } = extractDimensions(event);
 
+  const {data, isLoading} = useProfile({
+    pubkey,
+  });
+
   const card = (
     <Card>
     <SmallCardContent>
