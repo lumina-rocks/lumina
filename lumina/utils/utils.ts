@@ -31,8 +31,18 @@ export async function signEvent(loginType: string | null, event: NostrEvent): Pr
     eventSigned = await window.nostr.signEvent(event);
   } else if (loginType === 'amber') {
     // TODO: Sign event with amber
-    alert('Signing with Amber is not implemented yet, sorry!');
-    return null;
+    // alert('Signing with Amber is not implemented yet, sorry!');
+    // return null;
+
+    // get the full current url of the user
+    let callbackUrl = window.location.host + window.location.pathname;
+
+    console.log(callbackUrl);
+    if (!callbackUrl) {
+        throw new Error("Callback URL is null or undefined but needed for Amber Signing");
+    }
+    const intent = `intent:#Intent;scheme=nostrsigner;S.compressionType=gzip;S.returnType=signature;S.type=get_public_key;S.callbackUrl=http://${callbackUrl}?amberSignResponse=;end`;
+    window.location.href = intent;
   } else if (loginType === 'raw_nsec') {
     if (typeof window !== 'undefined') {
       let nsecStr = null;
