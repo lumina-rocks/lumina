@@ -116,7 +116,7 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = ({ pubkey }) => {
             <div className='grid gap-4 grid-cols-2 p-6'>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-base font-normal">Followers</CardTitle>
+                        <CardTitle className="text-base font-normal">Followers 🫂</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{followers.length}</div>
@@ -127,7 +127,7 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = ({ pubkey }) => {
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-base font-normal">Following</CardTitle>
+                        <CardTitle className="text-base font-normal">Following 🫂</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">
@@ -140,7 +140,7 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = ({ pubkey }) => {
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-base font-normal">Zaps received</CardTitle>
+                        <CardTitle className="text-base font-normal">Zaps received ⚡️</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{zapsReceived.length} zaps</div>
@@ -152,7 +152,7 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = ({ pubkey }) => {
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-base font-normal">Zaps sent</CardTitle>
+                        <CardTitle className="text-base font-normal">Zaps sent ⚡️</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{zapsSent.length} zaps</div>
