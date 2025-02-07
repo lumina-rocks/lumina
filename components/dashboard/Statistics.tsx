@@ -16,6 +16,8 @@ interface ProfileInfoCardProps {
 }
 
 const ProfileInfoCard: React.FC<ProfileInfoCardProps> = ({ pubkey }) => {
+    var lightningPayReq = require('bolt11');
+
     const { data: userData, isLoading: userDataLoading } = useProfile({
         pubkey,
     });
@@ -27,12 +29,38 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = ({ pubkey }) => {
         },
     });
 
-    const { events: zaps, isLoading: zapsLoading } = useNostrEvents({
+    const { events: zapsReceived, isLoading: zapsReceivedLoading } = useNostrEvents({
         filter: {
             kinds: [9735],
             '#p': [pubkey],
-            limit: 50,
         },
+    });
+
+    const { events: zapsSent, isLoading: zapsSentLoading } = useNostrEvents({
+        filter: {
+            kinds: [9735],
+            authors: [pubkey],
+        },
+    });
+
+    let satsReceived = 0;
+    zapsReceived.forEach((event) => {
+        event.tags.forEach((tag) => {
+            if (tag[0] === 'bolt11') {
+                let decoded = lightningPayReq.decode(tag[1]);
+                satsReceived += decoded.satoshis;
+            }
+        });
+    });
+
+    let satsSent = 0;
+    zapsSent.forEach((event) => {
+        event.tags.forEach((tag) => {
+            if (tag[0] === 'bolt11') {
+                let decoded = lightningPayReq.decode(tag[1]);
+                satsSent += decoded.satoshis;
+            }
+        });
     });
 
     const { events: following, isLoading: followingLoading } = useNostrEvents({
@@ -110,8 +138,32 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = ({ pubkey }) => {
                         </p> */}
                     </CardContent>
                 </Card>
-                <RecentFollowerCard followers={filteredFollowers.reverse()} />
-                <RecentZapsCard zaps={zaps.reverse() ?? []} />
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-base font-normal">Zaps received</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{zapsReceived.length} zaps</div>
+                        <div className="text-xl">{satsReceived} sats</div>
+                        {/* <p className="text-xs text-muted-foreground">
+                            +20.1% from last month
+                        </p> */}
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-base font-normal">Zaps sent</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{zapsSent.length} zaps</div>
+                        <div className="text-xl">{satsSent} sats</div>
+                        {/* <p className="text-xs text-muted-foreground">
+                            +20.1% from last month
+                        </p> */}
+                    </CardContent>
+                </Card>
+                {/* <RecentFollowerCard followers={filteredFollowers.reverse()} /> */}
+                <RecentZapsCard zaps={zapsReceived.reverse() ?? []} />
             </div>
         </>
     );
