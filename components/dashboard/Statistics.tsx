@@ -116,7 +116,7 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = ({ pubkey }) => {
             <div className='grid gap-4 grid-cols-2 p-6'>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-base font-normal">Total Followers</CardTitle>
+                        <CardTitle className="text-base font-normal">Followers</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{followers.length}</div>
@@ -127,7 +127,7 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = ({ pubkey }) => {
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-base font-normal">Total Following</CardTitle>
+                        <CardTitle className="text-base font-normal">Following</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">
