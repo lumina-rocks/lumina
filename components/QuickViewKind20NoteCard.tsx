@@ -33,30 +33,28 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubke
   });
 
   const card = (
-    <Card>
-    <SmallCardContent>
-      <div>
-        <div className='d-flex justify-content-center align-items-center'>
-            <div style={{ position: 'relative' }}>
-              <Image 
-                src={image || "/placeholder.svg"} 
-                alt={text}
-                width={width}
-                height={height}
-                className='rounded lg:rounded-lg' 
-                style={{ maxWidth: '100%', maxHeight: '75vh', objectFit: 'contain', margin: 'auto' }} 
-              />
-            </div>
+    <Card className="aspect-square">
+      <SmallCardContent className="h-full p-0">
+        <div className="h-full w-full">
+          <div className='relative w-full h-full'>
+            <Image 
+              src={image || "/placeholder.svg"} 
+              alt={text}
+              fill
+              sizes="(max-width: 768px) 100vw, 300px"
+              className='rounded lg:rounded-lg object-cover' 
+              priority
+            />
+          </div>
         </div>
-      </div>
-    </SmallCardContent>
-  </Card>
+      </SmallCardContent>
+    </Card>
   );
 
   return (
     <>
       {linkToNote ? (
-        <Link href={`/note/${encodedNoteId}`}>
+        <Link href={`/note/${encodedNoteId}`} className="block w-full aspect-square">
           {card}
         </Link>
       ) : (
