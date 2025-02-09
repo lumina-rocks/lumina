@@ -33,6 +33,8 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
   event,
   showViewNoteCardButton,
 }) => {
+  if (!image) return null;
+
   const { data: userData } = useProfile({
     pubkey,
   })
