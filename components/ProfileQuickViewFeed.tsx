@@ -40,18 +40,31 @@ const ProfileQuickViewFeed: React.FC<ProfileQuickViewFeedProps> = ({ pubkey }) =
               <Skeleton className="h-[125px] rounded-xl" />
             </div>
           </>
-        ) : (
+        ) : events.some(event => getImageUrl(event.tags)) ? (
           <>
             {events.map((event) => {
               const imageUrl = getImageUrl(event.tags);
-              return (
-                <QuickViewKind20NoteCard key={event.id} pubkey={event.pubkey} text={event.content} image={imageUrl} event={event} tags={event.tags} eventId={event.id} linkToNote={true} />
-              );
+              return imageUrl ? (
+                <QuickViewKind20NoteCard 
+                  key={event.id} 
+                  pubkey={event.pubkey} 
+                  text={event.content} 
+                  image={imageUrl} 
+                  event={event} 
+                  tags={event.tags} 
+                  eventId={event.id} 
+                  linkToNote={true} 
+                />
+              ) : null;
             })}
           </>
+        ) : (
+          <div className="col-span-3 flex flex-col items-center justify-center py-10 text-gray-500">
+            <p className="text-lg">No posts found :(</p>
+          </div>
         )}
       </div>
-      {!isLoading ? (
+      {!isLoading && events.some(event => getImageUrl(event.tags)) ? (
         <div className="flex justify-center p-4">
           <Button className="w-full" onClick={loadMore}>Load More</Button>
         </div>
