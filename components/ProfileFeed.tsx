@@ -36,28 +36,35 @@ const ProfileFeed: React.FC<ProfileFeedProps> = ({ pubkey }) => {
             <Skeleton className="h-4 w-[200px]" />
           </div>
         </div>
-      ) : (
+      ) : events.some(event => getImageUrl(event.tags)) ? (
         <>
-          {events.map((event) => (
-            <div key={event.id} className="py-6">
-              <KIND20Card 
-                key={event.id} 
-                pubkey={event.pubkey} 
-                text={event.content} 
-                image={getImageUrl(event.tags)} 
-                event={event} 
-                tags={event.tags} 
-                eventId={event.id} 
-                showViewNoteCardButton={true}
-              />
-            </div>
-          ))}
+          {events.map((event) => {
+            const imageUrl = getImageUrl(event.tags);
+            return imageUrl ? (
+              <div key={event.id} className="py-6">
+                <KIND20Card 
+                  key={event.id} 
+                  pubkey={event.pubkey} 
+                  text={event.content} 
+                  image={imageUrl} 
+                  event={event} 
+                  tags={event.tags} 
+                  eventId={event.id} 
+                  showViewNoteCardButton={true}
+                />
+              </div>
+            ) : null;
+          })}
           {!isLoading && (
             <div className="flex justify-center p-4">
               <Button className="w-full md:w-auto" onClick={loadMore}>Load More</Button>
             </div>
           )}
         </>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-10 text-gray-500">
+          <p className="text-lg">No posts found :(</p>
+        </div>
       )}
     </>
   );

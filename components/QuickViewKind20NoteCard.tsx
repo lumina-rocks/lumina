@@ -22,16 +22,16 @@ interface QuickViewKind20NoteCardProps {
 }
 
 const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubkey, text, image, eventId, tags, event, linkToNote }) => {
+  const {data, isLoading} = useProfile({
+    pubkey,
+  });
+
   if (!image) return null;
 
   text = text.replaceAll('\n', ' ');
   const encodedNoteId = nip19.noteEncode(event.id)
 
   const { width, height } = extractDimensions(event);
-
-  const {data, isLoading} = useProfile({
-    pubkey,
-  });
 
   const card = (
     <Card className="aspect-square">
