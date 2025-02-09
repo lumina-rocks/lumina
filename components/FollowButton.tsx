@@ -24,7 +24,7 @@ const FollowButton: React.FC<FollowButtonProps> = ({ pubkey, userPubkey }) => {
         isLoggedIn = storedPubkey !== null;
     }
 
-    const { events } = useNostrEvents({
+    const { events, isLoading } = useNostrEvents({
         filter: {
             kinds: [3],
             authors: [userPubkey],
@@ -88,7 +88,7 @@ const FollowButton: React.FC<FollowButtonProps> = ({ pubkey, userPubkey }) => {
     };
 
     return (
-        <Button className='w-full' onClick={handleFollow} disabled>
+        <Button className='w-full' onClick={handleFollow} disabled={isLoading || !isLoggedIn}>
             {isFollowing ? 'Unfollow' : 'Follow'}
         </Button>
     );
