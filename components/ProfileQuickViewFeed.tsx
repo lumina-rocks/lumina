@@ -30,14 +30,14 @@ const ProfileQuickViewFeed: React.FC<ProfileQuickViewFeedProps> = ({ pubkey }) =
       <div className="grid grid-cols-3 gap-2">
         {events.length === 0 && isLoading ? (
           <>
-            <div>
-              <Skeleton className="h-[125px] rounded-xl" />
+            <div className="aspect-square w-full">
+              <Skeleton className="h-full w-full rounded-xl" />
             </div>
-            <div>
-              <Skeleton className="h-[125px] rounded-xl" />
+            <div className="aspect-square w-full">
+              <Skeleton className="h-full w-full rounded-xl" />
             </div>
-            <div>
-              <Skeleton className="h-[125px] rounded-xl" />
+            <div className="aspect-square w-full">
+              <Skeleton className="h-full w-full rounded-xl" />
             </div>
           </>
         ) : events.some(event => getImageUrl(event.tags)) ? (
@@ -45,15 +45,15 @@ const ProfileQuickViewFeed: React.FC<ProfileQuickViewFeedProps> = ({ pubkey }) =
             {events.map((event) => {
               const imageUrl = getImageUrl(event.tags);
               return imageUrl ? (
-                <QuickViewKind20NoteCard 
-                  key={event.id} 
-                  pubkey={event.pubkey} 
-                  text={event.content} 
-                  image={imageUrl} 
-                  event={event} 
-                  tags={event.tags} 
-                  eventId={event.id} 
-                  linkToNote={true} 
+                <QuickViewKind20NoteCard
+                  key={event.id}
+                  pubkey={event.pubkey}
+                  text={event.content}
+                  image={imageUrl}
+                  event={event}
+                  tags={event.tags}
+                  eventId={event.id}
+                  linkToNote={true}
                 />
               ) : null;
             })}

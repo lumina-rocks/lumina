@@ -45,23 +45,23 @@ const FollowerQuickViewFeed: React.FC<FollowerQuickViewFeedProps> = ({ pubkey })
       <div className="grid grid-cols-3 gap-2">
         {events.length === 0 && isLoading ? (
           <>
-            <div>
-              <Skeleton className="h-[33vh] rounded-xl" />
+            <div className="aspect-square w-full">
+              <Skeleton className="h-full w-full rounded-xl" />
             </div>
-            <div>
-              <Skeleton className="h-[33vh] rounded-xl" />
+            <div className="aspect-square w-full">
+              <Skeleton className="h-full w-full rounded-xl" />
             </div>
-            <div>
-              <Skeleton className="h-[33vh] rounded-xl" />
+            <div className="aspect-square w-full">
+              <Skeleton className="h-full w-full rounded-xl" />
             </div>
-            <div>
-              <Skeleton className="h-[33vh] rounded-xl" />
+            <div className="aspect-square w-full">
+              <Skeleton className="h-full w-full rounded-xl" />
             </div>
-            <div>
-              <Skeleton className="h-[33vh] rounded-xl" />
+            <div className="aspect-square w-full">
+              <Skeleton className="h-full w-full rounded-xl" />
             </div>
-            <div>
-              <Skeleton className="h-[33vh] rounded-xl" />
+            <div className="aspect-square w-full">
+              <Skeleton className="h-full w-full rounded-xl" />
             </div>
           </>
         ) : (
