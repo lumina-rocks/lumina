@@ -22,6 +22,7 @@ interface QuickViewKind20NoteCardProps {
 }
 
 const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubkey, text, image, eventId, tags, event, linkToNote }) => {
+  if (!image) return null;
 
   text = text.replaceAll('\n', ' ');
   const encodedNoteId = nip19.noteEncode(event.id)
