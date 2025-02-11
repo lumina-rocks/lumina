@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useProfile } from "nostr-react";
 import {
   nip19,
@@ -25,8 +25,9 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubke
   const {data, isLoading} = useProfile({
     pubkey,
   });
+  const [imageError, setImageError] = useState(false);
 
-  if (!image) return null;
+  if (!image || imageError) return null;
 
   text = text.replaceAll('\n', ' ');
   const encodedNoteId = nip19.noteEncode(event.id)
@@ -45,6 +46,7 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubke
               sizes="(max-width: 768px) 100vw, 300px"
               className='rounded lg:rounded-lg object-cover' 
               priority
+              onError={() => setImageError(true)}
             />
           </div>
         </div>
