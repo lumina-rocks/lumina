@@ -1,6 +1,7 @@
 import type React from "react"
 import { useProfile } from "nostr-react"
 import { nip19 } from "nostr-tools"
+import { useState } from "react"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
@@ -36,8 +37,9 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
   const { data: userData } = useProfile({
     pubkey,
   })
+  const [imageError, setImageError] = useState(false);
 
-  if (!image) return null;
+  if (!image || imageError) return null;
 
   const title =
     userData?.username || userData?.display_name || userData?.name || userData?.npub || nip19.npubEncode(pubkey)
@@ -77,15 +79,13 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
           <div className="px-2 sm:px-4">
             <div className="w-full">
               <div className="relative w-full" style={{ paddingBottom: "100%" }}>
-                {image && (
-                  <Image
-                    src={image || "/placeholder.svg"}
-                    alt={text}
-                    fill
-                    className="rounded-lg object-contain"
-                    // sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  />
-                )}
+                <Image
+                  src={image}
+                  alt={text}
+                  fill
+                  className="rounded-lg object-contain"
+                  onError={() => setImageError(true)}
+                />
               </div>
             </div>
           </div>
