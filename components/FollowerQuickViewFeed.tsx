@@ -22,7 +22,11 @@ const FollowerQuickViewFeed: React.FC<FollowerQuickViewFeedProps> = ({ pubkey })
     },
   });
 
-  let followingPubkeys = following.flatMap((event) => event.tags.map(tag => tag[1])).slice(0, 500);
+  let followingPubkeys = following.flatMap((event) => 
+    event.tags
+      .filter(tag => tag[0] === 'p')
+      .map(tag => tag[1])
+  );
 
   const { events, isLoading } = useNostrEvents({
     filter: {
