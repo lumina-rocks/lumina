@@ -17,6 +17,14 @@ import {
 } from "@/components/ui/drawer"
 import { Spinner } from "@/components/spinner"
 import { signEvent } from "@/utils/utils"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
 
 async function calculateBlurhash(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -51,6 +59,7 @@ const UploadComponent: React.FC = () => {
   const [uploadedNoteId, setUploadedNoteId] = useState("")
   const [retryCount, setRetryCount] = useState(0)
   const [shouldFetch, setShouldFetch] = useState(false)
+  const [serverChoice, setServerChoice] = useState("nostr.download")
 
   const { events, isLoading: isNoteLoading } = useNostrEvents({
     filter: shouldFetch
@@ -104,6 +113,10 @@ const UploadComponent: React.FC = () => {
       // Optional: Bereinigung alter URLs
       return () => URL.revokeObjectURL(url)
     }
+  }
+
+  const handleServerChange = (value: string) => {
+    setServerChoice(value)
   }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -174,8 +187,9 @@ const UploadComponent: React.FC = () => {
         // authEventSigned as base64 encoded string
         let authString = Buffer.from(JSON.stringify(authEventSigned)).toString('base64')
 
-        // Actually upload the file
-        await fetch("https://nostr.download/upload", {
+        const blossomServer = "https://" + serverChoice
+
+        await fetch(blossomServer + "/upload", {
           method: "PUT",
           body: file,
           headers: { authorization: "Nostr " + authString },
@@ -220,7 +234,7 @@ const UploadComponent: React.FC = () => {
             // NIP-89
             // ["client","lumina","31990:ff363e4afc398b7dd8ceb0b2e73e96fe9621ababc22ab150ffbb1aa0f34df8b2:1731850618505"]
             noteTags.push(["client", "lumina", "31990:" + "ff363e4afc398b7dd8ceb0b2e73e96fe9621ababc22ab150ffbb1aa0f34df8b2" + ":" + createdAt])
-            
+
             // Create the actual note
             const noteEvent: NostrEvent = {
               kind: 20,
@@ -278,6 +292,22 @@ const UploadComponent: React.FC = () => {
           ></Textarea>
           <div className="grid w-full max-w-sm items-center gap-1.5">
             <Input id="file" name="file" type="file" accept="image/*" onChange={handleFileChange} />
+          </div>
+          <div className="grid grid-cols-2 w-full max-w-sm items-center gap-1.5">
+            {/* <select value={serverChoice} onChange={handleServerChange} className="w-full">
+              <option value="nostr.download">nostr.download</option>
+              <option value="blossom.primal.net">blossom.primal.net</option>
+            </select> */}
+            Upload to
+            <Select onValueChange={handleServerChange} value={serverChoice}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={serverChoice} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="nostr.download">nostr.download</SelectItem>
+                <SelectItem value="blossom.primal.net">blossom.primal.net</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           {previewUrl && <img src={previewUrl || "/placeholder.svg"} alt="Preview" className="w-full pt-4" />}
           {isLoading ? (
