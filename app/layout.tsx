@@ -2,7 +2,7 @@
 
 import { Metadata } from "next";
 import "./globals.css";
-import { NostrProvider } from "nostr-react";
+import { NostrProvider, useNostrEvents } from "nostr-react";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TopNavigation } from "@/components/headerComponents/TopNavigation";
 import BottomBar from "@/components/BottomBar";
@@ -18,12 +18,36 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  let pubkey = null;
+  if (typeof window !== 'undefined') {
+    pubkey = window.localStorage.getItem('pubkey');
+  }
 
-  const relayUrls = [
+  let relayUrls = [
     "wss://relay.nostr.band",
     "wss://relay.damus.io",
   ];
 
+  if (pubkey) {
+    relayUrls = [];
+    const { events } = useNostrEvents({
+      filter: {
+        kinds: [10002],
+        limit: 1,
+        authors: [pubkey],
+      },
+    });
+    
+    if (events.length > 0) {
+      const tags = events[0].tags;
+      for (let i = 0; i < tags.length; i++) {
+        if (tags[i][0] === "r") {
+          relayUrls.push(tags[i][1]);
+        }
+      }
+    }
+  }
+  
   return (
     <html lang="en">
       <head>
