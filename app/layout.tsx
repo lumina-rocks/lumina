@@ -10,43 +10,43 @@ import { Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/toaster"
 import Script from "next/script";
 import Umami from "@/components/Umami";
+import { useMemo } from "react";
 
 const inter = Inter({ subsets: ["latin"] });
+
+const DEFAULT_RELAYS = [
+  "wss://relay.nostr.band",
+  "wss://relay.damus.io",
+];
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  let pubkey = null;
-  if (typeof window !== 'undefined') {
-    pubkey = window.localStorage.getItem('pubkey');
-  }
+  const pubkey = typeof window !== 'undefined' ? window.localStorage.getItem('pubkey') : null;
+  
+  const { events } = useNostrEvents({
+    filter: {
+      kinds: [10002],
+      authors: pubkey ? [pubkey] : [],
+      limit: 1,
+    },
+  });
 
-  let relayUrls = [
-    "wss://relay.nostr.band",
-    "wss://relay.damus.io",
-  ];
+  const relayUrls = useMemo(() => {
+    if (!pubkey) return DEFAULT_RELAYS;
+    if (!events.length) return [];
 
-  if (pubkey) {
-    relayUrls = [];
-    const { events } = useNostrEvents({
-      filter: {
-        kinds: [10002],
-        limit: 1,
-        authors: [pubkey],
-      },
-    });
-    
-    if (events.length > 0) {
-      const tags = events[0].tags;
-      for (let i = 0; i < tags.length; i++) {
-        if (tags[i][0] === "r") {
-          relayUrls.push(tags[i][1]);
-        }
+    const urls: string[] = [];
+    const tags = events[0].tags;
+    for (let i = 0; i < tags.length; i++) {
+      if (tags[i][0] === "r") {
+        urls.push(tags[i][1]);
       }
     }
-  }
+    return urls;
+  }, [events, pubkey]);
   
   return (
     <html lang="en">
