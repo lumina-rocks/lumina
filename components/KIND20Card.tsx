@@ -51,67 +51,70 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            <Link href={hrefProfile} style={{ textDecoration: "none" }}>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <Avatar>
-                        <AvatarImage src={profileImageSrc} />
-                      </Avatar>
-                      <span className="break-all" style={{ marginLeft: "10px" }}>
-                        {title}
-                      </span>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{title}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </Link>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="px-2 sm:px-4">
-            <div className="w-full">
-              <div className="relative w-full" style={{ paddingBottom: "100%" }}>
-                <Image
-                  src={image}
-                  alt={text}
-                  fill
-                  className="rounded-lg object-contain"
-                  onError={() => setImageError(true)}
-                />
+
+      <div key={event.id} className="py-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <Link href={hrefProfile} style={{ textDecoration: "none" }}>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <div style={{ display: "flex", alignItems: "center" }}>
+                        <Avatar>
+                          <AvatarImage src={profileImageSrc} />
+                        </Avatar>
+                        <span className="break-all" style={{ marginLeft: "10px" }}>
+                          {title}
+                        </span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{title}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </Link>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="px-2 sm:px-4">
+              <div className="w-full">
+                <div className="relative w-full" style={{ paddingBottom: "100%" }}>
+                  <Image
+                    src={image}
+                    alt={text}
+                    fill
+                    className="rounded-lg object-contain"
+                    onError={() => setImageError(true)}
+                  />
+                </div>
               </div>
             </div>
-          </div>
-          <div className="p-4">
-            <div className="break-word overflow-hidden">{text}</div>
-            <hr className="my-4" />
-            <div className="space-x-4 flex justify-between items-start">
-              <div className="flex space-x-4">
-                <ReactionButton event={event} />
-                <ZapButton event={event} />
-                {showViewNoteCardButton && <ViewNoteButton event={event} />}
-              </div>
-              <div className="flex space-x-2">
-                <ViewCopyButton event={event} />
-                <ViewRawButton event={event} />
+            <div className="p-4">
+              <div className="break-word overflow-hidden">{text}</div>
+              <hr className="my-4" />
+              <div className="space-x-4 flex justify-between items-start">
+                <div className="flex space-x-4">
+                  <ReactionButton event={event} />
+                  <ZapButton event={event} />
+                  {showViewNoteCardButton && <ViewNoteButton event={event} />}
+                </div>
+                <div className="flex space-x-2">
+                  <ViewCopyButton event={event} />
+                  <ViewRawButton event={event} />
+                </div>
               </div>
             </div>
-          </div>
-        </CardContent>
-        <CardFooter>
-          <div className="grid grid-cols-1">
-            <small className="text-muted">{createdAt.toLocaleString()}</small>
-            {uploadedVia && <small className="text-muted">Uploaded via {uploadedVia}</small>}
-          </div>
-        </CardFooter>
-      </Card>
+          </CardContent>
+          <CardFooter>
+            <div className="grid grid-cols-1">
+              <small className="text-muted">{createdAt.toLocaleString()}</small>
+              {uploadedVia && <small className="text-muted">Uploaded via {uploadedVia}</small>}
+            </div>
+          </CardFooter>
+        </Card>
+      </div>
     </>
   )
 }
