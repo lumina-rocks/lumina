@@ -20,7 +20,7 @@ interface ViewRawButtonProps {
 export default function ViewRawButton({ event }: ViewRawButtonProps) {
     return (
         <Drawer>
-            <DrawerTrigger>
+            <DrawerTrigger asChild>
                 <Button variant="outline"><CodeIcon /></Button>
             </DrawerTrigger>
             <DrawerContent>
@@ -30,8 +30,10 @@ export default function ViewRawButton({ event }: ViewRawButtonProps) {
                 </DrawerHeader>
                 <Textarea rows={20} disabled>{JSON.stringify(event, null, 2)}</Textarea>
                 <DrawerFooter>
-                    <DrawerClose>
-                        <Button variant="outline">Close</Button>
+                    <DrawerClose asChild>
+                        <div>
+                            <Button variant="outline">Close</Button>
+                        </div>
                     </DrawerClose>
                 </DrawerFooter>
             </DrawerContent>
