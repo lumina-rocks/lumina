@@ -1,10 +1,11 @@
-declare global {
-    interface Window {
-        nostr: any;
-    }
-}
+'use client';
 
+import React, { useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { generatePrivateKey, getPublicKey } from 'nostr-tools/pure'
+import { nip19 } from "nostr-tools"
+import { Label } from "./ui/label"
 import {
     Card,
     CardContent,
@@ -13,22 +14,25 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
     Accordion,
     AccordionContent,
     AccordionItem,
     AccordionTrigger,
 } from "@/components/ui/accordion"
-import { useEffect, useRef } from "react"
-import { getPublicKey, generateSecretKey, nip19 } from 'nostr-tools'
 import { InfoIcon } from "lucide-react";
 import Link from "next/link";
-import { bytesToHex, hexToBytes } from '@noble/hashes/utils' 
+import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
+import { useNDK } from '@/hooks/useNDK';
+
+declare global {
+    interface Window {
+        nostr: any;
+    }
+}
 
 export function LoginForm() {
-
+    const ndk = useNDK();
     let publicKey = useRef(null);
     let nsecInput = useRef<HTMLInputElement>(null);
     let npubInput = useRef<HTMLInputElement>(null);
@@ -38,70 +42,52 @@ export function LoginForm() {
         const urlParams = new URLSearchParams(window.location.search);
         const amberResponse = urlParams.get('amberResponse');
         if (amberResponse !== null) {
-            // localStorage.setItem("pubkey", nip19.npubEncode(amberResponse).toString());
             localStorage.setItem("pubkey", amberResponse);
             localStorage.setItem("loginType", "amber");
             window.location.href = `/profile/${amberResponse}`;
         }
     }, []);
 
-
     const handleAmber = async () => {
         const hostname = window.location.host;
-        console.log(hostname);
         if (!hostname) {
             throw new Error("Hostname is null or undefined");
         }
         const intent = `intent:#Intent;scheme=nostrsigner;S.compressionType=none;S.returnType=signature;S.type=get_public_key;S.callbackUrl=http://${hostname}/login?amberResponse=;end`;
         window.location.href = intent;
-        // window.location.href = `nostrsigner:?compressionType=none&returnType=signature&type=get_public_key&callbackUrl=http://${hostname}/login?amberResponse=`;
-    }
+    };
 
-    const handleExtensionLogin = async () => {
-        // eslint-disable-next-line
-        if (window.nostr !== undefined) {
-            publicKey.current = await window.nostr.getPublicKey()
-            console.log("Logged in with pubkey: ", publicKey.current);
-            if (publicKey.current !== null) {
-                localStorage.setItem("pubkey", publicKey.current);
+    const handleExtension = async () => {
+        if (typeof window !== 'undefined') {
+            try {
+                const pubkey = await window.nostr.getPublicKey();
+                localStorage.setItem("pubkey", pubkey);
                 localStorage.setItem("loginType", "extension");
-                // window.location.reload();
-                window.location.href = `/profile/${nip19.npubEncode(publicKey.current)}`;
+                window.location.href = `/profile/${nip19.npubEncode(pubkey)}`;
+            } catch (e) {
+                console.error(e);
             }
         }
     };
-
-    // const handleNsecSignUp = async () => {
-    //     let nsec = generateSecretKey();
-    //     console.log('nsec: ' + nsec);
-
-    //     let nsecHex = bytesToHex(nsec);
-    //     console.log('bytesToHex nsec: ' + nsecHex);
-
-    //     let pubkey = getPublicKey(nsec);
-    //     console.log('pubkey: ' + pubkey);
-
-    //     localStorage.setItem("nsec", nsecHex);
-    //     localStorage.setItem("pubkey", pubkey);
-    //     localStorage.setItem("loginType", "raw_nsec")
-    //     window.location.href = `/profile/${nip19.npubEncode(pubkey)}`;
-    // };
 
     const handleNsecLogin = async () => {
         if (nsecInput.current !== null) {
             try {
                 let input = nsecInput.current.value;
-                if(input.includes("nsec")) {
-                    input = bytesToHex(nip19.decode(input).data as Uint8Array);
-                    console.log('decoded nsec: ' + input);
-                }
-                let nsecBytes = hexToBytes(input);
-                let nsecHex = bytesToHex(nsecBytes);
-                let pubkey = getPublicKey(nsecBytes);
+                let nsec = null;
+                let pubkey = null;
 
-                localStorage.setItem("nsec", nsecHex);
+                if (input.startsWith("nsec1")) {
+                    nsec = nip19.decode(input).data.toString();
+                    pubkey = getPublicKey(hexToBytes(nsec));
+                } else {
+                    nsec = input;
+                    pubkey = getPublicKey(hexToBytes(input));
+                }
+
+                localStorage.setItem("nsec", nsec);
                 localStorage.setItem("pubkey", pubkey);
-                localStorage.setItem("loginType", "raw_nsec")
+                localStorage.setItem("loginType", "raw_nsec");
 
                 window.location.href = `/profile/${nip19.npubEncode(pubkey)}`;
             } catch (e) {
@@ -114,77 +100,90 @@ export function LoginForm() {
         if (npubInput.current !== null) {
             try {
                 let input = npubInput.current.value;
-                let npub = null;
                 let pubkey = null;
-                if(input.startsWith("npub1")) {
-                    npub = input;
+
+                if (input.startsWith("npub1")) {
                     pubkey = nip19.decode(input).data.toString();
                 } else {
                     pubkey = input;
-                    npub = nip19.npubEncode(input);
                 }
 
-                localStorage.setItem("pubkey", pubkey);
-                localStorage.setItem("loginType", "readOnly_npub")
-
-                window.location.href = `/profile/${npub}`;
+                // Verify the pubkey exists by trying to fetch their profile
+                const user = ndk.getUser({ pubkey });
+                const profile = await user.fetchProfile();
+                
+                if (profile || confirm("No profile found for this key. Continue anyway?")) {
+                    localStorage.setItem("pubkey", pubkey);
+                    localStorage.setItem("loginType", "readOnly_npub");
+                    window.location.href = `/profile/${nip19.npubEncode(pubkey)}`;
+                }
             } catch (e) {
                 console.error(e);
+                alert("Invalid public key");
             }
         }
     };
 
-
     return (
         <Card className="w-full max-w-xl">
             <CardHeader>
-                <CardTitle className="text-2xl">Login to Lumina</CardTitle>
-                <CardDescription>
-                    Login to your account either with a nostr extension or with your nsec.
-                </CardDescription>
+                <CardTitle>Login</CardTitle>
+                <CardDescription>Login with your preferred method.</CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-4">
-            <div className="grid grid-cols-8 gap-2">
-                    <Button className="w-full col-span-7" onClick={handleExtensionLogin}>Sign in with Extension (NIP-07)</Button>
-                    <Link target="_blank" href="https://www.getflamingo.org/">
-                        <Button variant={"outline"}><InfoIcon /></Button>
-                    </Link>
-                </div>
-                <div className="grid grid-cols-8 gap-2">
-                    <Button className="w-full col-span-7" onClick={handleAmber}>Sign in with Amber</Button>
-                    <Link target="_blank" href="https://github.com/greenart7c3/Amber">
-                        <Button variant={"outline"}><InfoIcon /></Button>
-                    </Link>
-                </div>
-                <hr />
-                or
-                <Accordion type="single" collapsible>
-                    <AccordionItem value="item-1">
-                        <AccordionTrigger>Login with npub (read-only)</AccordionTrigger>
-                        <AccordionContent>
-                            <div className="grid gap-2">
-                                <Label htmlFor="npub">npub</Label>
-                                <Input placeholder="npub1..." id="npub" ref={npubInput} type="text" />
-                                <Button className="w-full" onClick={handleNpubLogin}>Sign in</Button>
+            <CardContent>
+                <div className='grid gap-4'>
+                    <div>
+                        <Button className='w-full' onClick={handleExtension}></Button>
+                            Login with Extension
+                        </Button>
+                    </div>
+                    <div>
+                        <Button className='w-full' onClick={handleAmber}>
+                            Login with Amber
+                        </Button>
+                    </div>
+                    <Accordion type="single" collapsible>
+                        <AccordionItem value="item-1">
+                            <AccordionTrigger>
+                                <div className='flex flex-row items-center'>
+                                    Login with Private Key (nsec)
+                                    <InfoIcon className='ml-2 h-4 w-4' />
                                 </div>
-                        </AccordionContent>
-                    </AccordionItem>
-                </Accordion>
-                or
-                <Accordion type="single" collapsible>
-                    <AccordionItem value="item-1">
-                        <AccordionTrigger>Login with nsec (not recommended)</AccordionTrigger>
-                        <AccordionContent>
-                            <div className="grid gap-2">
-                                <Label htmlFor="nsec">nsec</Label>
-                                <Input placeholder="nsecabcdefghijklmnopqrstuvwxyz" id="nsec" ref={nsecInput} type="password" />
-                                <Button className="w-full" onClick={handleNsecLogin}>Sign in</Button>
+                            </AccordionTrigger>
+                            <AccordionContent>
+                                <div className='py-4'>
+                                    <p className="text-sm text-muted-foreground">Warning: This is not recommended for security reasons.</p>
+                                    <div className='flex flex-row space-x-2 py-4'>
+                                        <Input type="text" placeholder="Enter nsec.." ref={nsecInput} />
+                                        <Button onClick={handleNsecLogin}>Login</Button>
+                                    </div>
                                 </div>
-                        </AccordionContent>
-                    </AccordionItem>
-                </Accordion>
+                            </AccordionContent>
+                        </AccordionItem>
+                        <AccordionItem value="item-2">
+                            <AccordionTrigger>
+                                <div className='flex flex-row items-center'>
+                                    Login with Public Key (npub)
+                                    <InfoIcon className='ml-2 h-4 w-4' />
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent>
+                                <div className='py-4'>
+                                    <p className="text-sm text-muted-foreground">Read-only mode - you won&apos;t be able to post.</p>
+                                    <div className='flex flex-row space-x-2 py-4'>
+                                        <Input type="text" placeholder="Enter npub.." ref={npubInput} />
+                                        <Button onClick={handleNpubLogin}>Login</Button>
+                                    </div>
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    </Accordion>
+                </div>
             </CardContent>
             <CardFooter>
+                <div className='w-full text-center'>
+                    <p className="text-sm text-muted-foreground">Don&apos;t have an Account? <Link href="/onboarding">Create Account</Link></p>
+                </div>
             </CardFooter>
         </Card>
     )

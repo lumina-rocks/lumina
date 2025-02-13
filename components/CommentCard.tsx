@@ -1,8 +1,5 @@
 import React from 'react';
-import { useProfile } from "nostr-react";
-import {
-  nip19,
-} from "nostr-tools";
+import { nip19 } from "nostr-tools";
 import {
   Card,
   CardContent,
@@ -26,8 +23,8 @@ import {
 import ReactionButton from '@/components/ReactionButton';
 import { Avatar, AvatarImage } from '@/components/ui/avatar';
 import ViewRawButton from '@/components/ViewRawButton';
-import ViewNoteButton from './ViewNoteButton';
 import Link from 'next/link';
+import { useProfile } from '@/hooks/useNDK';
 
 interface CommentCardProps {
   pubkey: string;
@@ -37,17 +34,15 @@ interface CommentCardProps {
   event: any;
 }
 
-const NoteCard: React.FC<CommentCardProps> = ({ pubkey, text, eventId, tags, event }) => {
-  const { data: userData } = useProfile({
-    pubkey,
-  });
+const CommentCard: React.FC<CommentCardProps> = ({ pubkey, text, eventId, tags, event }) => {
+  const { data: userData } = useProfile(pubkey);
 
-  const title = userData?.username || userData?.display_name || userData?.name || userData?.npub || nip19.npubEncode(pubkey);
+  const title = userData?.displayName || userData?.name || userData?.nip05 || userData?.npub || nip19.npubEncode(pubkey);
   const imageSrc = text.match(/https?:\/\/[^ ]*\.(png|jpg|gif|jpeg)/g);
   const textWithoutImage = text.replace(/https?:\/\/.*\.(?:png|jpg|gif|jpeg)/g, '');
   const createdAt = new Date(event.created_at * 1000);
   const hrefProfile = `/profile/${nip19.npubEncode(pubkey)}`;
-  const profileImageSrc = userData?.picture || "https://robohash.org/" + pubkey;
+  const profileImageSrc = userData?.image || "https://robohash.org/" + pubkey;
 
   return (
     <>
@@ -74,50 +69,38 @@ const NoteCard: React.FC<CommentCardProps> = ({ pubkey, text, eventId, tags, eve
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className='py-4'>
-            {
-              <div className='w-full h-full px-10'>
-                {imageSrc && imageSrc.length > 1 ? (
-                  <Carousel>
-                    <CarouselContent>
-                      {imageSrc.map((src, index) => (
-                        <CarouselItem key={index}>
-                          <img
-                            key={index}
-                            src={src}
-                            className='rounded lg:rounded-lg'
-                            style={{ maxWidth: '100%', maxHeight: '100vh', objectFit: 'contain', margin: 'auto' }}
-                          />
-                        </CarouselItem>
-                      ))}
-                    </CarouselContent>
-                    <CarouselPrevious />
-                    <CarouselNext />
-                  </Carousel>
-                ) : (
-                  imageSrc ? <img src={imageSrc[0]} className='rounded lg:rounded-lg' style={{ maxWidth: '100%', maxHeight: '100vh', objectFit: 'contain', margin: 'auto' }} /> : ""
-                )}
-              </div>
-            }
-            <br />
-            <div className='break-word overflow-hidden'>
-              {textWithoutImage}
-            </div>
+          <div className="space-y-2">
+            <p className='break-words whitespace-pre-wrap'>{textWithoutImage}</p>
+            {imageSrc && imageSrc.length > 0 && (
+              <Carousel>
+                <CarouselContent>
+                  {imageSrc.map((image, index) => (
+                    <CarouselItem key={index}>
+                      <img src={image} className='rounded lg:rounded-lg' style={{ maxWidth: '100%', maxHeight: '75vh', objectFit: 'contain', margin: 'auto' }} alt={`Image ${index + 1}`} />
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious />
+                <CarouselNext />
+              </Carousel>
+            )}
           </div>
-          <hr />
-          <div className='py-4 space-x-4 flex justify-between items-start'>
-            <div className='flex space-x-4'>
-              <ReactionButton event={event} />
+          <hr className="my-4" />
+          <div className="flex justify-between items-start">
+            <ReactionButton event={event} />
+            <div>
+              <ViewRawButton event={event} />
             </div>
-            <ViewRawButton event={event} />
           </div>
         </CardContent>
         <CardFooter>
-          <small className="text-muted">{createdAt.toLocaleString()}</small>
+          <small className="text-muted-foreground">
+            {createdAt.toLocaleString()}
+          </small>
         </CardFooter>
       </Card>
     </>
   );
 }
 
-export default NoteCard;
+export default CommentCard;

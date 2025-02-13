@@ -1,12 +1,14 @@
-import { ScrollArea } from "@/components/ui/scroll-area"
 import ZapButtonListItem from "./ZapButtonListItem";
+import { NDKEvent } from '@nostr-dev-kit/ndk';
 
-export default function ZapButtonList({ events }: { events: any }) {
-    return (
-        <ScrollArea className="px-4 h-[50vh]">
-            {events.map((event: any) => (
-                <ZapButtonListItem key={event.id} event={event} />
-            ))}
-        </ScrollArea>
-    );
+export default function ZapButtonList({ events }: { events: NDKEvent[] }) {
+  return (
+    <div className="px-4">
+      <div className="space-y-4">
+        {events.map((event) => (
+          <ZapButtonListItem key={event.id} event={event.rawEvent()} />
+        ))}
+      </div>
+    </div>
+  );
 }

@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { useNostrEvents } from "nostr-react";
+import { useNostrEvents } from "@/hooks/useNDK";
 import { Skeleton } from "@/components/ui/skeleton";
 import GalleryCard from "./GalleryCard";
 
@@ -8,7 +8,7 @@ interface ProfileGalleryViewFeedProps {
 }
 
 const ProfileGalleryViewFeed: React.FC<ProfileGalleryViewFeedProps> = ({ pubkey }) => {
-  const now = useRef(new Date()); // Make sure current time isn't re-rendered
+  const now = useRef(new Date());
 
   const { isLoading, events } = useNostrEvents({
     filter: {
@@ -28,7 +28,7 @@ const ProfileGalleryViewFeed: React.FC<ProfileGalleryViewFeedProps> = ({ pubkey 
   return (
     <>
       <div className="grid grid-cols-3 gap-2">
-        {imagesAndIds.length === 0 && isLoading ? (
+        {isLoading ? (
           <>
             <div>
               <Skeleton className="h-[125px] rounded-xl" />
@@ -41,15 +41,9 @@ const ProfileGalleryViewFeed: React.FC<ProfileGalleryViewFeedProps> = ({ pubkey 
             </div>
           </>
         ) : (
-          imagesAndIds.map((galleryEntry) => (
-            galleryEntry.images.map((imageUrl, index) => (
-              <GalleryCard
-                pubkey={pubkey}
-                key={`${galleryEntry.id[index]}-${index}`}
-                eventId={galleryEntry.id[index]}
-                imageUrl={imageUrl}
-                linkToNote={true}
-              />
+          imagesAndIds.map(({ id, images }) => (
+            images.map((image, index) => (
+              <GalleryCard key={index} pubkey={pubkey} eventId={id[index]} imageUrl={image} linkToNote={true} />
             ))
           ))
         )}

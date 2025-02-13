@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { useNostrEvents, dateToUnix } from "nostr-react";
+import { useNostrEvents } from "@/hooks/useNDK";
 import NoteCard from '@/components/NoteCard';
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -20,9 +20,9 @@ const ProfileTextFeed: React.FC<ProfileTextFeedProps> = ({ pubkey }) => {
     },
   });
 
-  // filter out all images since we only want text messages
+  // Filter out all images since we only want text messages
   let filteredEvents = events.filter((event) => !event.content.match(/https?:\/\/.*\.(?:png|jpg|gif|jpeg)/g)?.[0]);
-  // filter out all replies (tag[0] == e)
+  // Filter out all replies (tag[0] == e)
   filteredEvents = filteredEvents.filter((event) => !event.tags.some((tag) => { return tag[0] == 'e' }));
 
   const loadMore = () => {
@@ -47,7 +47,7 @@ const ProfileTextFeed: React.FC<ProfileTextFeedProps> = ({ pubkey }) => {
                 key={event.id} 
                 pubkey={event.pubkey} 
                 text={event.content} 
-                event={event} 
+                event={event.rawEvent()} 
                 tags={event.tags} 
                 eventId={event.id} 
                 showViewNoteCardButton={true} 

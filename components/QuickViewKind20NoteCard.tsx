@@ -1,14 +1,11 @@
 import React, { useState } from 'react';
-import { useProfile } from "nostr-react";
-import {
-  nip19,
-} from "nostr-tools";
+import { useProfile } from "@/hooks/useNDK";
+import { nip19 } from "nostr-tools";
 import {
   Card,
   SmallCardContent,
 } from "@/components/ui/card"
 import Link from 'next/link';
-import Image from 'next/image';
 import { extractDimensions } from '@/utils/utils';
 
 interface QuickViewKind20NoteCardProps {
@@ -21,50 +18,51 @@ interface QuickViewKind20NoteCardProps {
   linkToNote: boolean;
 }
 
-const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubkey, text, image, eventId, tags, event, linkToNote }) => {
-  const {data, isLoading} = useProfile({
-    pubkey,
-  });
+const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ 
+  pubkey, 
+  text, 
+  image, 
+  eventId, 
+  tags, 
+  event, 
+  linkToNote 
+}) => {
+  const { data: userData } = useProfile(pubkey);
   const [imageError, setImageError] = useState(false);
 
   if (!image || imageError) return null;
 
   text = text.replaceAll('\n', ' ');
-  const encodedNoteId = nip19.noteEncode(event.id)
-
+  const encodedNoteId = nip19.noteEncode(event.id);
   const { width, height } = extractDimensions(event);
 
   const card = (
     <Card className="aspect-square">
       <SmallCardContent className="h-full p-0">
-        <div className="h-full w-full">
-          <div className='relative w-full h-full'>
-            <Image 
-              src={image || "/placeholder.svg"} 
-              alt={text}
-              fill
-              sizes="(max-width: 768px) 100vw, 300px"
-              className='rounded lg:rounded-lg object-cover' 
-              priority
-              onError={() => setImageError(true)}
-            />
-          </div>
-        </div>
+        <img 
+          src={image} 
+          className='rounded lg:rounded-lg'
+          style={{ 
+            width: '100%', 
+            height: '100%',
+            objectFit: 'cover'
+          }} 
+          alt={text}
+          onError={() => setImageError(true)}
+        />
       </SmallCardContent>
     </Card>
   );
 
-  return (
-    <>
-      {linkToNote ? (
-        <Link href={`/note/${encodedNoteId}`} className="block w-full aspect-square">
-          {card}
-        </Link>
-      ) : (
-        card
-      )}
-    </>
-  );
+  if (linkToNote) {
+    return (
+      <Link href={'/note/' + encodedNoteId}>
+        {card}
+      </Link>
+    );
+  }
+
+  return card;
 }
 
 export default QuickViewKind20NoteCard;

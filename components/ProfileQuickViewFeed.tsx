@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { useNostrEvents } from "nostr-react";
+import { useNostrEvents } from "@/hooks/useNDK";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import QuickViewKind20NoteCard from "./QuickViewKind20NoteCard";
@@ -10,7 +10,7 @@ interface ProfileQuickViewFeedProps {
 }
 
 const ProfileQuickViewFeed: React.FC<ProfileQuickViewFeedProps> = ({ pubkey }) => {
-  const now = useRef(new Date()); // Make sure current time isn't re-rendered
+  const now = useRef(new Date());
   const [limit, setLimit] = useState(20);
 
   const { isLoading, events } = useNostrEvents({
@@ -45,15 +45,15 @@ const ProfileQuickViewFeed: React.FC<ProfileQuickViewFeedProps> = ({ pubkey }) =
             {events.map((event) => {
               const imageUrl = getImageUrl(event.tags);
               return imageUrl ? (
-                <QuickViewKind20NoteCard 
-                  key={event.id} 
-                  pubkey={event.pubkey} 
-                  text={event.content} 
-                  image={imageUrl} 
-                  event={event} 
-                  tags={event.tags} 
-                  eventId={event.id} 
-                  linkToNote={true} 
+                <QuickViewKind20NoteCard
+                  key={event.id}
+                  pubkey={event.pubkey}
+                  text={event.content}
+                  image={imageUrl}
+                  event={event.rawEvent()}
+                  tags={event.tags}
+                  eventId={event.id}
+                  linkToNote={true}
                 />
               ) : null;
             })}

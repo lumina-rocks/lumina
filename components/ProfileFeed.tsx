@@ -1,10 +1,9 @@
 import { useRef, useState } from "react";
-import { useNostrEvents, dateToUnix } from "nostr-react";
-import NoteCard from '@/components/NoteCard';
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import KIND20Card from "./KIND20Card";
 import { getImageUrl } from "@/utils/utils";
+import { useNostrEvents } from "@/hooks/useNDK";
 
 interface ProfileFeedProps {
   pubkey: string;
@@ -18,7 +17,7 @@ const ProfileFeed: React.FC<ProfileFeedProps> = ({ pubkey }) => {
     filter: {
       authors: [pubkey],
       kinds: [20],
-      limit: limit,
+      limit,
     },
   });
 
@@ -46,7 +45,7 @@ const ProfileFeed: React.FC<ProfileFeedProps> = ({ pubkey }) => {
                 pubkey={event.pubkey}
                 text={event.content}
                 image={imageUrl}
-                event={event}
+                event={event.rawEvent()}
                 tags={event.tags}
                 eventId={event.id}
                 showViewNoteCardButton={true}

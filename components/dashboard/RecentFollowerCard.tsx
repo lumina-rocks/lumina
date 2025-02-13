@@ -1,23 +1,45 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { RecentFollower } from "./RecentFollower";
+import React from 'react';
+import { useProfile } from "@/hooks/useNDK";
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Avatar, AvatarImage } from '@/components/ui/avatar';
+import Link from 'next/link';
+import { nip19 } from "nostr-tools";
 
-export function RecentFollowerCard({ followers }: { followers: Array<any> }) {
-    const lastFiveFollowers = followers.slice(-5).reverse();
-    return (
-        <Card className="col-span-2">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-base font-normal">Recent Follower 🫂</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className='pt-4'>
-                    <div className="space-y-8">
-                        {lastFiveFollowers.map((follower) => (
-                            <RecentFollower follower={follower} key={follower.id}/>
-                        ))}
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-    )
+interface RecentFollowerCardProps {
+  followers: any[];
+}
+
+export function RecentFollowerCard({ followers }: RecentFollowerCardProps) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Recent Followers</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {followers.map((follower) => {
+          const { data: userData } = useProfile(follower.pubkey);
+          const title = userData?.displayName || userData?.name || userData?.nip05 || userData?.npub || nip19.npubEncode(follower.pubkey);
+          const profileImageSrc = userData?.image || "https://robohash.org/" + follower.pubkey;
+          const createdAt = new Date(follower.created_at * 1000);
+          const hrefProfile = `/profile/${nip19.npubEncode(follower.pubkey)}`;
+
+          return (
+            <div key={follower.id} className="flex items-center space-x-2 py-2">
+              <Link href={hrefProfile} style={{ textDecoration: 'none' }}>
+                <Avatar>
+                  <AvatarImage src={profileImageSrc} alt={title} />
+                </Avatar>
+              </Link>
+              <div className="ml-4 space-y-1">
+                <p className="text-sm font-medium leading-none">{title}</p>
+                <p className="text-sm text-muted-foreground">
+                  {createdAt.toLocaleDateString()} {createdAt.toLocaleTimeString()}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
 }

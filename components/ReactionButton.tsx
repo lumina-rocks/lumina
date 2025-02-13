@@ -1,5 +1,4 @@
-import { useNostr, useNostrEvents } from "nostr-react"
-import type { Event as NostrEvent } from "nostr-tools"
+import { useNostrEvents, useNDK } from "@/hooks/useNDK"
 import { Button } from "@/components/ui/button"
 import {
   Drawer,
@@ -12,12 +11,10 @@ import {
 } from "@/components/ui/drawer"
 import { ReloadIcon } from "@radix-ui/react-icons"
 import ReactionButtonReactionList from "./ReactionButtonReactionList"
-import { signEvent } from "@/utils/utils"
 import { useState, useEffect, useMemo } from "react"
 
 export default function ReactionButton({ event }: { event: any }) {
-  const { publish } = useNostr()
-
+  const ndk = useNDK()
   const loginType = typeof window !== "undefined" ? window.localStorage.getItem("loginType") : null
   const loggedInUserPublicKey = typeof window !== "undefined" ? window.localStorage.getItem("pubkey") : null
 
@@ -53,30 +50,32 @@ export default function ReactionButton({ event }: { event: any }) {
   const onPost = async (icon: string) => {
     const message = icon || "+"
 
-    const likeEvent: NostrEvent = {
-      content: message,
-      kind: 7,
-      tags: [],
-      created_at: Math.floor(Date.now() / 1000),
-      pubkey: "",
-      id: "",
-      sig: "",
-    }
+    const ndkEvent = ndk.getEvent()
+    ndkEvent.kind = 7
+    ndkEvent.tags.push(["e", event.id])
+    ndkEvent.tags.push(["p", event.pubkey])
+    ndkEvent.tags.push(["k", event.kind.toString()])
+    ndkEvent.content = message
+    ndkEvent.created_at = Math.floor(Date.now() / 1000)
 
-    likeEvent.tags.push(["e", event.id])
-    likeEvent.tags.push(["p", event.pubkey])
-    likeEvent.tags.push(["k", event.kind.toString()])
+    try {
+      if (loginType === "extension") {
+        await window.nostr.signEvent(ndkEvent.rawEvent())
+      } else if (loginType === "amber") {
+        alert("Signing with Amber is not implemented yet, sorry!")
+        return
+      } else if (loginType === "raw_nsec") {
+        const nsecStr = window.localStorage.getItem("nsec")
+        if (!nsecStr) throw new Error("No nsec found")
+        await ndkEvent.sign()
+      }
 
-    const signedEvent = await signEvent(loginType, likeEvent)
-
-    if (signedEvent) {
-      publish(signedEvent)
+      await ndkEvent.publish()
       setLiked(true)
       setLikeIcon(message)
-      filteredEvents.push(signedEvent)
-    } else {
-      console.error("Failed to sign event")
-      alert("Failed to sign event")
+      filteredEvents.push(ndkEvent)
+    } catch (error) {
+      console.error("Failed to sign/publish event", error)
     }
   }
 

@@ -1,108 +1,76 @@
-import { useNostr, dateToUnix, useNostrEvents } from "nostr-react";
-
+import { useNostrEvents } from "@/hooks/useNDK"
+import { Button } from "@/components/ui/button"
 import {
-    type Event as NostrEvent,
-    getEventHash,
-    getPublicKey,
-    finalizeEvent,
-} from "nostr-tools";
-import { Button } from "@/components/ui/button";
-import {
-    Drawer,
-    DrawerClose,
-    DrawerContent,
-    DrawerDescription,
-    DrawerFooter,
-    DrawerHeader,
-    DrawerTitle,
-    DrawerTrigger,
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
 } from "@/components/ui/drawer"
-import { ReloadIcon } from "@radix-ui/react-icons";
-import ZapButtonList from "./ZapButtonList";
-import { Input } from "./ui/input";
+import { ReloadIcon } from "@radix-ui/react-icons"
+import ZapButtonList from "./ZapButtonList"
+import { Input } from "./ui/input"
 
 export default function ZapButton({ event }: { event: any }) {
     const { events, isLoading } = useNostrEvents({
         filter: {
-            // since: dateToUnix(now.current), // all new events from now
-            // since: 0,
-            // limit: 100,
             '#e': [event.id],
             kinds: [9735],
         },
     });
 
-    // filter out all events that also have another e tag with another id
-    // this will filter out likes that are made on comments and not on the note itself
-    // const filteredEvents = events.filter((event) => { return event.tags.filter((tag) => { return tag[0] === '#e' && tag[1] !== event.id }).length === 0 });
-
     let sats = 0;
     var lightningPayReq = require('bolt11');
     events.forEach((event) => {
-        // console.log(event);
         event.tags.forEach((tag) => {
             if (tag[0] === 'bolt11') {
                 let decoded = lightningPayReq.decode(tag[1]);
-                // console.log(decoded.satoshis);
                 sats = sats + decoded.satoshis;
             }
         });
     });
 
-
-    // const { publish } = useNostr();
-
-    // const onPost = async () => {
-    //     const privKey = prompt("Paste your private key:");
-
-    //     if (!privKey) {
-    //         alert("no private key provided");
-    //         return;
-    //     }
-
-    //     const message = prompt("Enter the message you want to send:");
-
-    //     if (!message) {
-    //         alert("no message provided");
-    //         return;
-    //     }
-
-    //     const event: NostrEvent = {
-    //         content: message,
-    //         kind: 1,
-    //         tags: [],
-    //         created_at: dateToUnix(),
-    //         pubkey: getPublicKey(privKey),
-    //         id: "",
-    //         sig: ""
-    //     };
-
-    //     event.id = getEventHash(event);
-    //     event.sig = getSignature(event, privKey);
-
-    //     publish(event);
-    // };
+    const handleZap = async (amount: number) => {
+        // TODO: Implement zap functionality with NDK
+        // This will require integration with a Lightning wallet
+        alert('Zap functionality coming soon!');
+    };
 
     return (
         <Drawer>
             <DrawerTrigger asChild>
-                {isLoading ? (
-                    <Button variant="outline"><ReloadIcon className="mr-2 h-4 w-4 animate-spin" /> ⚡️</Button>
-                ) : (
-                    <Button variant="outline">{sats} sats ⚡️</Button>
-                )}
+                <Button variant="outline">
+                    {isLoading ? (
+                        <>
+                            <ReloadIcon className="mr-2 h-4 w-4 animate-spin" /> ⚡️
+                        </>
+                    ) : (
+                        <>
+                            {sats} ⚡️
+                        </>
+                    )}
+                </Button>
             </DrawerTrigger>
             <DrawerContent>
                 <DrawerHeader>
                     <DrawerTitle>Zaps</DrawerTitle>
-                    {/* <DrawerDescription>Sorry, but this feature is not implemented yet.</DrawerDescription> */}
+                    <DrawerDescription>Send some sats!</DrawerDescription>
                 </DrawerHeader>
-                <div className="px-4 grid grid-cols-3">
-                    <Button variant={"outline"} className="mx-1" disabled>1 sat</Button>
-                    <Button variant={"outline"} className="mx-1" disabled>21 sats</Button>
-                    <div className="flex">
-                        <Input className="mx-1" placeholder="1000 sats" />
-                        <Button variant={"outline"} className="mx-1" disabled>send</Button>
+                <div className="px-4">
+                    <div className="grid grid-cols-3 gap-4 mb-4">
+                        <Button onClick={() => handleZap(50)}>50 sats</Button>
+                        <Button onClick={() => handleZap(100)}>100 sats</Button>
+                        <Button onClick={() => handleZap(1000)}>1000 sats</Button>
+                        <Button onClick={() => handleZap(5000)}>5000 sats</Button>
+                        <Button onClick={() => handleZap(10000)}>10000 sats</Button>
+                        <Button onClick={() => handleZap(50000)}>50000 sats</Button>
+                    </div>
+                    <div className="flex items-center mb-4">
+                        <Input type="number" placeholder="Enter custom amount" className="mr-2" />
+                        <Button onClick={() => handleZap(0)}>Zap</Button>
                     </div>
                 </div>
                 <hr className="my-4" />
@@ -110,13 +78,11 @@ export default function ZapButton({ event }: { event: any }) {
                 <DrawerFooter>
                     <DrawerClose asChild>
                         <div>
-                            <Button variant={"outline"}>Close</Button>
+                            <Button variant="outline">Close</Button>
                         </div>
                     </DrawerClose>
                 </DrawerFooter>
             </DrawerContent>
         </Drawer>
-
-        // <Button variant="default" onClick={onPost}>{events.length} Reactions</Button>
-    );
+    )
 }

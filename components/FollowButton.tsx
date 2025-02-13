@@ -1,10 +1,6 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from './ui/button';
-import { useNostr, useNostrEvents } from 'nostr-react';
-import { finalizeEvent } from 'nostr-tools';
-import { sign } from 'crypto';
-import { SignalMedium } from 'lucide-react';
+import { useNDK, useNostrEvents } from '@/hooks/useNDK';
 
 interface FollowButtonProps {
     pubkey: string;
@@ -12,17 +8,8 @@ interface FollowButtonProps {
 }
 
 const FollowButton: React.FC<FollowButtonProps> = ({ pubkey, userPubkey }) => {
-    // const { publish } = useNostr();
+    const ndk = useNDK();
     const [isFollowing, setIsFollowing] = useState(false);
-
-    let storedPubkey: string | null = null;
-    let storedNsec: string | null = null;
-    let isLoggedIn = false;
-    if (typeof window !== 'undefined') {
-        storedPubkey = window.localStorage.getItem('pubkey');
-        storedNsec = window.localStorage.getItem('nsec');
-        isLoggedIn = storedPubkey !== null;
-    }
 
     const { events } = useNostrEvents({
         filter: {
@@ -33,65 +20,59 @@ const FollowButton: React.FC<FollowButtonProps> = ({ pubkey, userPubkey }) => {
     });
 
     let followingPubkeys = events.flatMap((event) => event.tags.map(tag => tag[1]));
-    // filter out all null or undefined
     followingPubkeys = followingPubkeys.filter((tag) => tag);
-
 
     useEffect(() => {
         if (followingPubkeys.includes(pubkey)) {
             setIsFollowing(true);
         }
-    }, [followingPubkeys, isFollowing, setIsFollowing]);
+    }, [followingPubkeys, isFollowing, pubkey]);
 
     const handleFollow = async () => {
-    //     if (isLoggedIn) {
+        const ndkEvent = ndk.getEvent();
+        ndkEvent.kind = 3;
+        ndkEvent.created_at = Math.floor(Date.now() / 1000);
+        ndkEvent.content = '';
 
-    //         let eventTemplate = {
-    //             kind: 3,
-    //             created_at: Math.floor(Date.now() / 1000),
-    //             tags: [followingPubkeys],
-    //             content: '',
-    //         }
+        // Get current following list and update it
+        const currentList = [...followingPubkeys];
+        if (isFollowing) {
+            ndkEvent.tags = currentList.filter(p => p !== pubkey).map(p => ['p', p]);
+        } else {
+            currentList.push(pubkey);
+            ndkEvent.tags = currentList.map(p => ['p', p]);
+        }
 
-    //         console.log(eventTemplate);
+        try {
+            const loginType = window.localStorage.getItem("loginType");
+            if (loginType === "extension") {
+                const signedEvent = await window.nostr.signEvent(ndkEvent.rawEvent());
+                Object.assign(ndkEvent, signedEvent);
+            } else if (loginType === "amber") {
+                alert("Signing with Amber is not implemented yet, sorry!");
+                return;
+            } else if (loginType === "raw_nsec") {
+                const nsecStr = window.localStorage.getItem("nsec");
+                if (!nsecStr) throw new Error("No nsec found");
+                await ndkEvent.sign();
+            }
 
-    //         if (isFollowing) {
-    //             eventTemplate.tags = eventTemplate.tags.filter(tag => tag[1] !== pubkey);
-    //         } else {
-    //             eventTemplate.tags[0].push(pubkey);
-    //         }
-
-    //         console.log(eventTemplate);
-
-    //         let signedEvent = null;
-    //         if (storedNsec != null) {
-    //             // TODO: Sign Nostr Event with nsec
-    //             const nsecArray = storedNsec ? new TextEncoder().encode(storedNsec) : new Uint8Array();
-    //             signedEvent = finalizeEvent(eventTemplate, nsecArray);
-    //             console.log(signedEvent);
-    //         } else if (storedPubkey != null) {
-    //             // TODO: Request Extension to sign Nostr Event
-    //             console.log('Requesting Extension to sign Nostr Event..');
-    //             try {
-    //                 signedEvent = await window.nostr.signEvent(eventTemplate);
-    //             } catch (error) {
-    //                 console.error('Nostr Extension not found or aborted.');
-    //             }
-    //         }
-
-    //         if (signedEvent !== null) {
-    //             console.log(signedEvent);
-    //             publish(signedEvent);
-    //             setIsFollowing(!isFollowing);
-    //         }
-    //     }
+            await ndkEvent.publish();
+            setIsFollowing(!isFollowing);
+        } catch (error) {
+            console.error("Failed to follow/unfollow:", error);
+        }
     };
 
     return (
-        <Button className='w-full' onClick={handleFollow} disabled>
-            {isFollowing ? 'Unfollow' : 'Follow'}
+        <Button
+            variant={isFollowing ? "default" : "outline"}
+            className="w-full"
+            onClick={handleFollow}
+        >
+            {isFollowing ? "Following" : "Follow"}
         </Button>
     );
-};
+}
 
 export default FollowButton;

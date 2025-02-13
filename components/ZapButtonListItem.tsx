@@ -1,48 +1,39 @@
 import Link from "next/link";
-import { useNostr, dateToUnix, useNostrEvents, useProfile } from "nostr-react";
-
-import {
-    type Event as NostrEvent,
-    getEventHash,
-    getPublicKey,
-    finalizeEvent,
-    nip19,
-} from "nostr-tools";
+import { useProfile } from "@/hooks/useNDK";
+import { nip19, type Event as NostrEvent } from "nostr-tools";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 
 export default function ZapButtonListItem({ event }: { event: NostrEvent }) {
-
+    // Find the actual zapper's pubkey from the P tag
     let pubkey = event.pubkey;
-    for(let i = 0; i < event.tags.length; i++) {
-        if(event.tags[i][0] === 'P') {
-            pubkey = event.tags[i][1];
+    for(let tag of event.tags) {
+        if(tag[0] === 'P') {
+            pubkey = tag[1];
             break;
         }
     }
 
-    const { data: userData } = useProfile({
-        pubkey,
-    });
+    const { data: userData } = useProfile(pubkey);
 
-    const title = userData?.username || userData?.display_name || userData?.name || nip19.npubEncode(pubkey).slice(0, 8) + ':' + nip19.npubEncode(pubkey).slice(-3);;
-    const createdAt = new Date(event.created_at * 1000);
+    const title = userData?.displayName || userData?.name || userData?.nip05 || 
+                 nip19.npubEncode(pubkey).slice(0, 8) + ':' + nip19.npubEncode(pubkey).slice(-3);
     const hrefProfile = `/profile/${nip19.npubEncode(pubkey)}`;
-    const profileImageSrc = userData?.picture || "https://robohash.org/" + pubkey;
+    const profileImageSrc = userData?.image || "https://robohash.org/" + pubkey;
+
+    // Calculate zap amount
     let sats = 0;
-    var lightningPayReq = require('bolt11');
+    const lightningPayReq = require('bolt11');
     event.tags.forEach((tag) => {
         if (tag[0] === 'bolt11') {
-            let decoded = lightningPayReq.decode(tag[1]);
-            // console.log(decoded.satoshis);
-            sats =  decoded.satoshis;
+            const decoded = lightningPayReq.decode(tag[1]);
+            sats = decoded.satoshis;
         }
     });
 
     return (
         <Link href={hrefProfile}>
-            <div key={event.id} className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2">
                 <div className="flex items-center space-x-2 p-1">
-                    {/* <img src={profileImageSrc} className="w-8 h-8 rounded-full" /> */}
                     <Avatar>
                         <AvatarImage src={profileImageSrc} alt={title} />
                     </Avatar>

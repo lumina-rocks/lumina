@@ -1,17 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import TrendingAccount from '@/components/TrendingAccount';
+import { useNDK } from '@/hooks/useNDK';
 
 export function TrendingAccounts() {
+    const ndk = useNDK();
     const [profiles, setProfiles] = useState<any[]>([]);
 
     useEffect(() => {
         fetch('https://api.nostr.band/v0/trending/profiles')
             .then(res => res.json())
-            .then(data => setProfiles(data.profiles))
+            .then(data => {
+                // Pre-fetch profiles to have them in NDK cache
+                data.profiles.forEach((profile: any) => {
+                    ndk.getUser({ pubkey: profile.pubkey }).fetchProfile();
+                });
+                setProfiles(data.profiles);
+            })
             .catch(error => {
                 console.error('Error calling trending profiles:', error);
             });
-    }, []);
+    }, [ndk]);
 
     return (
         <div className="flex flex-col items-center py-6 px-6">

@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import { useProfile } from "nostr-react";
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { AvatarImage } from '@radix-ui/react-avatar';
 import { Avatar } from '@/components/ui/avatar';
@@ -22,13 +21,13 @@ import {
 import { Input } from './ui/input';
 import { Share1Icon } from '@radix-ui/react-icons';
 import { toast } from './ui/use-toast';
+import { useProfile } from '@/hooks/useNDK';
 
 interface ProfileInfoCardProps {
   pubkey: string;
 }
 
 const ProfileInfoCard: React.FC<ProfileInfoCardProps> = React.memo(({ pubkey }) => {
-
   let userPubkey = '';
   let host = '';
   if (typeof window !== 'undefined') {
@@ -36,7 +35,7 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = React.memo(({ pubkey }) 
     host = window.location.host;
   }
 
-  const { data: userData, isLoading } = useProfile({ pubkey });
+  const { data: userData, isLoading } = useProfile(pubkey);
 
   const npubShortened = useMemo(() => {
     let encoded = nip19.npubEncode(pubkey);
@@ -44,7 +43,7 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = React.memo(({ pubkey }) 
     return 'npub' + parts[1].slice(0, 4) + ':' + parts[1].slice(-3);
   }, [pubkey]);
 
-  const title = userData?.username || userData?.display_name || userData?.name || userData?.npub || npubShortened;
+  const title = userData?.displayName || userData?.name || userData?.nip05 || userData?.npub || npubShortened;
   const description = userData?.about?.replace(/(?:\r\n|\r|\n)/g, '<br>');
   const nip05 = userData?.nip05;
 
@@ -88,7 +87,7 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = React.memo(({ pubkey }) 
             <Link href={`/profile/${nip19.npubEncode(pubkey)}`}>
               <div style={{ display: 'flex', alignItems: 'center' }}>
                 <Avatar className='mr-2'>
-                  <AvatarImage src={userData?.picture} alt={title} />
+                  <AvatarImage src={userData?.image} alt={title} />
                 </Avatar>
                 {title}
               </div>

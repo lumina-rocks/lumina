@@ -1,4 +1,4 @@
-import { useNostrEvents } from "nostr-react";
+import { useNostrEvents } from "@/hooks/useNDK";
 import KIND20Card from "./KIND20Card";
 import { getImageUrl } from "@/utils/utils";
 import { useState, useRef } from "react";
@@ -10,8 +10,9 @@ const GlobalFeed: React.FC = () => {
 
   const { events, isLoading } = useNostrEvents({
     filter: {
-      limit: limit,
+      limit,
       kinds: [20],
+      since: Math.floor(now.current.getTime() / 1000) - 24 * 60 * 60, // Last 24 hours
     },
   });
 
@@ -34,7 +35,7 @@ const GlobalFeed: React.FC = () => {
                 image={imageUrl}
                 eventId={event.id}
                 tags={event.tags}
-                event={event}
+                event={event.rawEvent()}
                 showViewNoteCardButton={true}
               />
             </div>
