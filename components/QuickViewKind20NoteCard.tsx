@@ -27,7 +27,7 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubke
   });
   const [imageError, setImageError] = useState(false);
 
-  if (!image || imageError) return null;
+  if (!image || !image.startsWith("http") || imageError) return null;
 
   text = text.replaceAll('\n', ' ');
   const encodedNoteId = nip19.noteEncode(event.id)

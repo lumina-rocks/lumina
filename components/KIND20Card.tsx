@@ -39,8 +39,8 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
   })
   const [imageError, setImageError] = useState(false);
 
-  if (!image || imageError) return null;
-
+  if (!image || !image.startsWith("http") || imageError) return null;
+  
   const title =
     userData?.username || userData?.display_name || userData?.name || userData?.npub || nip19.npubEncode(pubkey)
   text = text.replaceAll("\n", " ")
