@@ -86,7 +86,7 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = React.memo(({ pubkey }) 
         <CardHeader>
           <div className="flex items-center gap-6">
             <Avatar className="h-24 w-24">
-              <AvatarImage src={userData?.picture} alt={title} />
+              <AvatarImage className="object-cover w-full h-full" src={userData?.picture} alt={title} />
             </Avatar>
             <div className="flex flex-col gap-1.5">
               <Link href={`/profile/${nip19.npubEncode(pubkey)}`}>
