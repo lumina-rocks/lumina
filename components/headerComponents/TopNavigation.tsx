@@ -21,36 +21,32 @@ export function TopNavigation() {
   // Prevent hydration mismatch by not rendering auth-dependent content until mounted
   if (!mounted) {
     return (
-      <nav>
-        <header className="bg-background/80 sticky top-0 z-40 w-full border-b backdrop-blur">
-          <div className="container flex h-16 items-center space-x-4 sm:justify-between sm:space-x-0">
-            <TopNavigationItems items={siteConfig.mainNav} />
-            <div className="flex flex-1 items-center justify-end space-x-4">
-              <nav className="flex items-center space-x-2">
-                <DropdownThemeMode />
-              </nav>
-            </div>
-          </div>
-        </header>
-      </nav>
-    );
-  }
-
-  return (
-    <nav>
       <header className="bg-background/80 sticky top-0 z-40 w-full border-b backdrop-blur">
         <div className="container flex h-16 items-center space-x-4 sm:justify-between sm:space-x-0">
           <TopNavigationItems items={siteConfig.mainNav} />
           <div className="flex flex-1 items-center justify-end space-x-4">
             <nav className="flex items-center space-x-2">
               <DropdownThemeMode />
-              {pubkey === null ? <RegisterButton /> : null}
-              {pubkey === null ? <LoginButton /> : null}
-              {pubkey !== null ? <AvatarDropdown /> : null}
             </nav>
           </div>
         </div>
       </header>
-    </nav>
+    );
+  }
+
+  return (
+    <header className="bg-background/80 sticky top-0 z-40 w-full border-b backdrop-blur">
+      <div className="container flex h-16 items-center space-x-4 sm:justify-between sm:space-x-0">
+        <TopNavigationItems items={siteConfig.mainNav} />
+        <div className="flex flex-1 items-center justify-end space-x-4">
+          <nav className="flex items-center space-x-2">
+            <DropdownThemeMode />
+            {pubkey === null ? <RegisterButton /> : null}
+            {pubkey === null ? <LoginButton /> : null}
+            {pubkey !== null ? <AvatarDropdown /> : null}
+          </nav>
+        </div>
+      </div>
+    </header>
   )
 }
