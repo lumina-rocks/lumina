@@ -21,7 +21,6 @@ const GlobalFeed: React.FC = () => {
 
   return (
     <>
-      <h2 className="text-2xl font-bold mb-4 px-2 md:px-4">Global Feed</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-2 md:px-4">
         {events.map((event) => {
           const imageUrl = getImageUrl(event.tags);
