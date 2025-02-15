@@ -85,10 +85,12 @@ export default function ZapButton({ event }: { event: any }) {
 
     return (
         <Drawer>
-            <DrawerTrigger asChild>
+            <DrawerTrigger>
+                {/* <Button variant="default" onClick={onPost}>{events.length} Reactions</Button> */}
                 {isLoading ? (
                     <Button variant="outline"><ReloadIcon className="mr-2 h-4 w-4 animate-spin" /> ⚡️</Button>
                 ) : (
+                    // <Button variant="outline">{events.length} ⚡️ ({sats} sats)</Button>
                     <Button variant="outline">{sats} sats ⚡️</Button>
                 )}
             </DrawerTrigger>
@@ -108,10 +110,8 @@ export default function ZapButton({ event }: { event: any }) {
                 <hr className="my-4" />
                 <ZapButtonList events={events} />
                 <DrawerFooter>
-                    <DrawerClose asChild>
-                        <div>
-                            <Button variant={"outline"}>Close</Button>
-                        </div>
+                    <DrawerClose>
+                        <Button variant={"outline"}>Close</Button>
                     </DrawerClose>
                 </DrawerFooter>
             </DrawerContent>

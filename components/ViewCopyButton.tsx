@@ -60,7 +60,7 @@ export default function ViewCopyButton({ event }: ViewCopyButtonProps) {
 
     return (
         <Drawer>
-            <DrawerTrigger asChild>
+            <DrawerTrigger>
                 <Button variant="outline"><Share1Icon /></Button>
             </DrawerTrigger>
             <DrawerContent>
@@ -80,13 +80,12 @@ export default function ViewCopyButton({ event }: ViewCopyButtonProps) {
                     </div>
                 </div>
                 <DrawerFooter>
-                    <DrawerClose asChild>
-                        <div>
-                            <Button variant="outline">Close</Button>
-                        </div>
+                    <DrawerClose>
+                        <Button variant="outline">Close</Button>
                     </DrawerClose>
                 </DrawerFooter>
             </DrawerContent>
         </Drawer>
+
     );
 }

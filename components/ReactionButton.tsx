@@ -82,7 +82,7 @@ export default function ReactionButton({ event }: { event: any }) {
 
   return (
     <Drawer>
-      <DrawerTrigger asChild>
+      <DrawerTrigger>
         <Button variant={liked ? "default" : "outline"}>
           {isLoading ? (
             <>
@@ -125,10 +125,8 @@ export default function ReactionButton({ event }: { event: any }) {
         <hr className="my-4" />
         <ReactionButtonReactionList filteredEvents={filteredEvents} />
         <DrawerFooter>
-          <DrawerClose asChild>
-            <div>
-              <Button variant={"secondary"}>Close</Button>
-            </div>
+          <DrawerClose>
+            <Button variant={"secondary"}>Close</Button>
           </DrawerClose>
         </DrawerFooter>
       </DrawerContent>

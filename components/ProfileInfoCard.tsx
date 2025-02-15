@@ -97,6 +97,7 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = React.memo(({ pubkey }) 
           <div>
             <NIP05 nip05={nip05?.toString() ?? ''} pubkey={pubkey} />
             <div className='py-6 grid grid-cols-5 gap-4'>
+              {/* <Button className='w-full'>Follow</Button> */}
               <div className='col-span-2'>
                 <FollowButton pubkey={pubkey} userPubkey={userPubkey}></FollowButton>
               </div>
@@ -104,7 +105,7 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = React.memo(({ pubkey }) 
                 <Button className='w-full' variant="outline">View Statistics</Button>
               </Link>
               <Drawer>
-                <DrawerTrigger asChild>
+                <DrawerTrigger>
                   <Button className='w-full' variant="outline"><Share1Icon /></Button>
                 </DrawerTrigger>
                 <DrawerContent>
@@ -113,6 +114,7 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = React.memo(({ pubkey }) 
                     <DrawerDescription>Share this Profile with others.</DrawerDescription>
                   </DrawerHeader>
                   <div className="px-2">
+                    {/* <h1>URL</h1> */}
                     <div className="flex items-center mb-4">
                       <Input value={host+"/profile/"+nip19.npubEncode(pubkey)} disabled className="mr-2" />
                       <Button variant="outline" onClick={handleCopyLink}>Copy Link</Button>
@@ -123,10 +125,8 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = React.memo(({ pubkey }) 
                     </div>
                   </div>
                   <DrawerFooter>
-                    <DrawerClose asChild>
-                      <div>
-                        <Button variant="outline">Close</Button>
-                      </div>
+                    <DrawerClose>
+                      <Button variant="outline">Close</Button>
                     </DrawerClose>
                   </DrawerFooter>
                 </DrawerContent>
