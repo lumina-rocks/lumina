@@ -44,6 +44,7 @@ const TrendingImage: React.FC<TrendingImageProps> = ({ eventId, pubkey }) => {
   const imageSrc = text.match(/https?:\/\/[^ ]*\.(png|jpg|gif|jpeg)/g);
   const textWithoutImage = text.replace(/https?:\/\/.*\.(?:png|jpg|gif|jpeg)/g, '');
   const hrefProfile = `/profile/${nip19.npubEncode(pubkey)}`;
+  const hrefNote = `/note/${nip19.noteEncode(eventId)}`;
   const profileImageSrc = userData?.picture || "https://robohash.org/" + pubkey;
 
   return (
@@ -64,7 +65,7 @@ const TrendingImage: React.FC<TrendingImageProps> = ({ eventId, pubkey }) => {
             <div className='d-flex justify-content-center align-items-center'>
               {imageSrc && imageSrc.length > 0 && (
                 <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
-                  <Link href={hrefProfile}>
+                  <Link href={hrefNote}>
                     <img src={imageSrc[0]} className='rounded lg:rounded-lg' style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={text} />
                   </Link>
                 </div>
