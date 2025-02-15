@@ -84,18 +84,20 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = React.memo(({ pubkey }) 
     <div className='py-6'>
       <Card>
         <CardHeader>
-          <CardTitle>
-            <Link href={`/profile/${nip19.npubEncode(pubkey)}`}>
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <Avatar className='mr-2'>
-                  <AvatarImage src={userData?.picture} alt={title} />
-                </Avatar>
-                {title}
+          <div className="flex items-center gap-6">
+            <Avatar className="h-24 w-24">
+              <AvatarImage src={userData?.picture} alt={title} />
+            </Avatar>
+            <div className="flex flex-col gap-1.5">
+              <Link href={`/profile/${nip19.npubEncode(pubkey)}`}>
+                <div className="text-2xl">{title}</div>
+              </Link>
+              <div className="text-sm text-muted-foreground">
+                <NIP05 nip05={nip05?.toString() ?? ''} pubkey={pubkey} />
               </div>
-            </Link>
-          </CardTitle>
+            </div>
+          </div>
           <div>
-            <NIP05 nip05={nip05?.toString() ?? ''} pubkey={pubkey} />
             <div className='py-6 grid grid-cols-5 gap-4'>
               <div className='col-span-2'>
                 <FollowButton pubkey={pubkey} userPubkey={userPubkey}></FollowButton>
