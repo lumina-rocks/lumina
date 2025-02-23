@@ -3,6 +3,7 @@
 import { Search } from "@/components/Search";
 import { TrendingAccounts } from "@/components/TrendingAccounts";
 import { TrendingImages } from "@/components/TrendingImages";
+import { TrendingImagesNew } from "@/components/TrendingImagesNew";
 import { useEffect } from "react";
 
 
@@ -17,7 +18,8 @@ export default function Home() {
         <Search />
       </div>
       {/* <TrendingAccounts /> */}
-      <TrendingImages />
+      {/* <TrendingImages /> */}
+      <TrendingImagesNew />
     </>
   );
 }
