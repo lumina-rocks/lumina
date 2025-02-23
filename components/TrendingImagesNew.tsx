@@ -6,7 +6,7 @@ export function TrendingImagesNew() {
 
     useEffect(() => {
         // TODO: Change to luminas own relay
-        fetch('https://scraper.highperfocused.tech/api/trending/kind20')
+        fetch('https://relay.lumina.rocks/api/trending/kind20')
             .then(res => res.json())
             .then(data => setEvents(data.trending))
             .catch(error => {
