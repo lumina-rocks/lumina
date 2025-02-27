@@ -6,7 +6,7 @@ export function TrendingImagesNew() {
     const [events, setEvents] = useState<any[]>([]);
 
     useEffect(() => {
-        // TODO: Change to luminas own relay
+        // TODO: Fetch trending images from luminas own relay via http call
         fetch('https://relay.lumina.rocks/api/trending/kind20')
             .then(res => res.json())
             .then(data => setEvents(data.trending))
