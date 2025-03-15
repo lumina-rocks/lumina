@@ -19,7 +19,6 @@ const Notifications: React.FC<NotificationsProps> = ({ pubkey }) => {
         pubkey,
     });
 
-
     // const { events: followers, isLoading: followersLoading } = useNostrEvents({
     //     filter: {
     //         kinds: [3],
@@ -28,19 +27,11 @@ const Notifications: React.FC<NotificationsProps> = ({ pubkey }) => {
     //     },
     // });
 
-    const { events: zaps, isLoading: zapsLoading } = useNostrEvents({
+    const { events, isLoading: isLoading } = useNostrEvents({
         filter: {
-            kinds: [9735],
+            kinds: [7, 9735],
             '#p': [pubkey],
-            limit: 20,
-        },
-    });
-
-    const { events: reactions, isLoading: reactionsLoading } = useNostrEvents({
-        filter: {
-            kinds: [7],
-            '#p': [pubkey],
-            limit: 20,
+            limit: 50,
         },
     });
 
@@ -61,8 +52,10 @@ const Notifications: React.FC<NotificationsProps> = ({ pubkey }) => {
     //     }
     // });
 
-    // let allNotifications = [...filteredFollowers, ...zaps].sort((a, b) => b.created_at - a.created_at);
-    let allNotifications =  [...zaps, ...reactions].sort((a, b) => b.created_at - a.created_at);
+    // Create a combined and properly sorted array of all notifications
+    // const allNotifications = [...(zaps || []), ...(reactions || [])].sort(
+    //     (a, b) => (b.created_at || 0) - (a.created_at || 0)
+    // );
 
     return (
         <>
@@ -73,9 +66,19 @@ const Notifications: React.FC<NotificationsProps> = ({ pubkey }) => {
                         <CardTitle className="text-base font-normal">Notifications</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        {allNotifications.map((notification, index) => (
-                            <Notification key={index} event={notification} />
-                        ))}
+                        {events.length > 0 ? (
+                            events.map((notification, index) => (
+                                <Notification key={index} event={notification} />
+                            ))
+                        ) : (
+                            <div className="text-center py-4 text-muted-foreground">No notifications yet</div>
+                        )}
+                        {(!events) && (
+                            <div className="text-center py-2">
+                                <Skeleton className="h-12 w-full mb-2" />
+                                <Skeleton className="h-12 w-full" />
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>
