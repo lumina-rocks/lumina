@@ -80,14 +80,29 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
           <CardContent className="p-0">
             <div className="px-2 sm:px-4">
               <div className="w-full">
-                <div className="relative w-full" style={{ paddingBottom: "100%" }}>
-                  <Image
-                    src={image}
-                    alt={text}
-                    fill
-                    className="rounded-lg object-contain"
-                    onError={() => setImageError(true)}
-                  />
+                {/* Modified image container with max-height for desktop */}
+                <div className="relative w-full sm:max-h-[500px] md:max-h-[600px]">
+                  {/* On mobile, keep original square aspect ratio, on desktop limit height */}
+                  <div className="block sm:hidden relative w-full" style={{ paddingBottom: "100%" }}>
+                    <Image
+                      src={image}
+                      alt={text}
+                      fill
+                      className="rounded-lg object-contain"
+                      onError={() => setImageError(true)}
+                    />
+                  </div>
+                  {/* Desktop version with constrained height */}
+                  <div className="hidden sm:block w-full h-full max-h-[600px]">
+                    <Image
+                      src={image}
+                      alt={text}
+                      width={1200}
+                      height={800}
+                      className="rounded-lg object-contain w-full h-auto max-h-[600px]"
+                      onError={() => setImageError(true)}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
