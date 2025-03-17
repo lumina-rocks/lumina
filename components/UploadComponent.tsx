@@ -304,8 +304,9 @@ const UploadComponent: React.FC = () => {
                 <SelectValue placeholder={serverChoice} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="nostr.download">nostr.download</SelectItem>
                 <SelectItem value="blossom.primal.net">blossom.primal.net</SelectItem>
+                <SelectItem value="media.lumina.rocks">media.lumina.rocks</SelectItem>
+                <SelectItem value="nostr.download">nostr.download</SelectItem>
               </SelectContent>
             </Select>
           </div>
