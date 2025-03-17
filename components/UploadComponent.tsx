@@ -59,7 +59,7 @@ const UploadComponent: React.FC = () => {
   const [uploadedNoteId, setUploadedNoteId] = useState("")
   const [retryCount, setRetryCount] = useState(0)
   const [shouldFetch, setShouldFetch] = useState(false)
-  const [serverChoice, setServerChoice] = useState("blossom.primal.net")
+  const [serverChoice, setServerChoice] = useState("blossom.band")
 
   const { events, isLoading: isNoteLoading } = useNostrEvents({
     filter: shouldFetch
@@ -304,6 +304,7 @@ const UploadComponent: React.FC = () => {
                 <SelectValue placeholder={serverChoice} />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="blossom.band">blossom.band</SelectItem>
                 <SelectItem value="blossom.primal.net">blossom.primal.net</SelectItem>
                 <SelectItem value="media.lumina.rocks">media.lumina.rocks</SelectItem>
                 <SelectItem value="nostr.download">nostr.download</SelectItem>
