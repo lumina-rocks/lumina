@@ -59,7 +59,7 @@ const UploadComponent: React.FC = () => {
   const [uploadedNoteId, setUploadedNoteId] = useState("")
   const [retryCount, setRetryCount] = useState(0)
   const [shouldFetch, setShouldFetch] = useState(false)
-  const [serverChoice, setServerChoice] = useState("nostr.download")
+  const [serverChoice, setServerChoice] = useState("blossom.primal.net")
 
   const { events, isLoading: isNoteLoading } = useNostrEvents({
     filter: shouldFetch
