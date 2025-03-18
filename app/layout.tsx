@@ -27,7 +27,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="icon" href="/icon?<generated>" type="image/png" sizes="32x32" />
+        {/* <link rel="icon" href="/icon?<generated>" type="image/png" sizes="32x32" /> */}
+        <link rel="icon" href="/icon.ico" type="image/png" sizes="32x32" />
         <link rel="manifest" href="/manifest.json" />
         <title>LUMINA</title>
         <meta name="description" content="An effortless, enjoyable, and innovative way to capture, enhance, and share moments with everyone, decentralized and boundless." />
