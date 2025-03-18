@@ -1,5 +1,5 @@
 import React from 'react';
-import { useProfile } from "nostr-react";
+import { useProfile, useNostrEvents } from "nostr-react";
 import {
   nip19,
 } from "nostr-tools";
@@ -40,6 +40,14 @@ interface CommentCardProps {
 const NoteCard: React.FC<CommentCardProps> = ({ pubkey, text, eventId, tags, event }) => {
   const { data: userData } = useProfile({
     pubkey,
+  });
+  
+  // Fetch comments related to this event
+  const { events: commentEvents } = useNostrEvents({
+    filter: {
+      kinds: [1],
+      '#e': [eventId],
+    },
   });
 
   const title = userData?.username || userData?.display_name || userData?.name || userData?.npub || nip19.npubEncode(pubkey);
@@ -111,6 +119,29 @@ const NoteCard: React.FC<CommentCardProps> = ({ pubkey, text, eventId, tags, eve
             </div>
             <ViewRawButton event={event} />
           </div>
+          
+          {/* Comments section */}
+          {commentEvents && commentEvents.length > 0 && (
+            <div className="mt-4">
+              {/* <h3 className="text-lg font-medium mb-2">Comments ({commentEvents.length})</h3> */}
+              <div className="space-y-3">
+                {commentEvents.map((commentEvent) => (
+                  // <div key={commentEvent.id} className="border p-3 rounded-md">
+                  //   <div className="flex items-center mb-2">
+                  //     <span className="text-sm font-medium">
+                  //       {nip19.npubEncode(commentEvent.pubkey).substring(0, 10)}...
+                  //     </span>
+                  //     <span className="text-xs ml-2 text-gray-500">
+                  //       {new Date(commentEvent.created_at * 1000).toLocaleString()}
+                  //     </span>
+                  //   </div>
+                  //   <p className="text-sm">{commentEvent.content}</p>
+                  // </div>
+                  <NoteCard key={commentEvent.id} pubkey={commentEvent.pubkey} text={commentEvent.content} eventId={commentEvent.id} tags={commentEvent.tags} event={commentEvent} />
+                ))}
+              </div>
+            </div>
+          )}
         </CardContent>
         <CardFooter>
           <small className="text-muted">{createdAt.toLocaleString()}</small>
