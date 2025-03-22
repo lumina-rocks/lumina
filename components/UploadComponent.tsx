@@ -198,16 +198,16 @@ const UploadComponent: React.FC = () => {
     // If file is present, upload it to the media server
     if (file) {
       try {
-        // // Remove EXIF data from image if it's an image file
-        // if (file.type.startsWith("image/")) {
-        //   try {
-        //     file = await removeExifData(file)
-        //     console.log("EXIF data removed from image")
-        //   } catch (error) {
-        //     console.error("Error removing EXIF data:", error)
-        //     // Continue with original file if EXIF removal fails
-        //   }
-        // }
+        // Remove EXIF data from image if it's an image file
+        if (file.type.startsWith("image/")) {
+          try {
+            file = await removeExifData(file)
+            console.log("EXIF data removed from image")
+          } catch (error) {
+            console.error("Error removing EXIF data:", error)
+            // Continue with original file if EXIF removal fails
+          }
+        }
 
         // Helper function to read file as ArrayBuffer
         const readFileAsArrayBuffer = (file: File): Promise<ArrayBuffer> => {
@@ -255,8 +255,8 @@ const UploadComponent: React.FC = () => {
 
         // Sign auth event
         const authEventSigned = (await signEvent(loginType, authEvent)) as NostrEvent
-        // authEventSigned as base64 encoded string
-        let authString = Buffer.from(JSON.stringify(authEventSigned)).toString('base64')
+        // Convert authEventSigned to base64 encoded string without using Buffer
+        let authString = btoa(JSON.stringify(authEventSigned))
 
         const blossomServer = "https://" + serverChoice
 
