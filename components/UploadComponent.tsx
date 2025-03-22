@@ -255,8 +255,21 @@ const UploadComponent: React.FC = () => {
 
         // Sign auth event
         const authEventSigned = (await signEvent(loginType, authEvent)) as NostrEvent
-        // Convert authEventSigned to base64 encoded string without using Buffer
-        let authString = btoa(JSON.stringify(authEventSigned))
+
+        // Custom base64 encoding that handles Unicode characters properly
+        const base64Encode = (str: string): string => {
+          // Convert the string to UTF-8 bytes
+          const bytes = new TextEncoder().encode(str);
+          // Convert bytes to base64
+          return btoa(
+            Array.from(bytes)
+              .map(byte => String.fromCharCode(byte))
+              .join('')
+          );
+        };
+
+        // Convert authEventSigned to base64 encoded string handling Unicode characters
+        let authString = base64Encode(JSON.stringify(authEventSigned));
 
         const blossomServer = "https://" + serverChoice
 
