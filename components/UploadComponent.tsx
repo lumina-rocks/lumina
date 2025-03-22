@@ -59,7 +59,7 @@ const UploadComponent: React.FC = () => {
   const [uploadedNoteId, setUploadedNoteId] = useState("")
   const [retryCount, setRetryCount] = useState(0)
   const [shouldFetch, setShouldFetch] = useState(false)
-  const [serverChoice, setServerChoice] = useState("blossom.primal.net")
+  const [serverChoice, setServerChoice] = useState("blossom.band")
 
   const { events, isLoading: isNoteLoading } = useNostrEvents({
     filter: shouldFetch
@@ -165,13 +165,15 @@ const UploadComponent: React.FC = () => {
         const pubkey = window.localStorage.getItem("pubkey")
         const createdAt = Math.floor(Date.now() / 1000)
 
+        // alert("SHA256: " + sha256)
+
         // Create auth event for blossom auth via nostr
         const authEvent: NostrEvent = {
           kind: 24242,
           content: desc,
           created_at: createdAt,
           tags: [
-            ["t", "upload"],
+            ["t", "media"],
             ["x", sha256],
             ["expiration", newExpirationValue()],
           ],
@@ -189,7 +191,7 @@ const UploadComponent: React.FC = () => {
 
         const blossomServer = "https://" + serverChoice
 
-        await fetch(blossomServer + "/upload", {
+        await fetch(blossomServer + "/media", {
           method: "PUT",
           body: file,
           headers: { authorization: "Nostr " + authString },
@@ -256,6 +258,7 @@ const UploadComponent: React.FC = () => {
               console.log("final Event: ")
               console.log(signedEvent)
               publish(signedEvent)
+              // alert(JSON.stringify(signedEvent))
             }
 
             setIsLoading(false)
@@ -304,9 +307,8 @@ const UploadComponent: React.FC = () => {
                 <SelectValue placeholder={serverChoice} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="blossom.primal.net">blossom.primal.net</SelectItem>
+                <SelectItem value="blossom.band">blossom.band</SelectItem>
                 <SelectItem value="media.lumina.rocks">media.lumina.rocks</SelectItem>
-                <SelectItem value="nostr.download">nostr.download</SelectItem>
               </SelectContent>
             </Select>
           </div>
