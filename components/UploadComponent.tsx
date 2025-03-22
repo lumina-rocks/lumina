@@ -170,7 +170,8 @@ const UploadComponent: React.FC = () => {
         // Create auth event for blossom auth via nostr
         const authEvent: NostrEvent = {
           kind: 24242,
-          content: desc,
+          // content: desc,
+          content: "File upload",
           created_at: createdAt,
           tags: [
             ["t", "media"],
