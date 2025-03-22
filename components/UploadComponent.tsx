@@ -198,16 +198,16 @@ const UploadComponent: React.FC = () => {
     // If file is present, upload it to the media server
     if (file) {
       try {
-        // Remove EXIF data from image if it's an image file
-        if (file.type.startsWith("image/")) {
-          try {
-            file = await removeExifData(file)
-            console.log("EXIF data removed from image")
-          } catch (error) {
-            console.error("Error removing EXIF data:", error)
-            // Continue with original file if EXIF removal fails
-          }
-        }
+        // // Remove EXIF data from image if it's an image file
+        // if (file.type.startsWith("image/")) {
+        //   try {
+        //     file = await removeExifData(file)
+        //     console.log("EXIF data removed from image")
+        //   } catch (error) {
+        //     console.error("Error removing EXIF data:", error)
+        //     // Continue with original file if EXIF removal fails
+        //   }
+        // }
 
         // Helper function to read file as ArrayBuffer
         const readFileAsArrayBuffer = (file: File): Promise<ArrayBuffer> => {
@@ -240,7 +240,7 @@ const UploadComponent: React.FC = () => {
           content: desc,
           created_at: createdAt,
           tags: [
-            ["t", "upload"],
+            ["t", "media"],
             ["x", sha256],
             ["expiration", newExpirationValue()],
           ],
@@ -260,7 +260,7 @@ const UploadComponent: React.FC = () => {
 
         const blossomServer = "https://" + serverChoice
 
-        await fetch(blossomServer + "/upload", {
+        await fetch(blossomServer + "/media", {
           method: "PUT",
           body: file,
           headers: { authorization: "Nostr " + authString },
@@ -377,9 +377,9 @@ const UploadComponent: React.FC = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="blossom.band">blossom.band</SelectItem>
-                <SelectItem value="blossom.primal.net">blossom.primal.net</SelectItem>
+                {/* <SelectItem value="blossom.primal.net">blossom.primal.net</SelectItem> */}
                 <SelectItem value="media.lumina.rocks">media.lumina.rocks</SelectItem>
-                <SelectItem value="nostr.download">nostr.download</SelectItem>
+                {/* <SelectItem value="nostr.download">nostr.download</SelectItem> */}
               </SelectContent>
             </Select>
           </div>
