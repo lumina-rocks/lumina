@@ -199,15 +199,15 @@ const UploadComponent: React.FC = () => {
     if (file) {
       try {
         // Remove EXIF data from image if it's an image file
-        if (file.type.startsWith("image/")) {
-          try {
-            file = await removeExifData(file)
-            console.log("EXIF data removed from image")
-          } catch (error) {
-            console.error("Error removing EXIF data:", error)
-            // Continue with original file if EXIF removal fails
-          }
-        }
+        // if (file.type.startsWith("image/")) {
+        //   try {
+        //     file = await removeExifData(file)
+        //     console.log("EXIF data removed from image")
+        //   } catch (error) {
+        //     console.error("Error removing EXIF data:", error)
+        //     // Continue with original file if EXIF removal fails
+        //   }
+        // }
 
         // Helper function to read file as ArrayBuffer
         const readFileAsArrayBuffer = (file: File): Promise<ArrayBuffer> => {
