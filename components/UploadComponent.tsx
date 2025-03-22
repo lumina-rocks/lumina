@@ -48,57 +48,6 @@ async function calculateBlurhash(file: File): Promise<string> {
   })
 }
 
-/**
- * Removes EXIF metadata from an image by redrawing it on a canvas
- * @param file The image file to process
- * @returns A Promise that resolves to a new File object without EXIF data
- */
-async function removeExifData(file: File): Promise<File> {
-  return new Promise((resolve, reject) => {
-    // Only process images
-    if (!file.type.startsWith("image/")) {
-      resolve(file)
-      return
-    }
-
-    const img = new Image()
-    img.onload = () => {
-      // Create a canvas with the same dimensions as the image
-      const canvas = document.createElement("canvas")
-      canvas.width = img.width
-      canvas.height = img.height
-
-      // Draw the image to the canvas, which strips EXIF data
-      const ctx = canvas.getContext("2d")
-      if (!ctx) {
-        reject(new Error("Could not get canvas context"))
-        return
-      }
-      
-      ctx.drawImage(img, 0, 0)
-
-      // Convert canvas to blob with the same type as the original file
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          reject(new Error("Could not create blob from canvas"))
-          return
-        }
-        
-        // Create a new File object with the same name and type
-        const sanitizedFile = new File([blob], file.name, { 
-          type: file.type,
-          lastModified: file.lastModified
-        })
-        
-        resolve(sanitizedFile)
-      }, file.type)
-    }
-
-    img.onerror = () => reject(new Error("Failed to load image"))
-    img.src = URL.createObjectURL(file)
-  })
-}
-
 const UploadComponent: React.FC = () => {
   const { publish } = useNostr()
   const { createHash } = require("crypto")
@@ -110,7 +59,7 @@ const UploadComponent: React.FC = () => {
   const [uploadedNoteId, setUploadedNoteId] = useState("")
   const [retryCount, setRetryCount] = useState(0)
   const [shouldFetch, setShouldFetch] = useState(false)
-  const [serverChoice, setServerChoice] = useState("blossom.band")
+  const [serverChoice, setServerChoice] = useState("blossom.primal.net")
 
   const { events, isLoading: isNoteLoading } = useNostrEvents({
     filter: shouldFetch
@@ -153,16 +102,15 @@ const UploadComponent: React.FC = () => {
     setShouldFetch(true)
   }, [])
 
-  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      // Create a clean URL for preview that will be revoked later
       const url = URL.createObjectURL(file)
       if (url.startsWith("blob:")) {
         setPreviewUrl(url)
       }
 
-      // Optional: Cleanup old URLs
+      // Optional: Bereinigung alter URLs
       return () => URL.revokeObjectURL(url)
     }
   }
@@ -177,7 +125,7 @@ const UploadComponent: React.FC = () => {
 
     const formData = new FormData(event.currentTarget)
     const desc = formData.get("description") as string
-    let file = formData.get("file") as File
+    const file = formData.get("file") as File
     let sha256 = ""
     let finalNoteContent = desc
     let finalFileUrl = ""
@@ -197,33 +145,18 @@ const UploadComponent: React.FC = () => {
 
     // If file is present, upload it to the media server
     if (file) {
+      const readFileAsArrayBuffer = (file: File): Promise<ArrayBuffer> => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result as ArrayBuffer)
+          reader.onerror = () => reject(reader.error)
+          reader.readAsArrayBuffer(file)
+        })
+      }
+
       try {
-        // Remove EXIF data from image if it's an image file
-        // if (file.type.startsWith("image/")) {
-        //   try {
-        //     file = await removeExifData(file)
-        //     console.log("EXIF data removed from image")
-        //   } catch (error) {
-        //     console.error("Error removing EXIF data:", error)
-        //     // Continue with original file if EXIF removal fails
-        //   }
-        // }
-
-        // Helper function to read file as ArrayBuffer
-        const readFileAsArrayBuffer = (file: File): Promise<ArrayBuffer> => {
-          return new Promise((resolve, reject) => {
-            const reader = new FileReader()
-            reader.onload = () => resolve(reader.result as ArrayBuffer)
-            reader.onerror = () => reject(reader.error)
-            reader.readAsArrayBuffer(file)
-          })
-        }
-
-        // Calculate SHA-256 hash of the file AFTER EXIF removal
-        // Use pure Uint8Array instead of Buffer for browser compatibility
         const arrayBuffer = await readFileAsArrayBuffer(file)
-        const uint8Array = new Uint8Array(arrayBuffer)
-        const hashBuffer = createHash("sha256").update(uint8Array).digest()
+        const hashBuffer = createHash("sha256").update(Buffer.from(arrayBuffer)).digest()
         sha256 = hashBuffer.toString("hex")
 
         const unixNow = () => Math.floor(Date.now() / 1000)
@@ -232,15 +165,13 @@ const UploadComponent: React.FC = () => {
         const pubkey = window.localStorage.getItem("pubkey")
         const createdAt = Math.floor(Date.now() / 1000)
 
-        // alert("sha256: " + sha256)
-
         // Create auth event for blossom auth via nostr
         const authEvent: NostrEvent = {
           kind: 24242,
           content: desc,
           created_at: createdAt,
           tags: [
-            ["t", "media"],
+            ["t", "upload"],
             ["x", sha256],
             ["expiration", newExpirationValue()],
           ],
@@ -249,31 +180,16 @@ const UploadComponent: React.FC = () => {
           sig: "", // Add a placeholder for sig
         }
 
-        // alert("authEvent: " + JSON.stringify(authEvent))
-
         console.log(authEvent)
 
         // Sign auth event
         const authEventSigned = (await signEvent(loginType, authEvent)) as NostrEvent
-
-        // Custom base64 encoding that handles Unicode characters properly
-        const base64Encode = (str: string): string => {
-          // Convert the string to UTF-8 bytes
-          const bytes = new TextEncoder().encode(str);
-          // Convert bytes to base64
-          return btoa(
-            Array.from(bytes)
-              .map(byte => String.fromCharCode(byte))
-              .join('')
-          );
-        };
-
-        // Convert authEventSigned to base64 encoded string handling Unicode characters
-        let authString = base64Encode(JSON.stringify(authEventSigned));
+        // authEventSigned as base64 encoded string
+        let authString = Buffer.from(JSON.stringify(authEventSigned)).toString('base64')
 
         const blossomServer = "https://" + serverChoice
 
-        await fetch(blossomServer + "/media", {
+        await fetch(blossomServer + "/upload", {
           method: "PUT",
           body: file,
           headers: { authorization: "Nostr " + authString },
@@ -340,7 +256,6 @@ const UploadComponent: React.FC = () => {
               console.log("final Event: ")
               console.log(signedEvent)
               publish(signedEvent)
-              // alert("OK:" + signedEvent)
             }
 
             setIsLoading(false)
@@ -389,10 +304,9 @@ const UploadComponent: React.FC = () => {
                 <SelectValue placeholder={serverChoice} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="blossom.band">blossom.band</SelectItem>
-                {/* <SelectItem value="blossom.primal.net">blossom.primal.net</SelectItem> */}
+                <SelectItem value="blossom.primal.net">blossom.primal.net</SelectItem>
                 <SelectItem value="media.lumina.rocks">media.lumina.rocks</SelectItem>
-                {/* <SelectItem value="nostr.download">nostr.download</SelectItem> */}
+                <SelectItem value="nostr.download">nostr.download</SelectItem>
               </SelectContent>
             </Select>
           </div>
