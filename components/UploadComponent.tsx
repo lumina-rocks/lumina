@@ -209,6 +209,7 @@ const UploadComponent: React.FC = () => {
           }
         }
 
+        // Helper function to read file as ArrayBuffer
         const readFileAsArrayBuffer = (file: File): Promise<ArrayBuffer> => {
           return new Promise((resolve, reject) => {
             const reader = new FileReader()
@@ -218,8 +219,11 @@ const UploadComponent: React.FC = () => {
           })
         }
 
+        // Calculate SHA-256 hash of the file AFTER EXIF removal
+        // Use pure Uint8Array instead of Buffer for browser compatibility
         const arrayBuffer = await readFileAsArrayBuffer(file)
-        const hashBuffer = createHash("sha256").update(Buffer.from(arrayBuffer)).digest()
+        const uint8Array = new Uint8Array(arrayBuffer)
+        const hashBuffer = createHash("sha256").update(uint8Array).digest()
         sha256 = hashBuffer.toString("hex")
 
         const unixNow = () => Math.floor(Date.now() / 1000)
@@ -227,6 +231,8 @@ const UploadComponent: React.FC = () => {
 
         const pubkey = window.localStorage.getItem("pubkey")
         const createdAt = Math.floor(Date.now() / 1000)
+
+        // alert("sha256: " + sha256)
 
         // Create auth event for blossom auth via nostr
         const authEvent: NostrEvent = {
@@ -242,6 +248,8 @@ const UploadComponent: React.FC = () => {
           id: "", // Add a placeholder for id
           sig: "", // Add a placeholder for sig
         }
+
+        // alert("authEvent: " + JSON.stringify(authEvent))
 
         console.log(authEvent)
 
