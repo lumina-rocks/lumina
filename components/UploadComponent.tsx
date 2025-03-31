@@ -1,3 +1,5 @@
+"use client"
+
 import { useNostr, useNostrEvents } from "nostr-react"
 import { nip19, type NostrEvent } from "nostr-tools"
 import type React from "react"
@@ -17,14 +19,9 @@ import {
 } from "@/components/ui/drawer"
 import { Spinner } from "@/components/spinner"
 import { signEvent } from "@/utils/utils"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 
 async function calculateBlurhash(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -60,14 +57,15 @@ const UploadComponent: React.FC = () => {
   const [retryCount, setRetryCount] = useState(0)
   const [shouldFetch, setShouldFetch] = useState(false)
   const [serverChoice, setServerChoice] = useState("blossom.band")
+  const [enableNip89, setEnableNip89] = useState(false)
 
   const { events, isLoading: isNoteLoading } = useNostrEvents({
     filter: shouldFetch
       ? {
-        ids: uploadedNoteId ? [uploadedNoteId] : [],
-        kinds: [20],
-        limit: 1,
-      }
+          ids: uploadedNoteId ? [uploadedNoteId] : [],
+          kinds: [20],
+          limit: 1,
+        }
       : { ids: [], kinds: [20], limit: 1 },
     enabled: shouldFetch,
   })
@@ -188,7 +186,7 @@ const UploadComponent: React.FC = () => {
         // Sign auth event
         const authEventSigned = (await signEvent(loginType, authEvent)) as NostrEvent
         // authEventSigned as base64 encoded string
-        let authString = Buffer.from(JSON.stringify(authEventSigned)).toString('base64')
+        const authString = Buffer.from(JSON.stringify(authEventSigned)).toString("base64")
 
         const blossomServer = "https://" + serverChoice
 
@@ -234,9 +232,14 @@ const UploadComponent: React.FC = () => {
 
             const createdAt = Math.floor(Date.now() / 1000)
 
-            // NIP-89
-            // ["client","lumina","31990:ff363e4afc398b7dd8ceb0b2e73e96fe9621ababc22ab150ffbb1aa0f34df8b2:1731850618505"]
-            noteTags.push(["client", "lumina", "31990:" + "ff363e4afc398b7dd8ceb0b2e73e96fe9621ababc22ab150ffbb1aa0f34df8b2" + ":" + createdAt])
+            // NIP-89 client tagging (optional)
+            if (enableNip89) {
+              noteTags.push([
+                "client",
+                "lumina",
+                "31990:" + "ff363e4afc398b7dd8ceb0b2e73e96fe9621ababc22ab150ffbb1aa0f34df8b2" + ":" + createdAt,
+              ])
+            }
 
             // Create the actual note
             const noteEvent: NostrEvent = {
@@ -269,10 +272,9 @@ const UploadComponent: React.FC = () => {
               setShouldFetch(true)
               setRetryCount(0)
             }
-
           } else {
             // alert(await res.text())
-            throw new Error("Failed to upload file: " + await res.text())
+            throw new Error("Failed to upload file: " + (await res.text()))
           }
         })
       } catch (error) {
@@ -312,6 +314,12 @@ const UploadComponent: React.FC = () => {
                 <SelectItem value="media.lumina.rocks">media.lumina.rocks</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="flex items-center justify-between w-full max-w-sm gap-2 mt-2">
+            <Label htmlFor="nip89-toggle" className="text-sm">
+              Enable client tagging (NIP-89)
+            </Label>
+            <Switch id="nip89-toggle" checked={enableNip89} onCheckedChange={setEnableNip89} />
           </div>
           {previewUrl && <img src={previewUrl || "/placeholder.svg"} alt="Preview" className="w-full pt-4" />}
           {isLoading ? (
