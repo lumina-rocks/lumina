@@ -201,6 +201,7 @@ const UploadComponent: React.FC = () => {
             const responseText = await res.text()
             const responseJson = JSON.parse(responseText)
             finalFileUrl = responseJson.url
+            sha256 = responseJson.sha256
 
             const noteTags = hashtags.map((tag) => ["t", tag])
 
@@ -226,7 +227,6 @@ const UploadComponent: React.FC = () => {
                 "url " + finalFileUrl,
                 "m " + file.type,
                 "x " + sha256,
-                "ox " + sha256,
                 "blurhash " + blurhash,
                 `dim ${image.width}x${image.height}`,
               ])
