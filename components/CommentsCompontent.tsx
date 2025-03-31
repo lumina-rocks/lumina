@@ -19,7 +19,7 @@ const CommentsCompontent: React.FC<CommentsCompontentProps> = ({ pubkey, event }
         },
     });
 
-    // filter out all events with more then 1 "e" tag. other tags are ok
+    // filter out all events with more than 1 "e" tag. other tags are ok
     // this shows only the top level comments
     let filteredEvents = events.filter((event) => {
         return event.tags.filter((tag) => tag[0] === 'e').length === 1;
