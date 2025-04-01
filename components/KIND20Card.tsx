@@ -138,11 +138,14 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div className="bg-black/50 rounded-full p-1">
-                              {verificationStatus ? (
+                              {/* {verificationStatus ? (
                                 <CheckCircle className="h-5 w-5 text-green-500" />
                               ) : (
                                 <XCircle className="h-5 w-5 text-red-500" />
-                              )}
+                              )} */}
+                              {!verificationStatus ? (
+                                <XCircle className="h-5 w-5 text-red-500" />
+                              ) : (null)}
                             </div>
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs text-xs">
