@@ -1,97 +1,123 @@
+"use client"
 
-import React, { useEffect, useState } from 'react';
-import { Button } from './ui/button';
-import { useNostr, useNostrEvents } from 'nostr-react';
-import { finalizeEvent } from 'nostr-tools';
-import { sign } from 'crypto';
-import { SignalMedium } from 'lucide-react';
+import type React from "react"
+import { useEffect, useState } from "react"
+import { Button } from "./ui/button"
+import { useNostr, useNostrEvents } from "nostr-react"
+import type { NostrEvent } from "nostr-tools"
+import { ReloadIcon } from "@radix-ui/react-icons"
+import { signEvent } from "@/utils/utils"
+import { AlignVerticalJustifyCenter } from "lucide-react"
 
 interface FollowButtonProps {
-    pubkey: string;
-    userPubkey: string;
+  pubkey: string
+  userPubkey: string
 }
 
 const FollowButton: React.FC<FollowButtonProps> = ({ pubkey, userPubkey }) => {
-    // const { publish } = useNostr();
-    const [isFollowing, setIsFollowing] = useState(false);
+  const { publish } = useNostr()
+  const [isFollowing, setIsFollowing] = useState(false)
+  const [isUpdating, setIsUpdating] = useState(false)
+  const loginType = typeof window !== "undefined" ? window.localStorage.getItem("loginType") : null
 
-    let storedPubkey: string | null = null;
-    let storedNsec: string | null = null;
-    let isLoggedIn = false;
-    if (typeof window !== 'undefined') {
-        storedPubkey = window.localStorage.getItem('pubkey');
-        storedNsec = window.localStorage.getItem('nsec');
-        isLoggedIn = storedPubkey !== null;
+  const { events, isLoading } = useNostrEvents({
+    filter: {
+      kinds: [3],
+      authors: [userPubkey],
+      limit: 1,
+    },
+  })
+
+  // Extract following pubkeys from events (tag with p)
+//   let followingPubkeys = events.flatMap((event) => event.tags.map((tag) => tag[1])).filter(Boolean) // Filter out null or undefined
+  let followingPubkeys = events.flatMap((event) => event.tags.filter((tag) => tag[0] === "p").map((tag) => tag[1])) // Filter out null or undefined
+
+  // Only update the following state from server data when not in the middle of an update
+  // and when the component first loads or receives new server data
+  useEffect(() => {
+    if (!isUpdating) {
+      setIsFollowing(followingPubkeys.includes(pubkey))
     }
+  }, [followingPubkeys, pubkey, isUpdating])
 
-    const { events } = useNostrEvents({
-        filter: {
-            kinds: [3],
-            authors: [userPubkey],
-            limit: 1,
-        },
-    });
+  const handleFollow = async () => {
+    if (!userPubkey || isUpdating) return
 
-    let followingPubkeys = events.flatMap((event) => event.tags.map(tag => tag[1]));
-    // filter out all null or undefined
-    followingPubkeys = followingPubkeys.filter((tag) => tag);
+    // Set updating state to prevent useEffect from overriding our optimistic update
+    setIsUpdating(true)
 
+    // Optimistically update UI immediately
+    const newFollowingState = !isFollowing
+    setIsFollowing(newFollowingState)
 
-    useEffect(() => {
-        if (followingPubkeys.includes(pubkey)) {
-            setIsFollowing(true);
-        }
-    }, [followingPubkeys, isFollowing, setIsFollowing]);
+    try {
+      // Get a unique set of pubkeys to follow
+      const uniqueFollows = new Set(followingPubkeys)
 
-    const handleFollow = async () => {
-    //     if (isLoggedIn) {
+      // Add or remove the target pubkey based on the new state
+      if (newFollowingState) {
+        uniqueFollows.add(pubkey)
+      } else {
+        uniqueFollows.delete(pubkey)
+      }
 
-    //         let eventTemplate = {
-    //             kind: 3,
-    //             created_at: Math.floor(Date.now() / 1000),
-    //             tags: [followingPubkeys],
-    //             content: '',
-    //         }
+      // Convert to array and create properly formatted p tags
+      const formattedTags = Array.from(uniqueFollows).map((pk) => ["p", pk])
 
-    //         console.log(eventTemplate);
+      const eventTemplate = {
+        kind: 3,
+        created_at: Math.floor(Date.now() / 1000),
+        tags: formattedTags,
+        content: "",
+        pubkey: "", // Placeholder
+        id: "", // Placeholder
+        sig: "", // Placeholder
+      }
 
-    //         if (isFollowing) {
-    //             eventTemplate.tags = eventTemplate.tags.filter(tag => tag[1] !== pubkey);
-    //         } else {
-    //             eventTemplate.tags[0].push(pubkey);
-    //         }
+      // Sign and publish the event
+      const signedEvent = (await signEvent(loginType, eventTemplate)) as NostrEvent
 
-    //         console.log(eventTemplate);
+      if (signedEvent) {
+        publish(signedEvent)
+      } else {
+        // If signing fails, revert the optimistic update
+        setIsFollowing(!newFollowingState)
+      }
+    } catch (error) {
+      console.error("Error updating follow status:", error)
+      // Revert optimistic update on error
+      setIsFollowing(!newFollowingState)
+    } finally {
+      // Allow server updates to affect state again after a short delay
+      // This ensures our optimistic update isn't immediately overridden
+      setTimeout(() => {
+        setIsUpdating(false)
+      }, 1000)
+    }
+  }
 
-    //         let signedEvent = null;
-    //         if (storedNsec != null) {
-    //             // TODO: Sign Nostr Event with nsec
-    //             const nsecArray = storedNsec ? new TextEncoder().encode(storedNsec) : new Uint8Array();
-    //             signedEvent = finalizeEvent(eventTemplate, nsecArray);
-    //             console.log(signedEvent);
-    //         } else if (storedPubkey != null) {
-    //             // TODO: Request Extension to sign Nostr Event
-    //             console.log('Requesting Extension to sign Nostr Event..');
-    //             try {
-    //                 signedEvent = await window.nostr.signEvent(eventTemplate);
-    //             } catch (error) {
-    //                 console.error('Nostr Extension not found or aborted.');
-    //             }
-    //         }
+  return (
+    <Button
+      className="w-full"
+      onClick={handleFollow}
+      disabled={isLoading || !userPubkey || isUpdating}
+      variant={isFollowing ? "outline" : "default"}
+    >
+      {isLoading ? (
+        <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
+      ) : isUpdating ? (
+        <>
+          <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
+          {isFollowing ? "Unfollow" : "Follow"}
+        </>
+      ) : isFollowing ? (
+        "Unfollow"
+      ) : (
+        "Follow"
+      )}
+    </Button>
+  )
+}
 
-    //         if (signedEvent !== null) {
-    //             console.log(signedEvent);
-    //             publish(signedEvent);
-    //             setIsFollowing(!isFollowing);
-    //         }
-    //     }
-    };
+export default FollowButton
 
-    return (
-        <Button className='w-full' onClick={handleFollow} disabled>
-            {isFollowing ? 'Unfollow' : 'Follow'}
-        </Button>
-    );
-};
-
-export default FollowButton;
