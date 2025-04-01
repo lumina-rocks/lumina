@@ -228,6 +228,7 @@ const UploadComponent: React.FC = () => {
                 "blurhash " + blurhash,
                 `dim ${image.width}x${image.height}`,
               ])
+              noteTags.push(["x", sha256])
             }
 
             const createdAt = Math.floor(Date.now() / 1000)
