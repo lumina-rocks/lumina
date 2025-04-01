@@ -1,7 +1,7 @@
 import type React from "react"
 import { useProfile } from "nostr-react"
 import { nip19 } from "nostr-tools"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
@@ -14,6 +14,8 @@ import ViewCopyButton from "./ViewCopyButton"
 import type { Event as NostrEvent } from "nostr-tools"
 import ZapButton from "./ZapButton"
 import Image from "next/image"
+import { CheckCircle, XCircle } from 'lucide-react'
+import { getChecksumSha256 } from '@/utils/utils'
 
 interface KIND20CardProps {
   pubkey: string
@@ -38,6 +40,34 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
     pubkey,
   })
   const [imageError, setImageError] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState<boolean | null>(null);
+  
+  useEffect(() => {
+    // Skip verification if there's no valid image
+    if (!image || !image.startsWith("http") || imageError) return;
+    
+    const verifyImage = async () => {
+      try {
+        // get hash of the image from event tags
+        const eventImageHash = tags.find((tag) => tag[0] === "x")?.[1];
+        
+        if (eventImageHash) {
+          // get blob from the image url
+          const response = await fetch(image);
+          const blob = await response.blob();
+          const sha256 = await getChecksumSha256(blob);
+          
+          // Determine verification status
+          setVerificationStatus(eventImageHash === sha256);
+        }
+      } catch (error) {
+        console.error("Error verifying image:", error);
+        setVerificationStatus(null);
+      }
+    };
+    
+    verifyImage();
+  }, [image, tags, imageError]);
 
   if (!image || !image.startsWith("http") || imageError) return null;
   
@@ -88,6 +118,17 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
                     className="rounded-lg object-contain"
                     onError={() => setImageError(true)}
                   />
+                  
+                  {/* Verification status indicator */}
+                  {verificationStatus !== null && (
+                    <div className="absolute top-2 right-2 z-10 bg-black/50 rounded-full p-1">
+                      {verificationStatus ? (
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <XCircle className="h-5 w-5 text-red-500" />
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
