@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card"
 import Link from 'next/link';
 import Image from 'next/image';
-import { extractDimensions } from '@/utils/utils';
+import { extractDimensions, getChecksumSha256 } from '@/utils/utils';
 
 interface QuickViewKind20NoteCardProps {
   pubkey: string;
@@ -21,13 +21,36 @@ interface QuickViewKind20NoteCardProps {
   linkToNote: boolean;
 }
 
-const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubkey, text, image, eventId, tags, event, linkToNote }) => {
+const readFileAsArrayBuffer = (file: File): Promise<ArrayBuffer> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as ArrayBuffer)
+    reader.onerror = () => reject(reader.error)
+    reader.readAsArrayBuffer(file)
+  })
+}
+
+const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = async ({ pubkey, text, image, eventId, tags, event, linkToNote }) => {
+
+
+  const { createHash } = require("crypto")
+
   const {data, isLoading} = useProfile({
     pubkey,
   });
   const [imageError, setImageError] = useState(false);
 
   if (!image || !image.startsWith("http") || imageError) return null;
+
+  // get hash of the image from event tags
+  const eventImageHash = tags.find((tag) => tag[0] === "x")?.[1];
+  // get blob from the image url
+  const response = await fetch(image);
+  const blob = await response.blob();
+  const sha256 = await getChecksumSha256(blob);
+  // console.log("Event X Hash: ", eventImageHash);
+  // console.log("Image Hash: ", sha256);
+  // console.log("===============");
 
   text = text.replaceAll('\n', ' ');
   const encodedNoteId = nip19.noteEncode(event.id)
