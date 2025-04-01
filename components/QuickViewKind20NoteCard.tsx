@@ -7,7 +7,6 @@ import { Card, SmallCardContent } from "@/components/ui/card"
 import Link from "next/link"
 import Image from "next/image"
 import { extractDimensions, getChecksumSha256 } from "@/utils/utils"
-import { CheckCircle, XCircle } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface QuickViewKind20NoteCardProps {
@@ -102,38 +101,28 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({
               onError={() => setImageError(true)}
             />
 
-            {/* Verification status indicator with tooltip */}
-            {verificationStatus !== null && (
-              <div className="absolute top-2 right-2 z-10">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="bg-black/50 rounded-full p-1">
-                        {verificationStatus ? (
-                          <CheckCircle className="h-5 w-5 text-green-500" />
-                        ) : (
-                          <XCircle className="h-5 w-5 text-red-500" />
-                        )}
+            {/* Red line under image when verification fails */}
+            {verificationStatus === false && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-red-500 z-10"></div>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs text-xs">
+                    <div className="space-y-1">
+                      <p className="font-semibold">Image verification failed ✗</p>
+                      <div>
+                        <p className="font-medium">Event hash:</p>
+                        <p className="break-all">{eventImageHash}</p>
                       </div>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs text-xs">
-                      <div className="space-y-1">
-                        <p className="font-semibold">
-                          {verificationStatus ? "Image verified ✓" : "Image verification failed ✗"}
-                        </p>
-                        <div>
-                          <p className="font-medium">Event hash:</p>
-                          <p className="break-all">{eventImageHash}</p>
-                        </div>
-                        <div>
-                          <p className="font-medium">Calculated hash:</p>
-                          <p className="break-all">{calculatedHash}</p>
-                        </div>
+                      <div>
+                        <p className="font-medium">Calculated hash:</p>
+                        <p className="break-all">{calculatedHash}</p>
                       </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
           </div>
         </div>
@@ -155,3 +144,4 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({
 }
 
 export default QuickViewKind20NoteCard
+
