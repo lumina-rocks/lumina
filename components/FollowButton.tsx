@@ -1,10 +1,11 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from './ui/button';
 import { useNostr, useNostrEvents } from 'nostr-react';
-import { finalizeEvent } from 'nostr-tools';
+import { finalizeEvent, NostrEvent } from 'nostr-tools';
 import { sign } from 'crypto';
 import { SignalMedium } from 'lucide-react';
+import { ReloadIcon } from '@radix-ui/react-icons';
+import { signEvent } from '@/utils/utils';
 
 interface FollowButtonProps {
     pubkey: string;
@@ -12,17 +13,10 @@ interface FollowButtonProps {
 }
 
 const FollowButton: React.FC<FollowButtonProps> = ({ pubkey, userPubkey }) => {
-    // const { publish } = useNostr();
-    const [isFollowing, setIsFollowing] = useState(false);
+    const { publish } = useNostr()
 
-    let storedPubkey: string | null = null;
-    let storedNsec: string | null = null;
-    let isLoggedIn = false;
-    if (typeof window !== 'undefined') {
-        storedPubkey = window.localStorage.getItem('pubkey');
-        storedNsec = window.localStorage.getItem('nsec');
-        isLoggedIn = storedPubkey !== null;
-    }
+    const [isFollowing, setIsFollowing] = useState(false);
+    const loginType = typeof window !== "undefined" ? window.localStorage.getItem("loginType") : null
 
     const { events, isLoading } = useNostrEvents({
         filter: {
@@ -38,58 +32,60 @@ const FollowButton: React.FC<FollowButtonProps> = ({ pubkey, userPubkey }) => {
 
 
     useEffect(() => {
-        if (followingPubkeys.includes(pubkey)) {
-            setIsFollowing(true);
-        }
-    }, [followingPubkeys, isFollowing, setIsFollowing]);
+        // Reset the following state when receiving new data
+        setIsFollowing(followingPubkeys.includes(pubkey));
+    }, [followingPubkeys, pubkey]);
 
     const handleFollow = async () => {
-    //     if (isLoggedIn) {
+            if (userPubkey) {
+                // Get a unique set of pubkeys to follow
+                let uniqueFollows = new Set(followingPubkeys);
+                
+                // Add or remove the target pubkey
+                if (isFollowing) {
+                    uniqueFollows.delete(pubkey);
+                } else {
+                    uniqueFollows.add(pubkey);
+                }
+                
+                // Convert to array and create properly formatted p tags
+                const formattedTags = Array.from(uniqueFollows).map(pk => ["p", pk]);
 
-    //         let eventTemplate = {
-    //             kind: 3,
-    //             created_at: Math.floor(Date.now() / 1000),
-    //             tags: [followingPubkeys],
-    //             content: '',
-    //         }
+                let eventTemplate = {
+                    kind: 3,
+                    created_at: Math.floor(Date.now() / 1000),
+                    tags: formattedTags,
+                    content: '',
+                    pubkey: '', // Placeholder
+                    id: '', // Placeholder
+                    sig: '', // Placeholder
+                }
 
-    //         console.log(eventTemplate);
+                console.log('Sending event template:', eventTemplate);
 
-    //         if (isFollowing) {
-    //             eventTemplate.tags = eventTemplate.tags.filter(tag => tag[1] !== pubkey);
-    //         } else {
-    //             eventTemplate.tags[0].push(pubkey);
-    //         }
+                let signedEvent = null;
+                signedEvent = await signEvent(loginType, eventTemplate) as NostrEvent;
 
-    //         console.log(eventTemplate);
-
-    //         let signedEvent = null;
-    //         if (storedNsec != null) {
-    //             // TODO: Sign Nostr Event with nsec
-    //             const nsecArray = storedNsec ? new TextEncoder().encode(storedNsec) : new Uint8Array();
-    //             signedEvent = finalizeEvent(eventTemplate, nsecArray);
-    //             console.log(signedEvent);
-    //         } else if (storedPubkey != null) {
-    //             // TODO: Request Extension to sign Nostr Event
-    //             console.log('Requesting Extension to sign Nostr Event..');
-    //             try {
-    //                 signedEvent = await window.nostr.signEvent(eventTemplate);
-    //             } catch (error) {
-    //                 console.error('Nostr Extension not found or aborted.');
-    //             }
-    //         }
-
-    //         if (signedEvent !== null) {
-    //             console.log(signedEvent);
-    //             publish(signedEvent);
-    //             setIsFollowing(!isFollowing);
-    //         }
-    //     }
+                if (signedEvent !== null) {
+                    console.log('Publishing signed event:', signedEvent);
+                    publish(signedEvent);
+                    
+                    // Update UI state immediately
+                    setIsFollowing(!isFollowing);
+                    
+                    // Optionally, store this change in a local state if needed
+                    // This could help with rapid UI interactions before the relay responds
+                }
+            }
     };
 
     return (
-        <Button className='w-full' onClick={handleFollow} disabled={isLoading || !isLoggedIn}>
-            {isFollowing ? 'Unfollow' : 'Follow'}
+        <Button className='w-full' onClick={handleFollow} disabled={isLoading || !userPubkey}>
+            {isLoading ? (
+                <ReloadIcon className='animate-spin' />
+            ) : (
+                isFollowing ? 'Unfollow' : 'Follow'
+            )}
         </Button>
     );
 };
