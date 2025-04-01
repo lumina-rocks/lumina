@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useProfile } from "nostr-react";
 import {
   nip19,
@@ -10,6 +10,7 @@ import {
 import Link from 'next/link';
 import Image from 'next/image';
 import { extractDimensions, getChecksumSha256 } from '@/utils/utils';
+import { CheckCircle, XCircle } from 'lucide-react'; // Import icons for verification status
 
 interface QuickViewKind20NoteCardProps {
   pubkey: string;
@@ -30,30 +31,41 @@ const readFileAsArrayBuffer = (file: File): Promise<ArrayBuffer> => {
   })
 }
 
-const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = async ({ pubkey, text, image, eventId, tags, event, linkToNote }) => {
-
-
-  const { createHash } = require("crypto")
-
-  const {data, isLoading} = useProfile({
-    pubkey,
-  });
+const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubkey, text, image, eventId, tags, event, linkToNote }) => {
   const [imageError, setImageError] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState<boolean | null>(null);
+  
+  useEffect(() => {
+    // Skip verification if there's no valid image
+    if (!image || !image.startsWith("http") || imageError) return;
+    
+    const verifyImage = async () => {
+      try {
+        // get hash of the image from event tags
+        const eventImageHash = tags.find((tag) => tag[0] === "x")?.[1];
+        
+        if (eventImageHash) {
+          // get blob from the image url
+          const response = await fetch(image);
+          const blob = await response.blob();
+          const sha256 = await getChecksumSha256(blob);
+          
+          // Determine verification status
+          setVerificationStatus(eventImageHash === sha256);
+        }
+      } catch (error) {
+        console.error("Error verifying image:", error);
+        setVerificationStatus(null);
+      }
+    };
+    
+    verifyImage();
+  }, [image, tags, imageError]);
 
   if (!image || !image.startsWith("http") || imageError) return null;
-
-  // get hash of the image from event tags
-  const eventImageHash = tags.find((tag) => tag[0] === "x")?.[1];
-  // get blob from the image url
-  const response = await fetch(image);
-  const blob = await response.blob();
-  const sha256 = await getChecksumSha256(blob);
-  // console.log("Event X Hash: ", eventImageHash);
-  // console.log("Image Hash: ", sha256);
-  // console.log("===============");
-
-  text = text.replaceAll('\n', ' ');
-  const encodedNoteId = nip19.noteEncode(event.id)
+  
+  const processedText = text.replaceAll('\n', ' ');
+  const encodedNoteId = nip19.noteEncode(event.id);
 
   const { width, height } = extractDimensions(event);
 
@@ -64,13 +76,24 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = async ({
           <div className='relative w-full h-full'>
             <Image 
               src={image || "/placeholder.svg"} 
-              alt={text}
+              alt={processedText}
               fill
               sizes="(max-width: 768px) 100vw, 300px"
               className='rounded lg:rounded-lg object-cover' 
               priority
               onError={() => setImageError(true)}
             />
+            
+            {/* Verification status indicator */}
+            {verificationStatus !== null && (
+              <div className="absolute top-2 right-2 z-10 bg-black/50 rounded-full p-1">
+                {verificationStatus ? (
+                  <CheckCircle className="h-5 w-5 text-green-500" />
+                ) : (
+                  <XCircle className="h-5 w-5 text-red-500" />
+                )}
+              </div>
+            )}
           </div>
         </div>
       </SmallCardContent>
