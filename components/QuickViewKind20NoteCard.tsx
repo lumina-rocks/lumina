@@ -42,8 +42,12 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubke
     const verifyImage = async () => {
       try {
         // get hash of the image from event tags
-        const eventImageHash = tags.find((tag) => tag[0] === "x")?.[1];
+        let eventImageHash = tags.find((tag) => tag[0] === "x")?.[1];
         
+        if(!eventImageHash) {
+          eventImageHash = tags.find((tag) => tag[0] === "imeta")?.find(tag => tag.startsWith("x"))?.split(" ")[1];
+        }
+
         if (eventImageHash) {
           // get blob from the image url
           const response = await fetch(image);
