@@ -1,10 +1,11 @@
+"use client"
+
 import type React from "react"
 import { useProfile } from "nostr-react"
 import { nip19 } from "nostr-tools"
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
 import ReactionButton from "@/components/ReactionButton"
 import { Avatar, AvatarImage } from "@/components/ui/avatar"
 import ViewRawButton from "@/components/ViewRawButton"
@@ -14,8 +15,8 @@ import ViewCopyButton from "./ViewCopyButton"
 import type { Event as NostrEvent } from "nostr-tools"
 import ZapButton from "./ZapButton"
 import Image from "next/image"
-import { CheckCircle, XCircle } from 'lucide-react'
-import { getChecksumSha256 } from '@/utils/utils'
+import { CheckCircle, XCircle } from "lucide-react"
+import { getChecksumSha256 } from "@/utils/utils"
 
 interface KIND20CardProps {
   pubkey: string
@@ -39,42 +40,50 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
   const { data: userData } = useProfile({
     pubkey,
   })
-  const [imageError, setImageError] = useState(false);
-  const [verificationStatus, setVerificationStatus] = useState<boolean | null>(null);
-  
+  const [imageError, setImageError] = useState(false)
+  const [verificationStatus, setVerificationStatus] = useState<boolean | null>(null)
+  const [calculatedHash, setCalculatedHash] = useState<string | null>(null)
+  const [eventImageHash, setEventImageHash] = useState<string | null>(null)
+
   useEffect(() => {
     // Skip verification if there's no valid image
-    if (!image || !image.startsWith("http") || imageError) return;
-    
+    if (!image || !image.startsWith("http") || imageError) return
+
     const verifyImage = async () => {
       try {
         // get hash of the image from event tags
-        let eventImageHash = tags.find((tag) => tag[0] === "x")?.[1];
+        let hash = tags.find((tag) => tag[0] === "x")?.[1]
 
-        if(!eventImageHash) {
-          eventImageHash = tags.find((tag) => tag[0] === "imeta")?.find(tag => tag.startsWith("x"))?.split(" ")[1];
+        if (!hash) {
+          hash = tags
+            .find((tag) => tag[0] === "imeta")
+            ?.find((tag) => tag.startsWith("x"))
+            ?.split(" ")[1]
         }
-        
-        if (eventImageHash) {
+
+        setEventImageHash(hash || null)
+
+        if (hash) {
           // get blob from the image url
-          const response = await fetch(image);
-          const blob = await response.blob();
-          const sha256 = await getChecksumSha256(blob);
-          
+          const response = await fetch(image)
+          const blob = await response.blob()
+          const sha256 = await getChecksumSha256(blob)
+
+          setCalculatedHash(sha256)
           // Determine verification status
-          setVerificationStatus(eventImageHash === sha256);
+          setVerificationStatus(hash === sha256)
         }
       } catch (error) {
-        console.error("Error verifying image:", error);
-        setVerificationStatus(null);
+        console.error("Error verifying image:", error)
+        setVerificationStatus(null)
       }
-    };
-    
-    verifyImage();
-  }, [image, tags, imageError]);
+    }
 
-  if (!image || !image.startsWith("http") || imageError) return null;
-  
+    verifyImage()
+  }, [image, tags, imageError])
+
+  if (!image || !image.startsWith("http") || imageError) return null
+
   const title =
     userData?.username || userData?.display_name || userData?.name || userData?.npub || nip19.npubEncode(pubkey)
   text = text.replaceAll("\n", " ")
@@ -85,7 +94,6 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
 
   return (
     <>
-
       <div key={event.id} className="py-6">
         <Card>
           <CardHeader>
@@ -116,21 +124,44 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
               <div className="w-full">
                 <div className="relative w-full" style={{ paddingBottom: "100%" }}>
                   <Image
-                    src={image}
+                    src={image || "/placeholder.svg"}
                     alt={text}
                     fill
                     className="rounded-lg object-contain"
                     onError={() => setImageError(true)}
                   />
-                  
-                  {/* Verification status indicator */}
+
+                  {/* Verification status indicator with tooltip */}
                   {verificationStatus !== null && (
-                    <div className="absolute top-2 right-2 z-10 bg-black/50 rounded-full p-1">
-                      {verificationStatus ? (
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                      ) : (
-                        <XCircle className="h-5 w-5 text-red-500" />
-                      )}
+                    <div className="absolute top-2 right-2 z-10">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="bg-black/50 rounded-full p-1">
+                              {verificationStatus ? (
+                                <CheckCircle className="h-5 w-5 text-green-500" />
+                              ) : (
+                                <XCircle className="h-5 w-5 text-red-500" />
+                              )}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs text-xs">
+                            <div className="space-y-1">
+                              <p className="font-semibold">
+                                {verificationStatus ? "Image verified ✓" : "Image verification failed ✗"}
+                              </p>
+                              <div>
+                                <p className="font-medium">Event hash:</p>
+                                <p className="break-all">{eventImageHash}</p>
+                              </div>
+                              <div>
+                                <p className="font-medium">Calculated hash:</p>
+                                <p className="break-all">{calculatedHash}</p>
+                              </div>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                   )}
                 </div>
