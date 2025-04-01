@@ -26,8 +26,9 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubke
     pubkey,
   });
   const [imageError, setImageError] = useState(false);
+  const [imageState, setImageState] = useState(image);
 
-  if (!image || !image.startsWith("http") || imageError) return null;
+  // if (!image || !image.startsWith("http") || imageError) return null;
 
   text = text.replaceAll('\n', ' ');
   const encodedNoteId = nip19.noteEncode(event.id)
@@ -40,13 +41,16 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubke
         <div className="h-full w-full">
           <div className='relative w-full h-full'>
             <Image 
-              src={image || "/placeholder.svg"} 
+              src={imageState || "/placeholder.png"} 
               alt={text}
               fill
               sizes="(max-width: 768px) 100vw, 300px"
               className='rounded lg:rounded-lg object-cover' 
               priority
-              onError={() => setImageError(true)}
+              // onError={() => setImageError(true)}
+              onError={() => {
+                setImageState("/placeholder.png");
+              }}
             />
           </div>
         </div>
