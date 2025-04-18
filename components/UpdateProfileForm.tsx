@@ -1,15 +1,15 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { generateSecretKey, getPublicKey } from 'nostr-tools/pure'
 import { nip19 } from "nostr-tools"
 import { Label } from "./ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { finalizeEvent, verifyEvent } from 'nostr-tools/pure'
-import { bytesToHex, hexToBytes } from '@noble/hashes/utils'
+import { verifyEvent } from 'nostr-tools/pure'
+import { hexToBytes } from '@noble/hashes/utils'
 import { useNostr, useProfile } from 'nostr-react';
+import { signEvent } from '@/utils/utils';
 
 export function UpdateProfileForm() {
 
@@ -17,11 +17,13 @@ export function UpdateProfileForm() {
 
     let npub = '';
     let pubkey = '';
+    let loginType = '';
     let nsec: Uint8Array;
 
     if (typeof window !== 'undefined') {
         pubkey = window.localStorage.getItem("pubkey") ?? '';
         const nsecHex = window.localStorage.getItem("nsec");
+        loginType = window.localStorage.getItem("loginType") ?? '';
 
         if (pubkey && pubkey.length > 0) {
             npub = nip19.npubEncode(pubkey);
@@ -55,21 +57,28 @@ export function UpdateProfileForm() {
         const bio = (document.getElementById('bio') as HTMLInputElement).value;
         const displayname = (document.getElementById('displayname') as HTMLInputElement).value;
 
-        if (nsec) {
-            let event = finalizeEvent({
+        if (loginType) {
+            let event = {
                 kind: 0,
                 created_at: Math.floor(Date.now() / 1000),
                 tags: [],
                 content: `{"name": "${username}", "about": "${bio}"}`,
-            }, nsec);
+                pubkey: pubkey,
+                id: "",
+                sig: "",
+            };
 
-            let isGood = verifyEvent(event);
+            let signedEvent = await signEvent(loginType, event);
 
-            // console.log('isGood: ' + isGood);
-            // console.log(event);
+            if (signedEvent === null) {
+                alert('Failed to sign the event. Please check your connection and try again.');
+                return;
+            }
+
+            let isGood = verifyEvent(signedEvent);
 
             if (isGood) {
-                publish(event);
+                publish(signedEvent);
                 window.location.href = `/profile/${npub}`;
             }
         }
