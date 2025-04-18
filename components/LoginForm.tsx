@@ -21,17 +21,21 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@/components/ui/accordion"
-import { useEffect, useRef } from "react"
-import { getPublicKey, generateSecretKey, nip19 } from 'nostr-tools'
+import { useEffect, useRef, useState } from "react"
+import { getPublicKey, generateSecretKey, nip19, SimplePool } from 'nostr-tools'
+import { BunkerSigner, parseBunkerInput } from 'nostr-tools/nip46'
 import { InfoIcon } from "lucide-react";
 import Link from "next/link";
-import { bytesToHex, hexToBytes } from '@noble/hashes/utils' 
+import { bytesToHex, hexToBytes } from '@noble/hashes/utils'
 
 export function LoginForm() {
 
     let publicKey = useRef(null);
     let nsecInput = useRef<HTMLInputElement>(null);
     let npubInput = useRef<HTMLInputElement>(null);
+    let bunkerUrlInput = useRef<HTMLInputElement>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [bunkerError, setBunkerError] = useState<string | null>(null);
 
     useEffect(() => {
         // handle Amber Login Response
@@ -43,8 +47,74 @@ export function LoginForm() {
             localStorage.setItem("loginType", "amber");
             window.location.href = `/profile/${amberResponse}`;
         }
+
+        // Handle nostrconnect URL from bunker
+        if (window.location.hash && window.location.hash.startsWith('#nostrconnect://')) {
+            handleNostrConnect(window.location.hash.substring(1));
+        }
     }, []);
 
+    // Handle NIP-46 connection initiated by bunker
+    const handleNostrConnect = async (url: string) => {
+        try {
+            setIsLoading(true);
+            setBunkerError(null);
+            
+            // Generate local secret key for communicating with the bunker
+            const localSecretKey = generateSecretKey();
+            const localSecretKeyHex = bytesToHex(localSecretKey);
+            
+            // Parse the nostrconnect URL 
+            const bunkerUrl = url.includes('://') ? url : `nostrconnect://${url}`;
+            const bunkerPointer = await parseBunkerInput(bunkerUrl);
+            
+            if (!bunkerPointer) {
+                throw new Error('Invalid bunker URL');
+            }
+            
+            // Create pool and bunker signer
+            const pool = new SimplePool();
+            const bunker = new BunkerSigner(localSecretKey, bunkerPointer, { pool });
+            
+            try {
+                await bunker.connect();
+                
+                // Get the user's public key from the bunker
+                const userPubkey = await bunker.getPublicKey();
+                
+                // Store connection info in localStorage
+                localStorage.setItem("pubkey", userPubkey);
+                localStorage.setItem("loginType", "bunker");
+                localStorage.setItem("bunkerLocalKey", localSecretKeyHex);
+                localStorage.setItem("bunkerUrl", bunkerUrl);
+                
+                // Close the pool and redirect
+                await bunker.close();
+                pool.close([]);
+                
+                window.location.href = `/profile/${nip19.npubEncode(userPubkey)}`;
+            } catch (err) {
+                console.error("Bunker connection error:", err);
+                setBunkerError("Failed to connect to bunker. Please check the URL and try again.");
+                await bunker.close().catch(console.error);
+                pool.close([]);
+            }
+        } catch (err) {
+            console.error("Bunker parsing error:", err);
+            setBunkerError("Invalid bunker URL format.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleBunkerLogin = async () => {
+        if (bunkerUrlInput.current && bunkerUrlInput.current.value) {
+            const bunkerUrl = bunkerUrlInput.current.value.trim();
+            await handleNostrConnect(bunkerUrl);
+        } else {
+            setBunkerError("Please enter a bunker URL");
+        }
+    };
 
     const handleAmber = async () => {
         const hostname = window.location.host;
@@ -140,11 +210,11 @@ export function LoginForm() {
             <CardHeader>
                 <CardTitle className="text-2xl">Login to Lumina</CardTitle>
                 <CardDescription>
-                    Login to your account either with a nostr extension or with your nsec.
+                    Login to your account with nostr extension, bunker, or with your nsec.
                 </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4">
-            <div className="grid grid-cols-8 gap-2">
+                <div className="grid grid-cols-8 gap-2">
                     <Button className="w-full col-span-7" onClick={handleExtensionLogin}>Sign in with Extension (NIP-07)</Button>
                     <Link target="_blank" href="https://www.getflamingo.org/">
                         <Button variant={"outline"}><InfoIcon /></Button>
@@ -157,6 +227,30 @@ export function LoginForm() {
                     </Link>
                 </div>
                 <hr />
+                or
+                <Accordion type="single" collapsible>
+                    <AccordionItem value="item-1">
+                        <AccordionTrigger>Login with Bunker (NIP-46)</AccordionTrigger>
+                        <AccordionContent>
+                            <div className="grid gap-2">
+                                <Label htmlFor="bunkerUrl">Bunker URL</Label>
+                                <Input placeholder="bunker://... or nostrconnect://..." 
+                                       id="bunkerUrl" 
+                                       ref={bunkerUrlInput} 
+                                       type="text" />
+                                {bunkerError && <p className="text-red-500 text-sm">{bunkerError}</p>}
+                                <Button className="w-full" 
+                                        onClick={handleBunkerLogin} 
+                                        disabled={isLoading}>
+                                    {isLoading ? "Connecting..." : "Sign in with Bunker"}
+                                </Button>
+                                <p className="text-sm text-muted-foreground">
+                                    Use a NIP-46 compatible bunker URL that starts with bunker:// or nostrconnect://
+                                </p>
+                            </div>
+                        </AccordionContent>
+                    </AccordionItem>
+                </Accordion>
                 or
                 <Accordion type="single" collapsible>
                     <AccordionItem value="item-1">
