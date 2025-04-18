@@ -40,6 +40,11 @@ export function AvatarDropdown() {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
+          <Link href="/relays">
+            Relays
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
           <Link href="/profile/settings">
             Settings
           </Link>
