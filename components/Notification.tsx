@@ -50,6 +50,24 @@ const Notification: React.FC<NotificationProps> = ({ event }) => {
         }
     }
 
+    // Calculate lnurl pay request URL from the zap tag
+    let lnurlPayRequestUrl = "";
+    for (let tag of event.tags) {
+        if (tag[0] === 'zap') {
+            lnurlPayRequestUrl = tag[1];
+            break;
+        }
+    }
+
+    // Validate the nostr query parameter
+    let nostrQueryParamValid = false;
+    for (let tag of event.tags) {
+        if (tag[0] === 'nostr') {
+            nostrQueryParamValid = true;
+            break;
+        }
+    }
+
     let name = userData?.name ?? nip19.npubEncode(event.pubkey).slice(0, 8) + ':' + nip19.npubEncode(event.pubkey).slice(-3);
     let createdAt = new Date(event.created_at * 1000);
 
@@ -68,6 +86,8 @@ const Notification: React.FC<NotificationProps> = ({ event }) => {
                         <div className='col-span-4'>
                             <p>{name} zapped you</p>
                             <p>{createdAt.toLocaleDateString() + ' ' + createdAt.toLocaleTimeString()}</p>
+                            <p>lnurl Pay Request URL: {lnurlPayRequestUrl}</p>
+                            <p>Nostr Query Parameter Valid: {nostrQueryParamValid ? "Yes" : "No"}</p>
                         </div>
                     </div>
                 )}
