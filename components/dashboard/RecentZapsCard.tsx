@@ -22,6 +22,9 @@ export function RecentZapsCard({ zaps }: { zaps: Array<any> }) {
         });
 
         let percentages: { [key: string]: number } = {};
+        if (totalWeight === 0) {
+            return percentages; // Return an empty object if totalWeight is zero
+        }
         for (let receiver in weights) {
             percentages[receiver] = (weights[receiver] / totalWeight) * 100;
         }
