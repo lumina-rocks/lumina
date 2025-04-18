@@ -10,19 +10,28 @@ import { Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/toaster"
 import Script from "next/script";
 import Umami from "@/components/Umami";
+import { useEffect, useState } from "react";
 
 const inter = Inter({ subsets: ["latin"] });
+
+export const relayUrls = [
+  "wss://relay.nostr.band",
+  "wss://relay.damus.io",
+];
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [dynamicRelayUrls, setDynamicRelayUrls] = useState(relayUrls);
 
-  const relayUrls = [
-    "wss://relay.nostr.band",
-    "wss://relay.damus.io",
-  ];
+  useEffect(() => {
+    const storedRelayUrls = localStorage.getItem('relayUrls');
+    if (storedRelayUrls) {
+      setDynamicRelayUrls(JSON.parse(storedRelayUrls));
+    }
+  }, []);
 
   return (
     <html lang="en">
@@ -43,7 +52,7 @@ export default function RootLayout({
           <Toaster />
           <Umami />
           <div className="main-content pb-14">
-            <NostrProvider relayUrls={relayUrls} debug={false}>
+            <NostrProvider relayUrls={dynamicRelayUrls} debug={false}>
               {children}
             </NostrProvider>
           </div>
