@@ -4,19 +4,23 @@ import { useNostr } from "nostr-react";
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, XCircle, AlertCircle, SignalHigh, Clock } from "lucide-react";
+import { CheckCircle2, XCircle, AlertCircle, SignalHigh, Clock, RefreshCw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { AddRelaySheet } from "@/components/AddRelaySheet";
 import { ManageCustomRelays } from "@/components/ManageCustomRelays";
+import { fetchNip65Relays, mergeAndStoreRelays } from "@/utils/nip65Utils";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function RelaysPage() {
   const { connectedRelays } = useNostr();
   const [relayStatus, setRelayStatus] = useState<{ [url: string]: 'connected' | 'connecting' | 'disconnected' | 'error' }>({});
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshingNip65, setRefreshingNip65] = useState(false);
+  const { toast } = useToast();
   
   useEffect(() => {
     document.title = `Relays | LUMINA`;
@@ -39,6 +43,63 @@ export default function RelaysPage() {
       setLoading(false);
     }
   }, [connectedRelays, refreshKey]);
+
+  // Function to refresh NIP-65 relays for the current user
+  const refreshNip65Relays = async () => {
+    try {
+      setRefreshingNip65(true);
+      
+      // Get current user's public key from local storage
+      const pubkey = localStorage.getItem('pubkey');
+      
+      if (!pubkey) {
+        toast({
+          title: "Error refreshing relays",
+          description: "You need to be logged in to refresh NIP-65 relays",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Default relays to query for NIP-65 data
+      const defaultRelays = [
+        "wss://relay.nostr.band",
+        "wss://relay.damus.io",
+        "wss://nos.lol",
+        "wss://relay.nostr.ch"
+      ];
+      
+      // Fetch NIP-65 relays
+      const nip65Relays = await fetchNip65Relays(pubkey, defaultRelays);
+      
+      if (nip65Relays.length > 0) {
+        // Merge with existing relays and store in localStorage
+        const mergedRelays = mergeAndStoreRelays(nip65Relays);
+        
+        toast({
+          title: "NIP-65 relays updated",
+          description: `Found ${nip65Relays.length} relays in your NIP-65 list. Refresh the page to connect to them.`,
+        });
+        
+        // Refresh page connection status
+        setRefreshKey(prev => prev + 1);
+      } else {
+        toast({
+          title: "No NIP-65 relays found",
+          description: "We couldn't find any NIP-65 relay preferences for your account",
+        });
+      }
+    } catch (error) {
+      console.error("Error refreshing NIP-65 relays:", error);
+      toast({
+        title: "Error refreshing relays",
+        description: "There was an error fetching your relay preferences",
+        variant: "destructive",
+      });
+    } finally {
+      setRefreshingNip65(false);
+    }
+  };
 
   // Function to get the appropriate status icon
   const getStatusIcon = (status: string) => {
@@ -81,7 +142,18 @@ export default function RelaysPage() {
     <div className="py-4 px-2 md:py-6 md:px-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold">Nostr Relays</h2>
-        <AddRelaySheet onRelayAdded={handleRelayAdded} />
+        <div className="flex space-x-2">
+          <Button 
+            variant="outline" 
+            className="gap-2"
+            onClick={refreshNip65Relays}
+            disabled={refreshingNip65}
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshingNip65 ? 'animate-spin' : ''}`} />
+            {refreshingNip65 ? 'Refreshing NIP-65...' : 'Refresh NIP-65 Relays'}
+          </Button>
+          <AddRelaySheet onRelayAdded={handleRelayAdded} />
+        </div>
       </div>
       
       <Tabs defaultValue="list">
@@ -128,7 +200,7 @@ export default function RelaysPage() {
             </CardContent>
             <CardFooter className="flex justify-between">
               <Button variant="outline" onClick={() => window.location.reload()}>
-                Refresh
+                Refresh Connection Status
               </Button>
             </CardFooter>
           </Card>
@@ -188,6 +260,14 @@ export default function RelaysPage() {
               that makes the decentralized social network possible. You can connect to multiple relays to
               increase the reach and resilience of your posts and profile.
             </p>
+            <div className="mt-3">
+              <h3 className="text-sm font-medium mb-1">NIP-65 Relay Lists</h3>
+              <p className="text-xs text-muted-foreground">
+                NIP-65 is a Nostr standard that allows users to share their preferred relays. When you log in, 
+                LUMINA automatically fetches your relay preferences from the Nostr network and adds them to your 
+                connection list. Use the "Refresh NIP-65 Relays" button above to manually update your relay list.
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>

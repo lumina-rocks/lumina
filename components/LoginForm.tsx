@@ -27,6 +27,7 @@ import { BunkerSigner, parseBunkerInput } from 'nostr-tools/nip46'
 import { InfoIcon } from "lucide-react";
 import Link from "next/link";
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils'
+import { fetchNip65Relays, mergeAndStoreRelays } from "@/utils/nip65Utils"
 
 export function LoginForm() {
 
@@ -37,15 +38,53 @@ export function LoginForm() {
     const [isLoading, setIsLoading] = useState(false);
     const [bunkerError, setBunkerError] = useState<string | null>(null);
 
+    // Default relays to query for NIP-65 data
+    const defaultRelays = [
+        "wss://relay.nostr.band",
+        "wss://relay.damus.io",
+        "wss://nos.lol",
+        "wss://relay.nostr.ch"
+    ];
+
+    // Helper function to load NIP-65 relays for a user
+    const loadNip65Relays = async (pubkey: string) => {
+        try {
+            // Fetch the user's relay preferences
+            const nip65Relays = await fetchNip65Relays(pubkey, defaultRelays);
+            
+            if (nip65Relays.length > 0) {
+                // Merge with existing relays and store in localStorage
+                mergeAndStoreRelays(nip65Relays);
+                console.log(`Loaded ${nip65Relays.length} relays from NIP-65 for user ${pubkey}`);
+            } else {
+                console.log(`No NIP-65 relays found for user ${pubkey}`);
+            }
+        } catch (error) {
+            console.error("Error loading NIP-65 relays:", error);
+        }
+    };
+
+    // Function to complete login process
+    const completeLogin = async (pubkey: string, loginType: string, redirect = true) => {
+        // Store the login info
+        localStorage.setItem("pubkey", pubkey);
+        localStorage.setItem("loginType", loginType);
+        
+        // Load NIP-65 relays
+        await loadNip65Relays(pubkey);
+        
+        // Redirect if needed
+        if (redirect) {
+            window.location.href = `/profile/${nip19.npubEncode(pubkey)}`;
+        }
+    };
+
     useEffect(() => {
         // handle Amber Login Response
         const urlParams = new URLSearchParams(window.location.search);
         const amberResponse = urlParams.get('amberResponse');
         if (amberResponse !== null) {
-            // localStorage.setItem("pubkey", nip19.npubEncode(amberResponse).toString());
-            localStorage.setItem("pubkey", amberResponse);
-            localStorage.setItem("loginType", "amber");
-            window.location.href = `/profile/${amberResponse}`;
+            completeLogin(amberResponse, "amber");
         }
 
         // Handle nostrconnect URL from bunker
@@ -83,16 +122,15 @@ export function LoginForm() {
                 const userPubkey = await bunker.getPublicKey();
                 
                 // Store connection info in localStorage
-                localStorage.setItem("pubkey", userPubkey);
-                localStorage.setItem("loginType", "bunker");
                 localStorage.setItem("bunkerLocalKey", localSecretKeyHex);
                 localStorage.setItem("bunkerUrl", bunkerUrl);
                 
-                // Close the pool and redirect
+                // Close the pool
                 await bunker.close();
                 pool.close([]);
                 
-                window.location.href = `/profile/${nip19.npubEncode(userPubkey)}`;
+                // Complete login and redirect
+                await completeLogin(userPubkey, "bunker", true);
             } catch (err) {
                 console.error("Bunker connection error:", err);
                 setBunkerError("Failed to connect to bunker. Please check the URL and try again.");
@@ -133,10 +171,7 @@ export function LoginForm() {
             publicKey.current = await window.nostr.getPublicKey()
             console.log("Logged in with pubkey: ", publicKey.current);
             if (publicKey.current !== null) {
-                localStorage.setItem("pubkey", publicKey.current);
-                localStorage.setItem("loginType", "extension");
-                // window.location.reload();
-                window.location.href = `/profile/${nip19.npubEncode(publicKey.current)}`;
+                await completeLogin(publicKey.current, "extension");
             }
         }
     };
@@ -170,10 +205,7 @@ export function LoginForm() {
                 let pubkey = getPublicKey(nsecBytes);
 
                 localStorage.setItem("nsec", nsecHex);
-                localStorage.setItem("pubkey", pubkey);
-                localStorage.setItem("loginType", "raw_nsec")
-
-                window.location.href = `/profile/${nip19.npubEncode(pubkey)}`;
+                await completeLogin(pubkey, "raw_nsec");
             } catch (e) {
                 console.error(e);
             }
@@ -194,16 +226,12 @@ export function LoginForm() {
                     npub = nip19.npubEncode(input);
                 }
 
-                localStorage.setItem("pubkey", pubkey);
-                localStorage.setItem("loginType", "readOnly_npub")
-
-                window.location.href = `/profile/${npub}`;
+                await completeLogin(pubkey, "readOnly_npub");
             } catch (e) {
                 console.error(e);
             }
         }
     };
-
 
     return (
         <Card className="w-full max-w-xl">
