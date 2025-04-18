@@ -10,7 +10,7 @@ export default function LoginPage() {
         document.title = `Login | LUMINA`;
     }, []);
 
-    const handleLogin = (relayUrls) => {
+    const handleLogin = (relayUrls: string[]) => {
         if (relayUrls && relayUrls.length > 0) {
             localStorage.setItem('relayUrls', JSON.stringify(relayUrls));
         }
