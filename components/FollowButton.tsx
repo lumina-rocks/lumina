@@ -1,13 +1,11 @@
 "use client"
 
-import type React from "react"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
 import { Button } from "./ui/button"
 import { useNostr, useNostrEvents } from "nostr-react"
 import type { NostrEvent } from "nostr-tools"
 import { ReloadIcon } from "@radix-ui/react-icons"
 import { signEvent } from "@/utils/utils"
-import { AlignVerticalJustifyCenter } from "lucide-react"
 
 interface FollowButtonProps {
   pubkey: string
@@ -17,9 +15,10 @@ interface FollowButtonProps {
 const FollowButton: React.FC<FollowButtonProps> = ({ pubkey, userPubkey }) => {
   const { publish } = useNostr()
   const [isFollowing, setIsFollowing] = useState(false)
-  const [isUpdating, setIsUpdating] = useState(false)
+  const [isPending, setIsPending] = useState(false)
   const loginType = typeof window !== "undefined" ? window.localStorage.getItem("loginType") : null
 
+  // Fetch the user's follow list (kind 3 event)
   const { events, isLoading } = useNostrEvents({
     filter: {
       kinds: [3],
@@ -28,93 +27,107 @@ const FollowButton: React.FC<FollowButtonProps> = ({ pubkey, userPubkey }) => {
     },
   })
 
-  // Extract following pubkeys from events (tag with p)
-//   let followingPubkeys = events.flatMap((event) => event.tags.map((tag) => tag[1])).filter(Boolean) // Filter out null or undefined
-  let followingPubkeys = events.flatMap((event) => event.tags.filter((tag) => tag[0] === "p").map((tag) => tag[1])) // Filter out null or undefined
+  // Get the latest follow list event
+  const latestFollowList = useMemo(() => {
+    if (events.length === 0) return null
+    // Sort by created_at to get the most recent
+    return [...events].sort((a, b) => (b.created_at || 0) - (a.created_at || 0))[0]
+  }, [events])
 
-  // Only update the following state from server data when not in the middle of an update
-  // and when the component first loads or receives new server data
+  // Extract the list of pubkeys the user is following
+  const followingPubkeys = useMemo(() => {
+    if (!latestFollowList) return []
+    return latestFollowList.tags
+      .filter(tag => tag[0] === "p")
+      .map(tag => tag[1])
+  }, [latestFollowList])
+
+  // Determine if the user is following the profile
   useEffect(() => {
-    if (!isUpdating) {
-      setIsFollowing(followingPubkeys.includes(pubkey))
+    if (!isPending) {
+      const following = followingPubkeys.includes(pubkey)
+      setIsFollowing(following)
     }
-  }, [followingPubkeys, pubkey, isUpdating])
+  }, [followingPubkeys, pubkey, isPending])
 
-  const handleFollow = async () => {
-    if (!userPubkey || isUpdating) return
+  const handleFollow = useCallback(async () => {
+    if (!userPubkey || isPending || isLoading) return
 
-    // Set updating state to prevent useEffect from overriding our optimistic update
-    setIsUpdating(true)
-
-    // Optimistically update UI immediately
+    setIsPending(true)
+    // Optimistically update UI
     const newFollowingState = !isFollowing
     setIsFollowing(newFollowingState)
 
     try {
-      // Get a unique set of pubkeys to follow
-      const uniqueFollows = new Set(followingPubkeys)
-
-      // Add or remove the target pubkey based on the new state
+      // Create a new follow list based on current follows
+      let newFollowList = [...followingPubkeys]
+      
       if (newFollowingState) {
-        uniqueFollows.add(pubkey)
+        // Add to follow list if not already there
+        if (!newFollowList.includes(pubkey)) {
+          newFollowList.push(pubkey)
+        }
       } else {
-        uniqueFollows.delete(pubkey)
+        // Remove from follow list
+        newFollowList = newFollowList.filter(pk => pk !== pubkey)
       }
 
-      // Convert to array and create properly formatted p tags
-      const formattedTags = Array.from(uniqueFollows).map((pk) => ["p", pk])
+      // Convert to properly formatted p tags
+      const formattedTags = newFollowList.map(pk => ["p", pk])
 
-      const eventTemplate = {
+      // Create the follow list event (NIP-02)
+      const followEvent: NostrEvent = {
         kind: 3,
         created_at: Math.floor(Date.now() / 1000),
         tags: formattedTags,
         content: "",
-        pubkey: "", // Placeholder
-        id: "", // Placeholder
-        sig: "", // Placeholder
+        pubkey: "", // Placeholder, will be set by signEvent
+        id: "", // Placeholder, will be set by signEvent
+        sig: "", // Placeholder, will be set by signEvent
       }
 
       // Sign and publish the event
-      const signedEvent = (await signEvent(loginType, eventTemplate)) as NostrEvent
-
+      const signedEvent = await signEvent(loginType, followEvent) as NostrEvent
+      
       if (signedEvent) {
         publish(signedEvent)
+        // Don't need to update local state since the useEffect will catch the new event
       } else {
-        // If signing fails, revert the optimistic update
+        // Revert the optimistic update if signing fails
         setIsFollowing(!newFollowingState)
+        console.error("Failed to sign the follow event")
       }
     } catch (error) {
       console.error("Error updating follow status:", error)
       // Revert optimistic update on error
       setIsFollowing(!newFollowingState)
     } finally {
-      // Allow server updates to affect state again after a short delay
-      // This ensures our optimistic update isn't immediately overridden
+      // Add a short delay before clearing the pending state
+      // to prevent race conditions with incoming events
       setTimeout(() => {
-        setIsUpdating(false)
-      }, 1000)
+        setIsPending(false)
+      }, 1500)
     }
-  }
+  }, [userPubkey, isPending, isLoading, isFollowing, followingPubkeys, pubkey, loginType, publish])
+
+  // Determine the button text based on current state
+  const buttonText = useMemo(() => {
+    if (isLoading) return "Loading..."
+    if (isPending) return isFollowing ? "Unfollowing..." : "Following..."
+    return isFollowing ? "Unfollow" : "Follow"
+  }, [isLoading, isPending, isFollowing])
 
   return (
     <Button
       className="w-full"
       onClick={handleFollow}
-      disabled={isLoading || !userPubkey || isUpdating}
+      disabled={isLoading || !userPubkey || isPending}
       variant={isFollowing ? "outline" : "default"}
     >
-      {isLoading ? (
+      {(isLoading || isPending) && (
         <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
-      ) : isUpdating ? (
-        <>
-          <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
-          {isFollowing ? "Unfollow" : "Follow"}
-        </>
-      ) : isFollowing ? (
-        "Unfollow"
-      ) : (
-        "Follow"
       )}
+      {buttonText}
     </Button>
   )
 }
