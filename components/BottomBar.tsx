@@ -71,6 +71,9 @@ export default function BottomBar() {
           <span className="sr-only">Notifications</span>
         </Link>
       )}
+      <Link className={`flex flex-col items-center justify-center w-full text-xs gap-1 px-4 ${isActive('/relays', pathname)}`} href="/relays">
+        <span className="sr-only">Relays</span>
+      </Link>
     </nav>
   )
 }

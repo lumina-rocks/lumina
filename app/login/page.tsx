@@ -10,6 +10,12 @@ export default function LoginPage() {
         document.title = `Login | LUMINA`;
     }, []);
 
+    const handleLogin = (relayUrls) => {
+        if (relayUrls && relayUrls.length > 0) {
+            localStorage.setItem('relayUrls', JSON.stringify(relayUrls));
+        }
+    };
+
     return (
         <>
             <Head>
@@ -19,7 +25,7 @@ export default function LoginPage() {
                 <link rel="icon" href="/favicon.ico" />
             </Head>
             <div className="w-screen pt-10 flex items-center justify-center">
-                <LoginForm />
+                <LoginForm onLogin={handleLogin} />
             </div>
         </>
     );
