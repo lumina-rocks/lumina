@@ -26,6 +26,25 @@ export function RecentZap({ zap }: { zap: any }) {
     let npubShortened = 'npub' + parts[1].slice(0, 4) + ':' + parts[1].slice(-3);
     let title = userData?.username || userData?.display_name || userData?.name || userData?.npub || npubShortened;
     const profileImageSrc = userData?.picture || "https://robohash.org/" + zap.pubkey;
+
+    // Calculate lnurl pay request URL from the zap tag
+    let lnurlPayRequestUrl = "";
+    for (let tag of zap.tags) {
+        if (tag[0] === 'zap') {
+            lnurlPayRequestUrl = tag[1];
+            break;
+        }
+    }
+
+    // Validate the nostr query parameter
+    let nostrQueryParamValid = false;
+    for (let tag of zap.tags) {
+        if (tag[0] === 'nostr') {
+            nostrQueryParamValid = true;
+            break;
+        }
+    }
+
     return (
         <div className="flex items-center" key={zap.id}>
             <Link href={`/profile/${encoded}`}>
@@ -38,6 +57,12 @@ export function RecentZap({ zap }: { zap: any }) {
                 <p className="text-sm font-medium leading-none">{title}</p>
                 <p className="text-sm text-muted-foreground">
                     {new Date(zap.created_at * 1000).toLocaleDateString()} {new Date(zap.created_at * 1000).toLocaleTimeString()}                                    </p>
+                <p className="text-sm text-muted-foreground">
+                    lnurl Pay Request URL: {lnurlPayRequestUrl}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                    Nostr Query Parameter Valid: {nostrQueryParamValid ? "Yes" : "No"}
+                </p>
             </div>
             {/* <div className="ml-auto font-medium">{zap.amount}</div> */}
         </div>

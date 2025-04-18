@@ -49,6 +49,23 @@ export default function ZapButton({ event }: { event: any }) {
         });
     });
 
+    // Calculate lnurl pay request URL from the zap tag
+    let lnurlPayRequestUrl = "";
+    for (let tag of event.tags) {
+        if (tag[0] === 'zap') {
+            lnurlPayRequestUrl = tag[1];
+            break;
+        }
+    }
+
+    // Validate the nostr query parameter
+    let nostrQueryParamValid = false;
+    for (let tag of event.tags) {
+        if (tag[0] === 'nostr') {
+            nostrQueryParamValid = true;
+            break;
+        }
+    }
 
     // const { publish } = useNostr();
 

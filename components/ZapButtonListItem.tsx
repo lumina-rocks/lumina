@@ -38,6 +38,24 @@ export default function ZapButtonListItem({ event }: { event: NostrEvent }) {
         }
     });
 
+    // Calculate lnurl pay request URL from the zap tag
+    let lnurlPayRequestUrl = "";
+    for (let tag of event.tags) {
+        if (tag[0] === 'zap') {
+            lnurlPayRequestUrl = tag[1];
+            break;
+        }
+    }
+
+    // Validate the nostr query parameter
+    let nostrQueryParamValid = false;
+    for (let tag of event.tags) {
+        if (tag[0] === 'nostr') {
+            nostrQueryParamValid = true;
+            break;
+        }
+    }
+
     return (
         <Link href={hrefProfile}>
             <div key={event.id} className="flex items-center space-x-2">
@@ -48,6 +66,8 @@ export default function ZapButtonListItem({ event }: { event: NostrEvent }) {
                     </Avatar>
                     <span>{title}</span>
                     <span className="pl-2">{sats} sats ⚡️</span>
+                    <span className="pl-2">lnurl Pay Request URL: {lnurlPayRequestUrl}</span>
+                    <span className="pl-2">Nostr Query Parameter Valid: {nostrQueryParamValid ? "Yes" : "No"}</span>
                 </div>
             </div>
         </Link>
