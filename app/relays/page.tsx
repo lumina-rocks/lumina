@@ -265,7 +265,7 @@ export default function RelaysPage() {
               <p className="text-xs text-muted-foreground">
                 NIP-65 is a Nostr standard that allows users to share their preferred relays. When you log in, 
                 LUMINA automatically fetches your relay preferences from the Nostr network and adds them to your 
-                connection list. Use the "Refresh NIP-65 Relays" button above to manually update your relay list.
+                connection list. Use the &quot;Refresh NIP-65 Relays&quot; button above to manually update your relay list.
               </p>
             </div>
           </CardContent>
