@@ -9,11 +9,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { AddRelaySheet } from "@/components/AddRelaySheet";
+import { ManageCustomRelays } from "@/components/ManageCustomRelays";
 
 export default function RelaysPage() {
   const { connectedRelays } = useNostr();
   const [relayStatus, setRelayStatus] = useState<{ [url: string]: 'connected' | 'connecting' | 'disconnected' | 'error' }>({});
   const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
   
   useEffect(() => {
     document.title = `Relays | LUMINA`;
@@ -35,7 +38,7 @@ export default function RelaysPage() {
       setRelayStatus(status);
       setLoading(false);
     }
-  }, [connectedRelays]);
+  }, [connectedRelays, refreshKey]);
 
   // Function to get the appropriate status icon
   const getStatusIcon = (status: string) => {
@@ -69,9 +72,17 @@ export default function RelaysPage() {
     }
   };
 
+  const handleRelayAdded = () => {
+    // Trigger a refresh of the component when a relay is added
+    setRefreshKey(prev => prev + 1);
+  };
+
   return (
     <div className="py-4 px-2 md:py-6 md:px-6">
-      <h2 className="text-2xl font-bold mb-4">Nostr Relays</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-2xl font-bold">Nostr Relays</h2>
+        <AddRelaySheet onRelayAdded={handleRelayAdded} />
+      </div>
       
       <Tabs defaultValue="list">
         <TabsList className="mb-4">
@@ -116,9 +127,6 @@ export default function RelaysPage() {
               </ScrollArea>
             </CardContent>
             <CardFooter className="flex justify-between">
-              {/* <div className="text-sm text-muted-foreground">
-                Active subscriptions: {activeSubscriptions?.length || 0}
-              </div> */}
               <Button variant="outline" onClick={() => window.location.reload()}>
                 Refresh
               </Button>
@@ -166,6 +174,8 @@ export default function RelaysPage() {
           )}
         </TabsContent>
       </Tabs>
+      
+      <ManageCustomRelays />
       
       <div className="mt-6">
         <Card>

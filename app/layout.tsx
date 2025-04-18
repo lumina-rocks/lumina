@@ -10,6 +10,7 @@ import { Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/toaster"
 import Script from "next/script";
 import Umami from "@/components/Umami";
+import { useEffect, useState } from "react";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,11 +19,26 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-
-  const relayUrls = [
+  const [relayUrls, setRelayUrls] = useState<string[]>([
     "wss://relay.nostr.band",
     "wss://relay.damus.io",
-  ];
+  ]);
+
+  useEffect(() => {
+    // Load custom relays from localStorage
+    try {
+      const customRelays = JSON.parse(localStorage.getItem("customRelays") || "[]");
+      if (customRelays.length > 0) {
+        setRelayUrls(prevRelays => {
+          // Combine default relays with custom relays, removing duplicates
+          const allRelays = [...prevRelays, ...customRelays];
+          return Array.from(new Set(allRelays)); // Remove duplicates
+        });
+      }
+    } catch (error) {
+      console.error("Error loading custom relays:", error);
+    }
+  }, []);
 
   return (
     <html lang="en">
