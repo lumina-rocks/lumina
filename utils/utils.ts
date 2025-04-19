@@ -55,3 +55,11 @@ export async function signEvent(loginType: string | null, event: NostrEvent): Pr
   console.log(eventSigned);
   return eventSigned;
 }
+
+export async function getChecksumSha256(blob: Blob): Promise<string> {
+  const uint8Array = new Uint8Array(await blob.arrayBuffer());
+  const hashBuffer = await crypto.subtle.digest('SHA-256', uint8Array);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+
+  return hashArray.map((h) => h.toString(16).padStart(2, '0')).join('');
+}
