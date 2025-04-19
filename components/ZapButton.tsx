@@ -1,7 +1,4 @@
 import {
-    type Event as NostrEvent,
-    getEventHash,
-    getPublicKey,
     finalizeEvent,
     nip19,
 } from "nostr-tools";
@@ -15,15 +12,17 @@ import {
     DrawerTitle,
     DrawerTrigger,
 } from "@/components/ui/drawer"
-import { ReloadIcon } from "@radix-ui/react-icons";
+import { ReloadIcon, CheckCircledIcon } from "@radix-ui/react-icons";
 import ZapButtonList from "./ZapButtonList";
 import { Input } from "./ui/input";
-import { useNostr, useNostrEvents, useProfile, dateToUnix } from "nostr-react";
+import { useNostr, useNostrEvents, useProfile } from "nostr-react";
 import { useEffect, useState, useRef } from "react";
 import QRCode from "react-qr-code";
-import { bytesToHex, hexToBytes } from "@noble/hashes/utils";
 
 export default function ZapButton({ event }: { event: any }) {
+
+    const { connectedRelays } = useNostr();
+
     const { events, isLoading } = useNostrEvents({
         filter: {
             '#e': [event.id],
@@ -36,7 +35,40 @@ export default function ZapButton({ event }: { event: any }) {
     const [customAmount, setCustomAmount] = useState<string>("1000");
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
     const [errorMessage, setErrorMessage] = useState<string>("");
+    const [paymentComplete, setPaymentComplete] = useState<boolean>(false);
     const { publish } = useNostr();
+
+    // Store the initial count of zap receipts when an invoice is generated
+    const invoiceEventsCountRef = useRef<number>(0);
+
+    // Effect to check for new zap receipts when showing an invoice
+    useEffect(() => {
+        if (invoice) {
+            // Store the current count of zap receipts when invoice is generated
+            invoiceEventsCountRef.current = events.length;
+            setPaymentComplete(false);
+        }
+    }, [invoice]);
+
+    // Effect to detect new zap receipts after invoice is shown
+    useEffect(() => {
+        if (invoice && events.length > invoiceEventsCountRef.current) {
+            // Filter events to find new zap receipts related to current invoice
+            const newEvents = events.slice(invoiceEventsCountRef.current);
+            
+            // Check if any new events contain the current invoice
+            const relevantEvents = newEvents.filter(zapEvent => {
+                // Look for bolt11 tag containing the invoice
+                return zapEvent.tags.some(tag => 
+                    tag[0] === 'bolt11' && invoice.includes(tag[1].substring(0, 50))
+                );
+            });
+
+            if (relevantEvents.length > 0) {
+                setPaymentComplete(true);
+            }
+        }
+    }, [events, invoice]);
 
     const { data: userData } = useProfile({
         pubkey: event.pubkey,
@@ -135,16 +167,11 @@ export default function ZapButton({ event }: { event: any }) {
                 return;
             }
 
-            const relays = [
-                "wss://relay.nostr.ch",
-                "wss://nostr-pub.wellorder.net",
-            ];
-
             let zapRequestEvent = {
                 kind: 9734,
                 content: "",
                 tags: [
-                    ["relays", ...relays],
+                    ["relays", ...connectedRelays.map((relay) => relay.url)],
                     ["amount", amount.toString()],
                     ["p", event.pubkey],
                     ["e", event.id],
@@ -274,9 +301,15 @@ export default function ZapButton({ event }: { event: any }) {
                         <p className="text-sm text-center mb-4">
                             Scan this QR code with a Lightning wallet to pay the invoice
                         </p>
-                        <div className="w-full overflow-auto p-2 bg-gray-100 rounded text-xs mb-4">
+                        <div className="w-full overflow-auto p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs mb-4">
                             <code className="break-all">{invoice}</code>
                         </div>
+                        {paymentComplete ? (
+                            <div className="flex items-center text-green-500">
+                                <CheckCircledIcon className="mr-2 h-4 w-4" />
+                                Payment Complete!
+                            </div>
+                        ) : null}
                         <Button variant="outline" onClick={() => setInvoice("")}>
                             Back to Zap Options
                         </Button>
