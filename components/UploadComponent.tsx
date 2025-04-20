@@ -22,6 +22,7 @@ import { signEvent } from "@/utils/utils"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { RefreshCw } from "lucide-react"
 
 // Function to strip metadata from image files
 async function stripImageMetadata(file: File): Promise<File> {
@@ -422,9 +423,19 @@ const UploadComponent: React.FC = () => {
           </DrawerHeader>
           <DrawerFooter className="flex flex-col space-y-2">
             {events.length === 0 && (
-              <Button onClick={handleRetry} variant="outline" className="w-full">
-                Retry Now
-              </Button>
+              <>
+                <Button onClick={handleRetry} variant="outline" className="w-full">
+                  Retry Now
+                </Button>
+                <Button 
+                  onClick={() => window.location.reload()} 
+                  variant="outline" 
+                  className="w-full flex items-center gap-2"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Refresh Relays
+                </Button>
+              </>
             )}
             <Button asChild className="w-full">
               <a href={`/note/${nip19.noteEncode(uploadedNoteId)}`}>View Note</a>
