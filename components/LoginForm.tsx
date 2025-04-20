@@ -24,10 +24,19 @@ import {
 import { useEffect, useRef, useState } from "react"
 import { getPublicKey, generateSecretKey, nip19, SimplePool } from 'nostr-tools'
 import { BunkerSigner, parseBunkerInput } from 'nostr-tools/nip46'
-import { InfoIcon, Loader2 } from "lucide-react";
+import { InfoIcon, Loader2, QrCode, X } from "lucide-react";
 import Link from "next/link";
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils'
 import { fetchNip65Relays, mergeAndStoreRelays } from "@/utils/nip65Utils"
+import { Html5Qrcode } from "html5-qrcode";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogClose
+} from "@/components/ui/dialog"
 
 export function LoginForm() {
 
@@ -42,6 +51,9 @@ export function LoginForm() {
     const [isNsecLoading, setIsNsecLoading] = useState(false);
     const [isNpubLoading, setIsNpubLoading] = useState(false);
     const [bunkerError, setBunkerError] = useState<string | null>(null);
+    const [isQRDialogOpen, setIsQRDialogOpen] = useState(false);
+    const [isScanning, setIsScanning] = useState(false);
+    const qrScannerRef = useRef<any>(null);
 
     // Default relays to query for NIP-65 data
     const defaultRelays = [
@@ -54,11 +66,9 @@ export function LoginForm() {
     // Helper function to load NIP-65 relays for a user
     const loadNip65Relays = async (pubkey: string) => {
         try {
-            // Fetch the user's relay preferences
             const nip65Relays = await fetchNip65Relays(pubkey, defaultRelays);
             
             if (nip65Relays.length > 0) {
-                // Merge with existing relays and store in localStorage
                 mergeAndStoreRelays(nip65Relays);
                 console.log(`Loaded ${nip65Relays.length} relays from NIP-65 for user ${pubkey}`);
             } else {
@@ -72,20 +82,16 @@ export function LoginForm() {
     // Function to complete login process
     const completeLogin = async (pubkey: string, loginType: string, redirect = true) => {
         try {
-            // Store the login info
             localStorage.setItem("pubkey", pubkey);
             localStorage.setItem("loginType", loginType);
             
-            // Load NIP-65 relays
             await loadNip65Relays(pubkey);
             
-            // Redirect if needed
             if (redirect) {
                 window.location.href = `/profile/${nip19.npubEncode(pubkey)}`;
             }
         } catch (error) {
             console.error("Error completing login:", error);
-            // Reset all loading states in case of error
             setIsLoading(false);
             setIsBunkerLoading(false);
             setIsExtensionLoading(false);
@@ -96,7 +102,6 @@ export function LoginForm() {
     };
 
     useEffect(() => {
-        // handle Amber Login Response
         const urlParams = new URLSearchParams(window.location.search);
         const amberResponse = urlParams.get('amberResponse');
         if (amberResponse !== null) {
@@ -104,11 +109,63 @@ export function LoginForm() {
             completeLogin(amberResponse, "amber");
         }
 
-        // Handle nostrconnect URL from bunker
         if (window.location.hash && window.location.hash.startsWith('#nostrconnect://')) {
             handleNostrConnect(window.location.hash.substring(1));
         }
+
+        return () => {
+            if (qrScannerRef.current) {
+                qrScannerRef.current.stop().catch(console.error);
+            }
+        };
     }, []);
+
+    // Handle QR Scanner dialog
+    const startQRScanner = () => {
+        setIsQRDialogOpen(true);
+        setTimeout(() => {
+            setIsScanning(true);
+            const qrContainer = document.getElementById('qr-reader');
+            
+            if (qrContainer) {
+                const html5QrCode = new Html5Qrcode("qr-reader");
+                qrScannerRef.current = html5QrCode;
+                
+                html5QrCode.start(
+                    { facingMode: "environment" },
+                    {
+                        fps: 10,
+                        qrbox: { width: 250, height: 250 },
+                    },
+                    (decodedText) => {
+                        if (decodedText) {
+                            html5QrCode.stop().catch(console.error);
+                            setIsQRDialogOpen(false);
+                            setIsScanning(false);
+                            
+                            if (bunkerUrlInput.current) {
+                                bunkerUrlInput.current.value = decodedText;
+                            }
+                        }
+                    },
+                    (errorMessage) => {
+                        console.error("QR Scan error:", errorMessage);
+                    }
+                ).catch(error => {
+                    console.error("Starting QR Scanner failed:", error);
+                    setIsScanning(false);
+                });
+            }
+        }, 300);
+    };
+
+    const stopQRScanner = () => {
+        if (qrScannerRef.current) {
+            qrScannerRef.current.stop().catch(console.error);
+        }
+        setIsScanning(false);
+        setIsQRDialogOpen(false);
+    };
 
     // Handle NIP-46 connection initiated by bunker
     const handleNostrConnect = async (url: string) => {
@@ -117,11 +174,9 @@ export function LoginForm() {
             setIsBunkerLoading(true);
             setBunkerError(null);
             
-            // Generate local secret key for communicating with the bunker
             const localSecretKey = generateSecretKey();
             const localSecretKeyHex = bytesToHex(localSecretKey);
             
-            // Parse the nostrconnect URL 
             const bunkerUrl = url.includes('://') ? url : `nostrconnect://${url}`;
             const bunkerPointer = await parseBunkerInput(bunkerUrl);
             
@@ -129,25 +184,20 @@ export function LoginForm() {
                 throw new Error('Invalid bunker URL');
             }
             
-            // Create pool and bunker signer
             const pool = new SimplePool();
             const bunker = new BunkerSigner(localSecretKey, bunkerPointer, { pool });
             
             try {
                 await bunker.connect();
                 
-                // Get the user's public key from the bunker
                 const userPubkey = await bunker.getPublicKey();
                 
-                // Store connection info in localStorage
                 localStorage.setItem("bunkerLocalKey", localSecretKeyHex);
                 localStorage.setItem("bunkerUrl", bunkerUrl);
                 
-                // Close the pool
                 await bunker.close();
                 pool.close([]);
                 
-                // Complete login and redirect
                 await completeLogin(userPubkey, "bunker", true);
             } catch (err) {
                 console.error("Bunker connection error:", err);
@@ -185,7 +235,6 @@ export function LoginForm() {
             }
             const intent = `intent:#Intent;scheme=nostrsigner;S.compressionType=none;S.returnType=signature;S.type=get_public_key;S.callbackUrl=http://${hostname}/login?amberResponse=;end`;
             window.location.href = intent;
-            // The loading state will be maintained until the callback returns or page unloads
         } catch (error) {
             console.error("Error launching Amber:", error);
             setIsAmberLoading(false);
@@ -197,7 +246,6 @@ export function LoginForm() {
         try {
             setIsExtensionLoading(true);
             setIsLoading(true);
-            // eslint-disable-next-line
             if (window.nostr !== undefined) {
                 publicKey.current = await window.nostr.getPublicKey()
                 console.log("Logged in with pubkey: ", publicKey.current);
@@ -266,146 +314,189 @@ export function LoginForm() {
     };
 
     return (
-        <Card className="w-full max-w-xl">
-            <CardHeader>
-                <CardTitle className="text-2xl">Login to Lumina</CardTitle>
-                <CardDescription>
-                    Login to your account with nostr extension, bunker, or with your nsec.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4">
-                <div className="grid grid-cols-8 gap-2">
-                    <Button 
-                        className="w-full col-span-7" 
-                        onClick={handleExtensionLogin} 
-                        disabled={isLoading || isExtensionLoading}
-                    >
-                        {isExtensionLoading ? (
-                            <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Connecting...
-                            </>
-                        ) : "Sign in with Extension (NIP-07)"}
-                    </Button>
-                    <Link target="_blank" href="https://www.getflamingo.org/">
-                        <Button variant={"outline"} disabled={isLoading}><InfoIcon /></Button>
-                    </Link>
-                </div>
-                <div className="grid grid-cols-8 gap-2">
-                    <Button 
-                        className="w-full col-span-7" 
-                        onClick={handleAmber} 
-                        disabled={isLoading || isAmberLoading}
-                    >
-                        {isAmberLoading ? (
-                            <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Connecting...
-                            </>
-                        ) : "Sign in with Amber"}
-                    </Button>
-                    <Link target="_blank" href="https://github.com/greenart7c3/Amber">
-                        <Button variant={"outline"} disabled={isLoading}><InfoIcon /></Button>
-                    </Link>
-                </div>
-                <hr />
-                or
-                <Accordion type="single" collapsible>
-                    <AccordionItem value="item-1">
-                        <AccordionTrigger>Login with Bunker (NIP-46)</AccordionTrigger>
-                        <AccordionContent>
-                            <div className="grid gap-2">
-                                <Label htmlFor="bunkerUrl">Bunker URL</Label>
-                                <Input 
-                                    placeholder="bunker://... or nostrconnect://..." 
-                                    id="bunkerUrl" 
-                                    ref={bunkerUrlInput} 
-                                    type="text"
-                                    disabled={isLoading || isBunkerLoading} 
-                                />
-                                {bunkerError && <p className="text-red-500 text-sm">{bunkerError}</p>}
-                                <Button 
-                                    className="w-full" 
-                                    onClick={handleBunkerLogin} 
-                                    disabled={isLoading || isBunkerLoading}
-                                >
-                                    {isBunkerLoading ? (
-                                        <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Connecting...
-                                        </>
-                                    ) : "Sign in with Bunker"}
-                                </Button>
-                                <p className="text-sm text-muted-foreground">
-                                    Use a NIP-46 compatible bunker URL that starts with bunker:// or nostrconnect://
-                                </p>
-                            </div>
-                        </AccordionContent>
-                    </AccordionItem>
-                </Accordion>
-                or
-                <Accordion type="single" collapsible>
-                    <AccordionItem value="item-1">
-                        <AccordionTrigger>Login with npub (read-only)</AccordionTrigger>
-                        <AccordionContent>
-                            <div className="grid gap-2">
-                                <Label htmlFor="npub">npub</Label>
-                                <Input 
-                                    placeholder="npub1..." 
-                                    id="npub" 
-                                    ref={npubInput} 
-                                    type="text" 
-                                    disabled={isLoading || isNpubLoading}
-                                />
-                                <Button 
-                                    className="w-full" 
-                                    onClick={handleNpubLogin}
-                                    disabled={isLoading || isNpubLoading}
-                                >
-                                    {isNpubLoading ? (
-                                        <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Signing in...
-                                        </>
-                                    ) : "Sign in"}
-                                </Button>
-                            </div>
-                        </AccordionContent>
-                    </AccordionItem>
-                </Accordion>
-                or
-                <Accordion type="single" collapsible>
-                    <AccordionItem value="item-1">
-                        <AccordionTrigger>Login with nsec (not recommended)</AccordionTrigger>
-                        <AccordionContent>
-                            <div className="grid gap-2">
-                                <Label htmlFor="nsec">nsec</Label>
-                                <Input 
-                                    placeholder="nsecabcdefghijklmnopqrstuvwxyz" 
-                                    id="nsec" 
-                                    ref={nsecInput} 
-                                    type="password" 
-                                    disabled={isLoading || isNsecLoading}
-                                />
-                                <Button 
-                                    className="w-full" 
-                                    onClick={handleNsecLogin}
-                                    disabled={isLoading || isNsecLoading}
-                                >
-                                    {isNsecLoading ? (
-                                        <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Signing in...
-                                        </>
-                                    ) : "Sign in"}
-                                </Button>
-                            </div>
-                        </AccordionContent>
-                    </AccordionItem>
-                </Accordion>
-            </CardContent>
-            <CardFooter>
-            </CardFooter>
-        </Card>
+        <>
+            <Card className="w-full max-w-xl">
+                <CardHeader>
+                    <CardTitle className="text-2xl">Login to Lumina</CardTitle>
+                    <CardDescription>
+                        Login to your account with nostr extension, bunker, or with your nsec.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4">
+                    <div className="grid grid-cols-8 gap-2">
+                        <Button 
+                            className="w-full col-span-7" 
+                            onClick={handleExtensionLogin} 
+                            disabled={isLoading || isExtensionLoading}
+                        >
+                            {isExtensionLoading ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Connecting...
+                                </>
+                            ) : "Sign in with Extension (NIP-07)"}
+                        </Button>
+                        <Link target="_blank" href="https://www.getflamingo.org/">
+                            <Button variant={"outline"} disabled={isLoading}><InfoIcon /></Button>
+                        </Link>
+                    </div>
+                    <div className="grid grid-cols-8 gap-2">
+                        <Button 
+                            className="w-full col-span-7" 
+                            onClick={handleAmber} 
+                            disabled={isLoading || isAmberLoading}
+                        >
+                            {isAmberLoading ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Connecting...
+                                </>
+                            ) : "Sign in with Amber"}
+                        </Button>
+                        <Link target="_blank" href="https://github.com/greenart7c3/Amber">
+                            <Button variant={"outline"} disabled={isLoading}><InfoIcon /></Button>
+                        </Link>
+                    </div>
+                    <hr />
+                    or
+                    <Accordion type="single" collapsible>
+                        <AccordionItem value="item-1">
+                            <AccordionTrigger>Login with Bunker (NIP-46)</AccordionTrigger>
+                            <AccordionContent>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="bunkerUrl">Bunker URL</Label>
+                                    <div className="flex gap-2">
+                                        <Input 
+                                            placeholder="bunker://... or nostrconnect://..." 
+                                            id="bunkerUrl" 
+                                            ref={bunkerUrlInput} 
+                                            type="text"
+                                            disabled={isLoading || isBunkerLoading} 
+                                            className="flex-1"
+                                        />
+                                        <Button 
+                                            variant="outline" 
+                                            onClick={startQRScanner} 
+                                            disabled={isLoading || isBunkerLoading}
+                                            title="Scan QR code"
+                                        >
+                                            <QrCode className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                    {bunkerError && <p className="text-red-500 text-sm">{bunkerError}</p>}
+                                    <Button 
+                                        className="w-full" 
+                                        onClick={handleBunkerLogin} 
+                                        disabled={isLoading || isBunkerLoading}
+                                    >
+                                        {isBunkerLoading ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                Connecting...
+                                            </>
+                                        ) : "Sign in with Bunker"}
+                                    </Button>
+                                    <p className="text-sm text-muted-foreground">
+                                        Use a NIP-46 compatible bunker URL that starts with bunker:// or nostrconnect://
+                                    </p>
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    </Accordion>
+                    or
+                    <Accordion type="single" collapsible>
+                        <AccordionItem value="item-1">
+                            <AccordionTrigger>Login with npub (read-only)</AccordionTrigger>
+                            <AccordionContent>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="npub">npub</Label>
+                                    <Input 
+                                        placeholder="npub1..." 
+                                        id="npub" 
+                                        ref={npubInput} 
+                                        type="text" 
+                                        disabled={isLoading || isNpubLoading}
+                                    />
+                                    <Button 
+                                        className="w-full" 
+                                        onClick={handleNpubLogin}
+                                        disabled={isLoading || isNpubLoading}
+                                    >
+                                        {isNpubLoading ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                Signing in...
+                                            </>
+                                        ) : "Sign in"}
+                                    </Button>
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    </Accordion>
+                    or
+                    <Accordion type="single" collapsible>
+                        <AccordionItem value="item-1">
+                            <AccordionTrigger>Login with nsec (not recommended)</AccordionTrigger>
+                            <AccordionContent>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="nsec">nsec</Label>
+                                    <Input 
+                                        placeholder="nsecabcdefghijklmnopqrstuvwxyz" 
+                                        id="nsec" 
+                                        ref={nsecInput} 
+                                        type="password" 
+                                        disabled={isLoading || isNsecLoading}
+                                    />
+                                    <Button 
+                                        className="w-full" 
+                                        onClick={handleNsecLogin}
+                                        disabled={isLoading || isNsecLoading}
+                                    >
+                                        {isNsecLoading ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                Signing in...
+                                            </>
+                                        ) : "Sign in"}
+                                    </Button>
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    </Accordion>
+                </CardContent>
+                <CardFooter>
+                </CardFooter>
+            </Card>
+            
+            {/* QR Code Scanner Dialog */}
+            <Dialog open={isQRDialogOpen} onOpenChange={(open) => {
+                if (!open) stopQRScanner();
+                setIsQRDialogOpen(open);
+            }}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Scan Bunker QR Code</DialogTitle>
+                        <DialogDescription>
+                            Position the QR code in the camera view to scan your bunker URL.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex flex-col items-center justify-center">
+                        <div id="qr-reader" style={{ width: '100%', maxWidth: '500px' }}></div>
+                        {isScanning ? (
+                            <p className="text-sm text-center mt-2">Scanning...</p>
+                        ) : (
+                            <p className="text-sm text-center mt-2">Starting camera...</p>
+                        )}
+                    </div>
+                    <div className="flex justify-center">
+                        <DialogClose asChild>
+                            <Button variant="secondary" onClick={stopQRScanner}>
+                                <X className="h-4 w-4 mr-2" /> Cancel
+                            </Button>
+                        </DialogClose>
+                    </div>
+                </DialogContent>
+            </Dialog>
+        </>
     )
 }
