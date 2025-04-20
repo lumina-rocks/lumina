@@ -172,9 +172,6 @@ export function CreateProfileForm() {
             // Verify the event
             const isGood = verifyEvent(signedEvent);
 
-            alert(`Event verification: ${isGood ? 'Success' : 'Failed'}`);
-            alert(JSON.stringify(signedEvent, null, 2));
-
             if (isGood) {
                 // Publish to relays
                 publish(signedEvent);
