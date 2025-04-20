@@ -38,8 +38,9 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
     pubkey,
   })
   const [imageError, setImageError] = useState(false);
+  const [imageState, setImageState] = useState(image);
 
-  if (!image || !image.startsWith("http") || imageError) return null;
+  // if (!image || !image.startsWith("http") || imageError) return null;
   
   const title =
     userData?.username || userData?.display_name || userData?.name || userData?.npub || nip19.npubEncode(pubkey)
@@ -82,11 +83,14 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
               <div className="w-full">
                 <div className="relative w-full" style={{ paddingBottom: "100%" }}>
                   <Image
-                    src={image}
+                    src={imageState || "/placeholder.png"}
                     alt={text}
                     fill
                     className="rounded-lg object-contain"
-                    onError={() => setImageError(true)}
+                    // onError={() => setImageError(true)}
+                    onError={() => {
+                      setImageState("/placeholder.png")
+                    }}
                   />
                 </div>
               </div>
