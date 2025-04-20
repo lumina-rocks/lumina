@@ -22,7 +22,7 @@ export default function ProfileSettingsPage() {
   }
 
   return (
-    <div className="container max-w-3xl mx-auto py-8 px-4 sm:px-6">
+    <div className="container mx-auto py-8 px-4 sm:px-6">
       <div className="space-y-6">
         <div className="flex flex-col space-y-2">
           <h1 className="text-3xl font-bold tracking-tight">Profile Settings</h1>
