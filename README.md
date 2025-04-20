@@ -67,16 +67,6 @@ docker run -p 3000:3000 lumina
 
 ## ⚙️ Configuration
 
-### Environment Variables
-
-Create a `.env` file in the root directory to configure your instance:
-
-```
-# Example .env configuration
-NEXT_PUBLIC_DEFAULT_RELAYS=["wss://relay.example.com","wss://relay2.example.com"]
-NEXT_PUBLIC_APP_NAME=Lumina
-```
-
 ### Umami Analytics
 
 Umami analytics is disabled by default. To enable:
