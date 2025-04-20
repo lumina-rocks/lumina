@@ -14,9 +14,9 @@ export default function GlobalFeedPage() {
 
   return (
     <div className="py-4 px-2 md:py-6 md:px-6">
-      <h2 className="text-2xl font-bold mb-4">Global Feed</h2>
+      {/* <h2 className="text-2xl font-bold mb-4">Global Feed</h2> */}
       <Tabs defaultValue="GlobalQuickViewFeed">
-        <TabsList className="mb-4">
+        <TabsList className="mb-4 w-full grid grid-cols-2">
           <TabsTrigger value="GlobalQuickViewFeed"><GridIcon /></TabsTrigger>
           <TabsTrigger value="GlobalFeed"><SectionIcon /></TabsTrigger>
         </TabsList>

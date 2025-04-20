@@ -40,9 +40,9 @@ export default function FeedPage() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <div className="py-4 px-2 md:py-6 md:px-6">
-        <h2 className="text-2xl font-bold mb-4 px-2 md:px-4">Follower Feed</h2>
+        {/* <h2 className="text-2xl font-bold mb-4 px-2 md:px-4">Follower Feed</h2> */}
         <Tabs defaultValue="QuickView">
-          <TabsList className="mb-4">
+          <TabsList className="mb-4 w-full grid grid-cols-2">
             <TabsTrigger value="QuickView"><GridIcon /></TabsTrigger>
             <TabsTrigger value="ProfileFeed"><SectionIcon /></TabsTrigger>
           </TabsList>
