@@ -1,23 +1,98 @@
-# lumina.rocks
+# Lumina.rocks 📸
 
-A social media for images and pictures 📸
+![Lumina Version](https://img.shields.io/badge/version-0.1.13-blue)
 
-## Docker
-### Quickstart
+A modern, decentralized social media platform for images and pictures built on the Nostr protocol.
+
+## ✨ Features
+
+- **Image-centric social experience** - Share and discover beautiful images
+- **Decentralized architecture** - Powered by Nostr protocol
+- **User profiles** - Customize your presence on the platform
+- **Feeds** - Global, personalized, and tag-based image discovery
+- **React and engage** - Like, comment, and interact with content
+- **Lightning Network integration** - For tipping and monetization
+- **Responsive design** - Optimized for mobile and desktop experiences
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) (v18 or newer)
+- [Docker](https://www.docker.com/) (optional, for containerized deployment)
+
+### Local Development
+
+```bash
+# Clone the repository
+git clone https://github.com/lumina-rocks/lumina.git
+cd lumina
+
+# Install dependencies
+npm install
+# or
+bun install
+
+# Start the development server
+npm run dev
+# or
+bun dev
 ```
+
+Your application will be available at http://localhost:3000.
+
+## 🐳 Docker Deployment
+
+### Quickstart
+
+```bash
 docker run --rm -it -p 3000:3000 ghcr.io/lumina-rocks/lumina:main
 ```
-or with Docker Compose
-```
+
+### Using Docker Compose
+
+```bash
 docker compose up -d
 ```
 
-## Umami
-Umami is disabled by default.
+### Build from Source
 
-To enable Umami edit the `.env` file in the `lumina` directory.
+```bash
+# Build the Docker image
+docker build -t lumina .
 
-Then build the Docker Image again and restart the container.
+# Run the container
+docker run -p 3000:3000 lumina
 ```
-docker compose up -d --build
-```
+
+## ⚙️ Configuration
+
+### Umami Analytics
+
+Umami analytics is disabled by default. To enable:
+
+1. Edit the `.env` file in the `lumina` directory:
+   ```
+   NEXT_PUBLIC_UMAMI_SCRIPT_URL=your-umami-script-url
+   NEXT_PUBLIC_UMAMI_WEBSITE_ID=your-website-id
+   ```
+
+2. Rebuild and restart the container:
+   ```bash
+   docker compose up -d --build
+   ```
+
+## 🛠️ Tech Stack
+
+- **Frontend**: Next.js, React, TypeScript, Tailwind CSS
+- **UI Components**: Radix UI, Lucide icons, shadcn/ui
+- **Protocols**: Nostr, Lightning Network
+
+## 🤝 Contributing
+
+Contributions, issues, and feature requests are welcome! Feel free to check [issues page](https://github.com/lumina-rocks/lumina/issues).
+
+## 🔗 Links
+
+- [Website](https://lumina.rocks)
+- [GitHub Repository](https://github.com/lumina-rocks/lumina)
