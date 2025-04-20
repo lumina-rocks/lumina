@@ -12,7 +12,7 @@ import { useNostr, useProfile } from 'nostr-react';
 import { signEvent } from '@/utils/utils';
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Globe, BoltIcon, Image, ImageIcon, BadgeCheck, ThumbsUp, ZapIcon, Zap } from "lucide-react";
+import { Loader2, Globe, Image, ImageIcon, BadgeCheck, Zap } from "lucide-react";
 
 export function UpdateProfileForm() {
     const { publish } = useNostr();
