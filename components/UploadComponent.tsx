@@ -22,6 +22,7 @@ import { signEvent } from "@/utils/utils"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { toast } from "./ui/use-toast"
 
 async function calculateBlurhash(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -58,6 +59,77 @@ const UploadComponent: React.FC = () => {
   const [shouldFetch, setShouldFetch] = useState(false)
   const [serverChoice, setServerChoice] = useState("blossom.band")
   const [enableNip89, setEnableNip89] = useState(false)
+  
+  // New state for user Blossom servers
+  const [userBlossomServers, setUserBlossomServers] = useState<string[]>([])
+  const [loadingBlossomServers, setLoadingBlossomServers] = useState(false)
+  
+  // Get the user's pubkey
+  const userPubkey = typeof window !== "undefined" ? window.localStorage.getItem("pubkey") || "" : ""
+  
+  // Fetch user's Blossom servers from kind:10063 events
+  const { events: blossomServerEvents } = useNostrEvents({
+    filter: {
+      authors: userPubkey ? [userPubkey] : [],
+      kinds: [10063],
+      limit: 1,
+    },
+    enabled: !!userPubkey,
+  })
+  
+  // Function to load user's Blossom servers
+  const loadUserBlossomServers = useCallback(() => {
+    setLoadingBlossomServers(true)
+    
+    if (blossomServerEvents.length > 0) {
+      // Extract server URLs from server tags
+      const servers = blossomServerEvents[0].tags
+        .filter(tag => tag[0] === 'server')
+        .map(tag => {
+          // Extract hostname from URL
+          try {
+            const url = new URL(tag[1])
+            return url.hostname
+          } catch (e) {
+            console.error("Invalid server URL:", tag[1])
+            return null
+          }
+        })
+        .filter(Boolean) as string[]
+      
+      setUserBlossomServers(servers)
+      
+      // Set the first server as the selected server if available
+      if (servers.length > 0) {
+        setServerChoice(servers[0])
+        toast({
+          title: "Blossom Servers Loaded",
+          description: `Loaded ${servers.length} Blossom server(s) from your kind:10063 event.`,
+        })
+      } else {
+        toast({
+          title: "No Blossom Servers Found",
+          description: "Your kind:10063 event doesn't contain any valid server tags.",
+          variant: "destructive"
+        })
+      }
+    } else {
+      toast({
+        title: "No Blossom Servers Found",
+        description: "You don't have a kind:10063 event configured with Blossom servers.",
+        variant: "destructive"
+      })
+    }
+    
+    setLoadingBlossomServers(false)
+  }, [blossomServerEvents, setServerChoice])
+  
+  // Effect to detect when Blossom server events are loaded
+  useEffect(() => {
+    if (blossomServerEvents.length > 0) {
+      console.log("Found kind:10063 Blossom server event:", blossomServerEvents[0])
+    }
+  }, [blossomServerEvents])
 
   const { events, isLoading: isNoteLoading } = useNostrEvents({
     filter: shouldFetch
@@ -300,19 +372,44 @@ const UploadComponent: React.FC = () => {
           <div className="grid w-full max-w-sm items-center gap-1.5">
             <Input id="file" name="file" type="file" accept="image/*" onChange={handleFileChange} />
           </div>
-          <div className="grid grid-cols-2 w-full max-w-sm items-center gap-1.5">
-            {/* <select value={serverChoice} onChange={handleServerChange} className="w-full">
-              <option value="nostr.download">nostr.download</option>
-              <option value="blossom.primal.net">blossom.primal.net</option>
-            </select> */}
-            Upload to
+          
+          <div className="grid w-full max-w-sm items-center gap-1.5">
+            <div className="flex items-center justify-between space-x-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={loadUserBlossomServers} 
+                disabled={loadingBlossomServers || !userPubkey}
+                className="text-xs"
+              >
+                {loadingBlossomServers ? (
+                  <>Loading Servers <ReloadIcon className="ml-2 h-3 w-3 animate-spin" /></>
+                ) : (
+                  "Load My Blossom Servers"
+                )}
+              </Button>
+              <Label>Upload to:</Label>
+            </div>
+            
             <Select onValueChange={handleServerChange} value={serverChoice}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder={serverChoice} />
               </SelectTrigger>
               <SelectContent>
+                {/* Default servers */}
                 <SelectItem value="blossom.band">blossom.band</SelectItem>
                 <SelectItem value="media.lumina.rocks">media.lumina.rocks</SelectItem>
+                
+                {/* User's Blossom servers */}
+                {userBlossomServers.length > 0 && (
+                  <>
+                    {userBlossomServers.map((server) => (
+                      <SelectItem key={server} value={server}>
+                        {server} (Your Server)
+                      </SelectItem>
+                    ))}
+                  </>
+                )}
               </SelectContent>
             </Select>
           </div>
