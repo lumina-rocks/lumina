@@ -34,6 +34,11 @@ export function AddRelaySheet({ onRelayAdded }: AddRelaySheetProps) {
     if (!formattedUrl.startsWith("wss://")) {
       formattedUrl = `wss://${formattedUrl}`;
     }
+    
+    // Remove trailing slash if present
+    if (formattedUrl.endsWith('/')) {
+      formattedUrl = formattedUrl.slice(0, -1);
+    }
 
     // Check if relay already exists in connected relays
     const existingRelays = connectedRelays?.map(relay => relay.url) || [];

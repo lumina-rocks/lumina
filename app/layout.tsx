@@ -29,9 +29,14 @@ export default function RootLayout({
     try {
       const customRelays = JSON.parse(localStorage.getItem("customRelays") || "[]");
       if (customRelays.length > 0) {
+        // Remove trailing slashes from any relay URLs
+        const sanitizedRelays = customRelays.map((relay: string) => 
+          relay.endsWith('/') ? relay.slice(0, -1) : relay
+        );
+        
         setRelayUrls(prevRelays => {
           // Combine default relays with custom relays, removing duplicates
-          const allRelays = [...prevRelays, ...customRelays];
+          const allRelays = [...prevRelays, ...sanitizedRelays];
           return Array.from(new Set(allRelays)); // Remove duplicates
         });
       }
