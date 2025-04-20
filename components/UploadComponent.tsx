@@ -23,6 +23,57 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 
+// Function to strip metadata from image files
+async function stripImageMetadata(file: File): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const objectUrl = URL.createObjectURL(file)
+    
+    img.onload = () => {
+      // Create a canvas to draw the image without metadata
+      const canvas = document.createElement("canvas")
+      canvas.width = img.width
+      canvas.height = img.height
+
+      // Draw the image onto the canvas (this strips the metadata)
+      const ctx = canvas.getContext("2d")
+      if (!ctx) {
+        URL.revokeObjectURL(objectUrl)
+        reject(new Error("Failed to get canvas context"))
+        return
+      }
+
+      ctx.drawImage(img, 0, 0)
+
+      // Convert canvas back to a file
+      canvas.toBlob((blob) => {
+        // Clean up the object URL
+        URL.revokeObjectURL(objectUrl)
+        
+        if (!blob) {
+          reject(new Error("Failed to create blob from canvas"))
+          return
+        }
+
+        // Create a new file with the same name but stripped metadata
+        const strippedFile = new File([blob], file.name, {
+          type: file.type,
+          lastModified: file.lastModified,
+        })
+
+        resolve(strippedFile)
+      }, file.type)
+    }
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl)
+      reject(new Error("Failed to load image"))
+    }
+    
+    img.src = objectUrl
+  })
+}
+
 async function calculateBlurhash(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const canvas = document.createElement("canvas")
@@ -123,7 +174,7 @@ const UploadComponent: React.FC = () => {
 
     const formData = new FormData(event.currentTarget)
     const desc = formData.get("description") as string
-    const file = formData.get("file") as File
+    let file = formData.get("file") as File
     let sha256 = ""
     let finalNoteContent = desc
     let finalFileUrl = ""
@@ -153,6 +204,9 @@ const UploadComponent: React.FC = () => {
       }
 
       try {
+        // Strip metadata from the file
+        file = await stripImageMetadata(file)
+
         const arrayBuffer = await readFileAsArrayBuffer(file)
         const hashBuffer = createHash("sha256").update(Buffer.from(arrayBuffer)).digest()
         sha256 = hashBuffer.toString("hex")
@@ -172,7 +226,8 @@ const UploadComponent: React.FC = () => {
           content: "File upload",
           created_at: createdAt,
           tags: [
-            ["t", "media"],
+            // ["t", "media"],
+            ["t", "upload"],
             ["x", sha256],
             ["expiration", newExpirationValue()],
           ],
@@ -190,7 +245,8 @@ const UploadComponent: React.FC = () => {
 
         const blossomServer = "https://" + serverChoice
 
-        await fetch(blossomServer + "/media", {
+        // await fetch(blossomServer + "/media", {
+        await fetch(blossomServer + "/upload", {
           method: "PUT",
           body: file,
           headers: { authorization: "Nostr " + authString },
@@ -297,9 +353,15 @@ const UploadComponent: React.FC = () => {
             id="description"
             className="w-full"
           ></Textarea>
-          <div className="grid w-full max-w-sm items-center gap-1.5">
-            <Input id="file" name="file" type="file" accept="image/*" onChange={handleFileChange} />
-          </div>
+            <div className="grid w-full max-w-sm items-center gap-1.5">
+            <Input
+              id="file"
+              name="file"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleFileChange}
+            />
+            </div>
           <div className="grid grid-cols-2 w-full max-w-sm items-center gap-1.5">
             {/* <select value={serverChoice} onChange={handleServerChange} className="w-full">
               <option value="nostr.download">nostr.download</option>
