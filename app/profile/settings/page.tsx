@@ -10,7 +10,6 @@ export default function ProfileSettingsPage() {
         document.title = `Settings | LUMINA`;
     }, []);
   
-
   let pubkey = null;
   if (typeof window !== 'undefined') {
     pubkey = window.localStorage.getItem('pubkey');
@@ -23,10 +22,20 @@ export default function ProfileSettingsPage() {
   }
 
   return (
-    <>
-      <div className="flex flex-col items-center py-6 px-6">
-        <UpdateProfileForm />
+    <div className="container mx-auto py-8 px-4 sm:px-6">
+      <div className="space-y-6">
+        <div className="flex flex-col space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight">Profile Settings</h1>
+          <p className="text-muted-foreground">
+            Update your profile information that will be visible to others on the Nostr network
+          </p>
+        </div>
+        <div className="rounded-lg border bg-card shadow-sm">
+          <div className="p-6">
+            <UpdateProfileForm />
+          </div>
+        </div>
       </div>
-    </>
+    </div>
   );
 }
