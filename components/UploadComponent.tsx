@@ -353,9 +353,15 @@ const UploadComponent: React.FC = () => {
             id="description"
             className="w-full"
           ></Textarea>
-          <div className="grid w-full max-w-sm items-center gap-1.5">
-            <Input id="file" name="file" type="file" accept="image/*" onChange={handleFileChange} />
-          </div>
+            <div className="grid w-full max-w-sm items-center gap-1.5">
+            <Input
+              id="file"
+              name="file"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleFileChange}
+            />
+            </div>
           <div className="grid grid-cols-2 w-full max-w-sm items-center gap-1.5">
             {/* <select value={serverChoice} onChange={handleServerChange} className="w-full">
               <option value="nostr.download">nostr.download</option>
