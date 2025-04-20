@@ -1,6 +1,6 @@
 # Lumina.rocks 📸
 
-![Lumina Version](https://img.shields.io/badge/version-0.1.13-blue)
+![Lumina Version](https://img.shields.io/badge/version-0.1.14-blue)
 
 A modern, decentralized social media platform for images and pictures built on the Nostr protocol.
 
