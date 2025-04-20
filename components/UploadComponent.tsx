@@ -27,6 +27,8 @@ import { Switch } from "@/components/ui/switch"
 async function stripImageMetadata(file: File): Promise<File> {
   return new Promise((resolve, reject) => {
     const img = new Image()
+    const objectUrl = URL.createObjectURL(file)
+    
     img.onload = () => {
       // Create a canvas to draw the image without metadata
       const canvas = document.createElement("canvas")
@@ -36,6 +38,7 @@ async function stripImageMetadata(file: File): Promise<File> {
       // Draw the image onto the canvas (this strips the metadata)
       const ctx = canvas.getContext("2d")
       if (!ctx) {
+        URL.revokeObjectURL(objectUrl)
         reject(new Error("Failed to get canvas context"))
         return
       }
@@ -44,6 +47,9 @@ async function stripImageMetadata(file: File): Promise<File> {
 
       // Convert canvas back to a file
       canvas.toBlob((blob) => {
+        // Clean up the object URL
+        URL.revokeObjectURL(objectUrl)
+        
         if (!blob) {
           reject(new Error("Failed to create blob from canvas"))
           return
@@ -63,9 +69,9 @@ async function stripImageMetadata(file: File): Promise<File> {
       URL.revokeObjectURL(objectUrl)
       reject(new Error("Failed to load image"))
     }
-    const objectUrl = URL.createObjectURL(file)
+    
     img.src = objectUrl
-    img.onload = () => URL.revokeObjectURL(objectUrl)
+  })
 }
 
 async function calculateBlurhash(file: File): Promise<string> {
