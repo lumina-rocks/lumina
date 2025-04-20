@@ -122,7 +122,6 @@ export function UpdateProfileForm() {
                     content: JSON.stringify({
                         name: username,
                         display_name: displayName,
-                        displayName: displayName,
                         about: bio,
                         picture: picture,
                         banner: banner,
