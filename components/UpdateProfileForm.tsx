@@ -13,11 +13,13 @@ import { signEvent } from '@/utils/utils';
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Globe, Image, ImageIcon, BadgeCheck, Zap } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function UpdateProfileForm() {
     const { publish } = useNostr();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSaved, setIsSaved] = useState(false);
+    const [isDataLoaded, setIsDataLoaded] = useState(false);
 
     let npub = '';
     let pubkey = '';
@@ -38,22 +40,22 @@ export function UpdateProfileForm() {
         }
     }
 
-    let { data: userData } = useProfile({
+    const { data: userData, isLoading: isUserDataLoading } = useProfile({
         pubkey,
     });
 
-    const [username, setUsername] = useState(userData?.name);
-    const [displayName, setDisplayName] = useState(userData?.display_name);
-    const [bio, setBio] = useState(userData?.about);
-    const [picture, setPicture] = useState(userData?.picture);
-    const [banner, setBanner] = useState(userData?.banner);
-    const [nip05, setNip05] = useState(userData?.nip05);
-    const [lud16, setLud16] = useState(userData?.lud16);
-    const [website, setWebsite] = useState(userData?.website);
+    const [username, setUsername] = useState<string | undefined>('');
+    const [displayName, setDisplayName] = useState<string | undefined>('');
+    const [bio, setBio] = useState<string | undefined>('');
+    const [picture, setPicture] = useState<string | undefined>('');
+    const [banner, setBanner] = useState<string | undefined>('');
+    const [nip05, setNip05] = useState<string | undefined>('');
+    const [lud16, setLud16] = useState<string | undefined>('');
+    const [website, setWebsite] = useState<string | undefined>('');
 
     // Update form data when userData changes
     useEffect(() => {
-        if (userData) {
+        if (userData && !isDataLoaded) {
             setUsername(userData.name);
             setDisplayName(userData.display_name);
             setBio(userData.about);
@@ -62,8 +64,9 @@ export function UpdateProfileForm() {
             setNip05(userData.nip05);
             setLud16(userData.lud16);
             setWebsite(userData.website);
+            setIsDataLoaded(true);
         }
-    }, [userData]);
+    }, [userData, isDataLoaded]);
 
     // Field change handlers
     const handleUsernameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -154,6 +157,34 @@ export function UpdateProfileForm() {
                 setIsSubmitting(false);
             }
         }
+    }
+
+    if (isUserDataLoading && !isDataLoaded) {
+        return (
+            <div className="w-full space-y-6">
+                <div className="flex items-center gap-4">
+                    <Skeleton className="h-20 w-20 rounded-full" />
+                    <div>
+                        <Skeleton className="h-8 w-48 mb-2" />
+                        <Skeleton className="h-4 w-64" />
+                    </div>
+                </div>
+                <Card className="border rounded-lg">
+                    <CardContent className="p-6 space-y-5">
+                        <Skeleton className="h-10 w-full mb-4" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <Skeleton className="h-28 w-full" />
+                            <Skeleton className="h-28 w-full" />
+                        </div>
+                        <Skeleton className="h-32 w-full" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <Skeleton className="h-28 w-full" />
+                            <Skeleton className="h-28 w-full" />
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        );
     }
 
     return (
