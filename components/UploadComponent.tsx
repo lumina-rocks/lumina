@@ -59,9 +59,13 @@ async function stripImageMetadata(file: File): Promise<File> {
       }, file.type)
     }
 
-    img.onerror = () => reject(new Error("Failed to load image"))
-    img.src = URL.createObjectURL(file)
-  })
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl)
+      reject(new Error("Failed to load image"))
+    }
+    const objectUrl = URL.createObjectURL(file)
+    img.src = objectUrl
+    img.onload = () => URL.revokeObjectURL(objectUrl)
 }
 
 async function calculateBlurhash(file: File): Promise<string> {
