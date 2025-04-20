@@ -56,7 +56,7 @@ export function CreateSecretKeyForm() {
                 <Shield className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                 <AlertTitle className="text-amber-800 dark:text-amber-400">Important security notice</AlertTitle>
                 <AlertDescription className="text-amber-700 dark:text-amber-500">
-                    Your <b>secret key</b> gives full control of your account. It's stored locally in your browser
+                    Your <b>secret key</b> gives full control of your account. It&apos;s stored locally in your browser
                     and never sent to any server. Make sure to back it up securely.
                 </AlertDescription>
             </Alert>
