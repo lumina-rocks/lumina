@@ -29,13 +29,14 @@ const ReelFeed: React.FC = () => {
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [videoEvents, setVideoEvents] = useState<VideoEvent[]>([]);
+  const [loadMoreCounter, setLoadMoreCounter] = useState(1); // Counter to trigger loading more events
   const { publish } = useNostr();
   
-  // Fetch NIP-71 kind 22 (short video) events
+  // Fetch NIP-71 kind 22 (short video) events with increased limit
   const { events: rawEvents } = useNostrEvents({
     filter: {
       kinds: [22], // NIP-71 short videos
-      limit: 50,
+      limit: 50 * loadMoreCounter, // Increase limit based on counter
     },
   });
 
@@ -44,6 +45,17 @@ const ReelFeed: React.FC = () => {
     const isBlacklisted = blacklistPubkeys.has(event.pubkey);
     return !isBlacklisted;
   }) || [];
+
+  // Load more events if we don't have enough after filtering
+  useEffect(() => {
+    // Check if we have enough events after filtering
+    if (events.length < 20 && rawEvents && rawEvents.length > 0 && 
+        // Make sure we're not in an infinite loop by checking if we have more events to load
+        rawEvents.length >= 50 * (loadMoreCounter - 1)) {
+      // Only increase counter if we actually received events but need more
+      setLoadMoreCounter(prev => prev + 1);
+    }
+  }, [events, rawEvents, loadMoreCounter]);
 
   // Track reactions to update UI accordingly
   const { events: reactions } = useNostrEvents({
