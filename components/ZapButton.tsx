@@ -20,8 +20,14 @@ import { useEffect, useState, useRef } from "react";
 import QRCode from "react-qr-code";
 import Link from "next/link";
 import { Alert } from "./ui/alert";
+import { signEvent } from "@/utils/utils";
 
 export default function ZapButton({ event }: { event: any }) {
+
+    let loginType = '';
+    if (typeof window !== 'undefined') {
+        loginType = window.localStorage.getItem("loginType") ?? '';
+    }
 
     const { connectedRelays } = useNostr();
 
@@ -219,6 +225,8 @@ export default function ZapButton({ event }: { event: any }) {
                 ],
                 created_at: Math.floor(Date.now() / 1000),
                 pubkey: senderPubkey,
+                id: "", // Add placeholder for id
+                sig: "", // Add placeholder for sig
             };
 
             let params = new URLSearchParams();
@@ -228,28 +236,7 @@ export default function ZapButton({ event }: { event: any }) {
                 zapRequestEvent.tags.push(["lnurl", userData.lud06]);
             }
 
-            const signEvent = async () => {
-                if (window.nostr) {
-                    return await window.nostr.signEvent(zapRequestEvent);
-                } else {
-                    const nsecHex = window.localStorage.getItem("nsec");
-                    if (nsecHex) {
-                        try {
-                            const decoded = nip19.decode(nsecHex);
-                            if (decoded.type === 'nsec') {
-                                const privateKey = decoded.data as Uint8Array;
-                                return finalizeEvent(zapRequestEvent, privateKey);
-                            }
-                        } catch (error) {
-                            console.error("Error decoding private key:", error);
-                            throw new Error("Invalid private key format");
-                        }
-                    }
-                    throw new Error("No private key available to sign the zap request");
-                }
-            };
-
-            const signedZapRequest = await signEvent();
+            const signedZapRequest = await signEvent(loginType, zapRequestEvent);
             params.append('nostr', JSON.stringify(signedZapRequest));
             
             if (userData?.lud06) {
