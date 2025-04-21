@@ -20,8 +20,9 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer"
 import { Input } from './ui/input';
-import { Share1Icon, LightningBoltIcon } from '@radix-ui/react-icons';
+import { Share1Icon, LightningBoltIcon, GlobeIcon } from '@radix-ui/react-icons';
 import { toast } from './ui/use-toast';
+import { Globe } from 'lucide-react';
 
 interface ProfileInfoCardProps {
   pubkey: string;
@@ -48,6 +49,7 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = React.memo(({ pubkey }) 
   const description = userData?.about?.replace(/(?:\r\n|\r|\n)/g, '<br>');
   const nip05 = userData?.nip05;
   const lightningAddress = userData?.lud16;
+  const website = userData?.website;
 
   const handleCopyLink = async () => {
     try {
@@ -99,6 +101,18 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = React.memo(({ pubkey }) 
     }
   };
 
+  const handleOpenWebsite = () => {
+    if (!website) return;
+    
+    // Add https:// prefix if not present
+    let url = website;
+    if (!/^https?:\/\//i.test(url)) {
+      url = 'https://' + url;
+    }
+    
+    window.open(url, '_blank');
+  };
+
   return (
     <div className='py-6'>
       <Card>
@@ -115,9 +129,15 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = React.memo(({ pubkey }) 
                 <NIP05 nip05={nip05?.toString() ?? ''} pubkey={pubkey} />
               </div>
               {lightningAddress && (
-                <div className="text-sm text-muted-foreground flex items-center gap-1 cursor-pointer" onClick={handleCopyLightningAddress}>
+                <div className="text-sm text-muted-foreground flex items-center gap-1 cursor-pointer hover:text-purple-400 transition-colors" onClick={handleCopyLightningAddress}>
                   <LightningBoltIcon className="h-4 w-4 text-yellow-500" />
                   <span>{lightningAddress}</span>
+                </div>
+              )}
+              {website && (
+                <div className="text-sm text-muted-foreground flex items-center gap-1 cursor-pointer hover:text-purple-400 transition-colors" onClick={handleOpenWebsite}>
+                  <Globe className="h-4 w-4 text-purple-500" />
+                  <span>{website}</span>
                 </div>
               )}
             </div>
