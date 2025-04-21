@@ -210,8 +210,7 @@ export default function ZapButton({ event }: { event: any }) {
             };
 
             const signedZapRequest = await signEvent();
-            
-            params.append('nostr', JSON.stringify(signedZapRequest));
+            params.append('nostr', encodeURIComponent(JSON.stringify(signedZapRequest)));
             
             if (userData?.lud06) {
                 params.append('lnurl', userData.lud06);
