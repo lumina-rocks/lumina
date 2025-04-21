@@ -1,4 +1,5 @@
 import { CheckIcon, ReloadIcon } from "@radix-ui/react-icons";
+import { BadgeCheck, Check } from "lucide-react";
 import React, { useState, useEffect } from 'react';
 
 interface NIP05Props {
@@ -33,8 +34,14 @@ const NIP05: React.FC<NIP05Props> = ({ nip05, pubkey }) => {
             <div style={{ display: 'flex', alignItems: 'center' }}>
                 {nip05.length > 0 && 
                 <>
+                    {isLoading ? (
+                        <ReloadIcon className="mr-1 h-4 w-4 animate-spin" />
+                    ) : isValid ? (
+                        <BadgeCheck className="mr-1 h-4 w-4 text-blue-500" />
+                    ) : (
+                        <span className="mr-1 text-red-500">❌</span>
+                    )}
                     { name === "_" ? domain : nip05 }
-                    {isLoading ? <ReloadIcon className="mx-2 h-4 w-4 animate-spin" /> : isValid ? <CheckIcon className="mx-2 h-4 w-4" /> : <span className="mx-2 text-red-500">❌</span>}
                 </>
                 }
             </div>
