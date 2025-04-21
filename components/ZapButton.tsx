@@ -210,7 +210,7 @@ export default function ZapButton({ event }: { event: any }) {
             };
 
             const signedZapRequest = await signEvent();
-            params.append('nostr', encodeURIComponent(JSON.stringify(signedZapRequest)));
+            params.append('nostr', JSON.stringify(signedZapRequest));
             
             if (userData?.lud06) {
                 params.append('lnurl', userData.lud06);
@@ -273,6 +273,58 @@ export default function ZapButton({ event }: { event: any }) {
         setIsProcessing(false);
     };
 
+    const checkPaymentStatus = async () => {
+        setIsProcessing(true);
+        try {
+            // Force a re-fetch of zap receipt events
+            const eventFilter = {
+                '#e': [event.id],
+                kinds: [9735],
+            };
+            
+            // Manually check relays for new zap events
+            const zapPromises = connectedRelays.map(async (relay) => {
+                return new Promise(async (resolve) => {
+                    const timeout = setTimeout(() => resolve([]), 3000); // 3 second timeout
+                    try {
+                        const sub = relay.sub([eventFilter]);
+                        const events: any[] = [];
+                        
+                        sub.on('event', (event) => {
+                            // Check if this event contains the current invoice
+                            const hasBolt11 = event.tags.some(tag => 
+                                tag[0] === 'bolt11' && invoice.includes(tag[1].substring(0, 50))
+                            );
+                            if (hasBolt11) {
+                                events.push(event);
+                            }
+                        });
+                        
+                        sub.on('eose', () => {
+                            clearTimeout(timeout);
+                            resolve(events);
+                            sub.unsub();
+                        });
+                    } catch (error) {
+                        clearTimeout(timeout);
+                        resolve([]);
+                    }
+                });
+            });
+            
+            const zapEventsArrays = await Promise.all(zapPromises);
+            const newZapEvents = zapEventsArrays.flat();
+            
+            if (newZapEvents.length > 0) {
+                setPaymentComplete(true);
+            }
+        } catch (error) {
+            console.error("Error checking payment status:", error);
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
     return (
         <Drawer onOpenChange={(open) => open ? handleOpenDrawer() : handleCloseDrawer()}>
             <DrawerTrigger asChild>
@@ -312,6 +364,9 @@ export default function ZapButton({ event }: { event: any }) {
                                 : "Scan this QR code with a Lightning wallet to pay the invoice"}
                         </p>
                         
+                        <div className="w-full overflow-auto p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs mb-4">
+                            <code className="break-all">{invoice}</code>
+                        </div>
                         
                         {paymentComplete ? (
                             <div className="flex items-center text-green-500 mb-4">
@@ -319,9 +374,20 @@ export default function ZapButton({ event }: { event: any }) {
                                 Zap sent successfully!
                             </div>
                         ) : (
-                            <div className="w-full overflow-auto p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs mb-4">
-                                <code className="break-all">{invoice}</code>
-                            </div>
+                            <Button 
+                                variant="outline" 
+                                className="mb-4"
+                                onClick={() => checkPaymentStatus()}
+                                disabled={isProcessing}
+                            >
+                                {isProcessing ? (
+                                    <>
+                                        <ReloadIcon className="mr-2 h-4 w-4 animate-spin" /> Checking...
+                                    </>
+                                ) : (
+                                    "Check if paid"
+                                )}
+                            </Button>
                         )}
                         
                         <Button variant="outline" onClick={() => setInvoice("")}>
