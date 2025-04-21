@@ -283,10 +283,6 @@ export default function ZapButton({ event }: { event: any }) {
                 )}
             </DrawerTrigger>
             <DrawerContent>
-                <DrawerHeader>
-                    <DrawerTitle>Zaps</DrawerTitle>
-                </DrawerHeader>
-
                 {errorMessage && (
                     <div className="px-4 py-2 mb-4 text-red-500 bg-red-50 rounded">
                         {errorMessage}
@@ -295,28 +291,43 @@ export default function ZapButton({ event }: { event: any }) {
 
                 {invoice ? (
                     <div className="flex flex-col items-center px-4 py-4">
-                        <div className="mb-4 p-2 bg-white rounded-lg">
-                            <QRCode value={invoice} size={200} />
-                        </div>
+                        {paymentComplete ? (
+                            <div className="flex flex-col items-center justify-center mb-4 p-2 rounded-lg bg-green-50 dark:bg-green-900/20 w-[200px] h-[200px]">
+                                <CheckCircledIcon className="h-24 w-24 text-green-500" />
+                                <p className="text-lg font-semibold text-green-500 mt-4">
+                                    Payment Complete!
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="mb-4 p-2 bg-white rounded-lg">
+                                <QRCode value={invoice} size={200} />
+                            </div>
+                        )}
+                        
                         <p className="text-sm text-center mb-4">
-                            Scan this QR code with a Lightning wallet to pay the invoice
+                            {paymentComplete 
+                                ? "Your payment has been received and confirmed!" 
+                                : "Scan this QR code with a Lightning wallet to pay the invoice"}
                         </p>
+                        
                         <div className="w-full overflow-auto p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs mb-4">
                             <code className="break-all">{invoice}</code>
                         </div>
-                        {paymentComplete ? (
-                            <div className="flex items-center text-green-500">
+                        
+                        {paymentComplete && (
+                            <div className="flex items-center text-green-500 mb-4">
                                 <CheckCircledIcon className="mr-2 h-4 w-4" />
-                                Payment Complete!
+                                Zap sent successfully!
                             </div>
-                        ) : null}
+                        )}
+                        
                         <Button variant="outline" onClick={() => setInvoice("")}>
-                            Back to Zap Options
+                            {paymentComplete ? "Send Another Zap" : "Back to Zap Options"}
                         </Button>
                     </div>
                 ) : (
                     <>
-                        <div className="px-4 grid grid-cols-3 gap-2">
+                        <div className="px-4 pt-4 grid grid-cols-3 gap-2">
                             <Button 
                                 variant={"outline"} 
                                 className="mx-1" 
@@ -356,14 +367,6 @@ export default function ZapButton({ event }: { event: any }) {
                         <ZapButtonList events={events} />
                     </>
                 )}
-
-                <DrawerFooter>
-                    <DrawerClose asChild>
-                        <div>
-                            <Button variant={"outline"}>Close</Button>
-                        </div>
-                    </DrawerClose>
-                </DrawerFooter>
             </DrawerContent>
         </Drawer>
     );
