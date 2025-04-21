@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { nip19, Event as NostrEvent } from "nostr-tools";
 import { useProfile } from "nostr-react";
 import Link from "next/link";
-import { signEvent } from "@/utils/utils";
+import { blacklistPubkeys, signEvent } from "@/utils/utils";
 import { toast } from "@/components/ui/use-toast";
 
 // Define interface for NIP-71 video event
@@ -32,12 +32,18 @@ const ReelFeed: React.FC = () => {
   const { publish } = useNostr();
   
   // Fetch NIP-71 kind 22 (short video) events
-  const { events } = useNostrEvents({
+  const { events: rawEvents } = useNostrEvents({
     filter: {
       kinds: [22], // NIP-71 short videos
-      limit: 20,
+      limit: 50,
     },
   });
+
+  // Filter out events from blacklisted pubkeys
+  const events = rawEvents?.filter(event => {
+    const isBlacklisted = blacklistPubkeys.has(event.pubkey);
+    return !isBlacklisted;
+  }) || [];
 
   // Track reactions to update UI accordingly
   const { events: reactions } = useNostrEvents({

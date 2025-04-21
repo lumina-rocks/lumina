@@ -55,3 +55,10 @@ export async function signEvent(loginType: string | null, event: NostrEvent): Pr
   console.log(eventSigned);
   return eventSigned;
 }
+
+// Blacklist annoying pubkeys
+export const blacklistPubkeys = new Set([
+  "0403c86a1bb4cfbc34c8a493fbd1f0d158d42dd06d03eaa3720882a066d3a378",
+  "7444faae22d4d4939c815819dca3c4822c209758bf86afc66365db5f79f67ddb",
+  "3ffac3a6c859eaaa8cdddb2c7002a6e10b33efeb92d025b14ead6f8a2d656657"
+]);
