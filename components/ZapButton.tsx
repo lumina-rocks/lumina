@@ -19,6 +19,7 @@ import { useNostr, useNostrEvents, useProfile } from "nostr-react";
 import { useEffect, useState, useRef } from "react";
 import QRCode from "react-qr-code";
 import Link from "next/link";
+import { Alert } from "./ui/alert";
 
 export default function ZapButton({ event }: { event: any }) {
 
@@ -120,20 +121,59 @@ export default function ZapButton({ event }: { event: any }) {
                 }
             }
 
-            const response = await fetch(lnurl);
-            const data = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(`Error fetching LNURL info: ${data.reason || 'Unknown error'}`);
-            }
+            try {
+                // Add a timeout to the fetch request
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-            if (!data.allowsNostr) {
-                setErrorMessage("This Lightning address doesn't support Nostr zaps");
-                setIsProcessing(false);
-                return;
-            }
+                const response = await fetch(lnurl, { 
+                    signal: controller.signal,
+                    headers: {
+                        'Accept': 'application/json',
+                    }
+                });
+                
+                clearTimeout(timeoutId);
+                
+                // Check content type to ensure it's JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    console.error("Invalid content type:", contentType);
+                    throw new Error("Lightning service returned invalid content type (expected JSON)");
+                }
+                
+                // Parse response as JSON
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(`Error fetching LNURL info: ${data.reason || response.statusText || 'Unknown error'}`);
+                }
 
-            setLnurlPayInfo(data);
+                if (!data.callback) {
+                    throw new Error("Invalid LNURL response: missing callback URL");
+                }
+
+                if (!data.allowsNostr) {
+                    setErrorMessage("This Lightning address doesn't support Nostr zaps");
+                    setIsProcessing(false);
+                    return;
+                }
+
+                setLnurlPayInfo(data);
+            } catch (error) {
+                if (typeof error === "object" && error !== null && "name" in error && typeof (error as any).name === "string") {
+                    if ((error as any).name === 'AbortError') {
+                        throw new Error("Request timed out - Lightning service not responding");
+                    } else if ((error as any).name === 'SyntaxError') {
+                        throw new Error("Lightning service returned invalid data format");
+                    }
+                }
+                if (typeof error === "object" && error !== null && "message" in error && typeof (error as any).message === "string" && (error as any).message.includes('NetworkError')) {
+                    throw new Error("Network error: CORS issue or service unavailable");
+                } else {
+                    throw error;
+                }
+            }
         } catch (error) {
             console.error("Error fetching LNURL info:", error);
             setErrorMessage(error instanceof Error ? error.message : "Failed to fetch Lightning payment information");
@@ -336,9 +376,9 @@ export default function ZapButton({ event }: { event: any }) {
             </DrawerTrigger>
             <DrawerContent>
                 {errorMessage && (
-                    <div className="px-4 py-2 mb-4 text-red-500 bg-red-50 rounded">
+                    <Alert variant={"destructive"}>
                         {errorMessage}
-                    </div>
+                    </Alert>
                 )}
 
                 {invoice ? (
