@@ -18,6 +18,7 @@ import { Input } from "./ui/input";
 import { useNostr, useNostrEvents, useProfile } from "nostr-react";
 import { useEffect, useState, useRef } from "react";
 import QRCode from "react-qr-code";
+import Link from "next/link";
 
 export default function ZapButton({ event }: { event: any }) {
 
@@ -300,7 +301,9 @@ export default function ZapButton({ event }: { event: any }) {
                             </div>
                         ) : (
                             <div className="mb-4 p-2 bg-white rounded-lg">
-                                <QRCode value={invoice} size={200} />
+                                <Link href={`lightning:${invoice}`} target="_blank" rel="noopener noreferrer">
+                                    <QRCode value={invoice} size={200} />
+                                </Link>
                             </div>
                         )}
                         
@@ -310,14 +313,15 @@ export default function ZapButton({ event }: { event: any }) {
                                 : "Scan this QR code with a Lightning wallet to pay the invoice"}
                         </p>
                         
-                        <div className="w-full overflow-auto p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs mb-4">
-                            <code className="break-all">{invoice}</code>
-                        </div>
                         
-                        {paymentComplete && (
+                        {paymentComplete ? (
                             <div className="flex items-center text-green-500 mb-4">
                                 <CheckCircledIcon className="mr-2 h-4 w-4" />
                                 Zap sent successfully!
+                            </div>
+                        ) : (
+                            <div className="w-full overflow-auto p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs mb-4">
+                                <code className="break-all">{invoice}</code>
                             </div>
                         )}
                         
