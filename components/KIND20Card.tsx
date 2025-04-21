@@ -52,7 +52,7 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
   return (
     <>
 
-      <div key={event.id} className="">
+      <div key={event.id}>
         <Card>
           <CardHeader>
             <CardTitle>
