@@ -114,7 +114,7 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = React.memo(({ pubkey }) 
   };
 
   return (
-    <div className='py-6'>
+    <div className='py-2'>
       <Card>
         <CardHeader>
           <div className="flex items-center gap-6">
