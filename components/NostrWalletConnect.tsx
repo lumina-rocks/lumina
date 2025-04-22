@@ -51,7 +51,7 @@ export function NostrWalletConnect() {
       // Get balance
       try {
         const balanceInfo = await client.getBalance();
-        setBalance(balanceInfo.balance);
+        setBalance(balanceInfo.balance / 1000); // Convert to sats
       } catch (e) {
         console.error("Error fetching balance:", e);
       }
@@ -71,11 +71,15 @@ export function NostrWalletConnect() {
       return;
     }
     
-    await connectWithSavedUrl(connectionUrl);
-    
-    // Save to localStorage if connection is successful
-    if (isConnected) {
+    try {
+      await connectWithSavedUrl(connectionUrl);
+      
+      // If we get here without an error being thrown, connection was successful
+      // Save to localStorage
       localStorage.setItem(NWC_STORAGE_KEY, connectionUrl);
+    } catch (error) {
+      // Error will be handled in connectWithSavedUrl
+      console.error("Connection failed:", error);
     }
   };
   
@@ -109,7 +113,7 @@ export function NostrWalletConnect() {
       // Get balance
       try {
         const balanceInfo = await client.getBalance();
-        setBalance(balanceInfo.balance);
+        setBalance(balanceInfo.balance / 1000);
       } catch (e) {
         console.error("Error fetching balance:", e);
       }
