@@ -28,7 +28,7 @@ const ProfileFeed: React.FC<ProfileFeedProps> = ({ pubkey }) => {
 
   return (
     <>
-      <div className="grid grid-cols-1  xl:grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-2">
         {events.length === 0 && isLoading ? (
           <div className="flex flex-col space-y-3">
             <Skeleton className="h-[125px] rounded-xl" />
