@@ -39,6 +39,20 @@ const TrendingImageNew: React.FC<TrendingImageNewProps> = ({ event }) => {
   const imageUrl = event.tags.find(tag => tag[0] === 'imeta' && tag[1]?.startsWith('url '))
     ?.slice(1)[0]?.replace('url ', '');
 
+  // Create proxied image URL
+  const getProxiedImageUrl = (url: string) => {
+    if (!url || !url.startsWith("http")) return url;
+    try {
+      // Encode the URL to be used in the proxy
+      const encodedUrl = encodeURIComponent(url);
+      return `https://imgproxy.lumina.rocks/resize:fit:800:600/plain/${encodedUrl}`;
+    } catch (error) {
+      console.error("Error creating proxied image URL:", error);
+      return url;
+    }
+  }
+
+  const proxiedImageUrl = imageUrl ? getProxiedImageUrl(imageUrl) : null;
   const hrefProfile = `/profile/${nip19.npubEncode(event.pubkey)}`;
   const hrefNote = `/note/${nip19.noteEncode(event.id)}`;
   const profileImageSrc = userData?.picture || "https://robohash.org/" + event.pubkey;
@@ -60,11 +74,11 @@ const TrendingImageNew: React.FC<TrendingImageNewProps> = ({ event }) => {
       <SmallCardContent>
         <div className='p-2'>
           <div className='d-flex justify-content-center align-items-center'>
-            {imageUrl && (
+            {proxiedImageUrl && (
               <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
                 <Link href={hrefNote}>
                   <img 
-                    src={imageUrl} 
+                    src={proxiedImageUrl} 
                     className='rounded lg:rounded-lg w-full h-full object-cover' 
                     style={{ margin: 'auto' }} 
                     alt={text}

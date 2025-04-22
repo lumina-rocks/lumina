@@ -49,6 +49,21 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
   const profileImageSrc = userData?.picture || "https://robohash.org/" + pubkey
   const uploadedVia = tags.find((tag) => tag[0] === "client")?.[1]
 
+  // Create proxied image URL
+  const getProxiedImageUrl = (url: string) => {
+    if (!url.startsWith("http")) return url;
+    try {
+      // Encode the URL to be used in the proxy
+      const encodedUrl = encodeURIComponent(url);
+      return `https://imgproxy.lumina.rocks/resize:fit:1200:800/plain/${encodedUrl}`;
+    } catch (error) {
+      console.error("Error creating proxied image URL:", error);
+      return url;
+    }
+  }
+
+  const proxiedImageUrl = getProxiedImageUrl(image);
+
   return (
     <>
       <div key={event.id}>
@@ -81,7 +96,7 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
               <div className="w-full flex justify-center">
                 <div className="relative w-full h-auto min-h-[300px] max-h-[80vh] flex justify-center">
                   <img
-                    src={image}
+                    src={proxiedImageUrl}
                     alt={text}
                     className="rounded-lg w-full h-auto object-contain"
                     onError={() => setImageError(true)}
