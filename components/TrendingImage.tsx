@@ -47,6 +47,21 @@ const TrendingImage: React.FC<TrendingImageProps> = ({ eventId, pubkey }) => {
   const hrefNote = `/note/${nip19.noteEncode(eventId)}`;
   const profileImageSrc = userData?.picture || "https://robohash.org/" + pubkey;
 
+  // Create proxied image URL
+  const getProxiedImageUrl = (url: string) => {
+    if (!url || !url.startsWith("http")) return url;
+    try {
+      // Encode the URL to be used in the proxy
+      const encodedUrl = encodeURIComponent(url);
+      return `https://imgproxy.lumina.rocks/resize:fit:800:600/plain/${encodedUrl}`;
+    } catch (error) {
+      console.error("Error creating proxied image URL:", error);
+      return url;
+    }
+  }
+
+  const proxiedImageSrc = imageSrc && imageSrc.length > 0 ? getProxiedImageUrl(imageSrc[0]) : null;
+
   return (
     <>
       <Card>
@@ -63,16 +78,12 @@ const TrendingImage: React.FC<TrendingImageProps> = ({ eventId, pubkey }) => {
         <SmallCardContent>
           <div className='p-2'>
             <div className='d-flex justify-content-center align-items-center'>
-              {imageSrc && imageSrc.length > 0 && (
+              {proxiedImageSrc && (
                 <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
                   <Link href={hrefNote}>
-                    <img src={imageSrc[0]} className='rounded lg:rounded-lg' style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={text} />
+                    <img src={proxiedImageSrc} className='rounded lg:rounded-lg' style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={text} />
                   </Link>
                 </div>
-                // <img src={imageSrc[0]} style={{ maxWidth: '100%', maxHeight: '100vh', objectFit: 'cover', margin: 'auto' }} alt={text} />
-                // <div style={{ position: 'relative', width: '100%', maxHeight: '100vh' }}>
-                //   <Image src={imageSrc[0]} alt={text} layout='fill' objectFit='contain' />
-                // </div>
               )}
             </div>
           </div>
