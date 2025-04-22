@@ -53,7 +53,7 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
     <>
 
       <div key={event.id}>
-        <Card>
+        <Card className="my-4">
           <CardHeader>
             <CardTitle>
               <Link href={hrefProfile} style={{ textDecoration: "none" }}>
