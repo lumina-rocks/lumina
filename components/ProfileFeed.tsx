@@ -28,42 +28,44 @@ const ProfileFeed: React.FC<ProfileFeedProps> = ({ pubkey }) => {
 
   return (
     <>
-      {events.length === 0 && isLoading ? (
-        <div className="flex flex-col space-y-3">
-          <Skeleton className="h-[125px] rounded-xl" />
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-[250px]" />
-            <Skeleton className="h-4 w-[200px]" />
-          </div>
-        </div>
-      ) : events.some(event => getImageUrl(event.tags)) ? (
-        <>
-          {events.map((event) => {
-            const imageUrl = getImageUrl(event.tags);
-            return imageUrl ? (
-              <KIND20Card
-                key={event.id}
-                pubkey={event.pubkey}
-                text={event.content}
-                image={imageUrl}
-                event={event}
-                tags={event.tags}
-                eventId={event.id}
-                showViewNoteCardButton={true}
-              />
-            ) : null;
-          })}
-          {!isLoading && (
-            <div className="flex justify-center p-4">
-              <Button className="w-full md:w-auto" onClick={loadMore}>Load More</Button>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-2">
+        {events.length === 0 && isLoading ? (
+          <div className="flex flex-col space-y-3">
+            <Skeleton className="h-[125px] rounded-xl" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-[250px]" />
+              <Skeleton className="h-4 w-[200px]" />
             </div>
-          )}
-        </>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-10 text-gray-500">
-          <p className="text-lg">No posts found :(</p>
-        </div>
-      )}
+          </div>
+        ) : events.some(event => getImageUrl(event.tags)) ? (
+          <>
+            {events.map((event) => {
+              const imageUrl = getImageUrl(event.tags);
+              return imageUrl ? (
+                <KIND20Card
+                  key={event.id}
+                  pubkey={event.pubkey}
+                  text={event.content}
+                  image={imageUrl}
+                  event={event}
+                  tags={event.tags}
+                  eventId={event.id}
+                  showViewNoteCardButton={true}
+                />
+              ) : null;
+            })}
+            {!isLoading && (
+              <div className="flex justify-center p-4">
+                <Button className="w-full md:w-auto" onClick={loadMore}>Load More</Button>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-10 text-gray-500">
+            <p className="text-lg">No posts found :(</p>
+          </div>
+        )}
+      </div>
     </>
   );
 }

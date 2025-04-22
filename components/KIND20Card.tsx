@@ -51,7 +51,6 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
 
   return (
     <>
-
       <div key={event.id}>
         <Card className="my-4">
           <CardHeader>
@@ -78,15 +77,22 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="px-2 sm:px-4">
-              <div className="w-full">
-                <div className="relative w-full" style={{ paddingBottom: "100%" }}>
+            <div className="w-full">
+              <div className="w-full flex justify-center">
+                <div className="relative w-full h-auto min-h-[300px] max-h-[80vh] flex justify-center">
                   <Image
                     src={image}
                     alt={text}
-                    fill
-                    className="rounded-lg object-contain"
+                    className="rounded-lg object-contain max-w-full h-auto"
                     onError={() => setImageError(true)}
+                    priority
+                    width={1200}
+                    height={800}
+                    style={{
+                      maxHeight: "80vh",
+                      width: "auto",
+                      maxWidth: "100%"
+                    }}
                   />
                 </div>
               </div>

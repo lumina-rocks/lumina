@@ -31,36 +31,38 @@ const ProfileTextFeed: React.FC<ProfileTextFeedProps> = ({ pubkey }) => {
 
   return (
     <>
-      {filteredEvents.length === 0 && isLoading ? (
-        <div className="flex flex-col space-y-3">
-          <Skeleton className="h-[125px] rounded-xl" />
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-[250px]" />
-            <Skeleton className="h-4 w-[200px]" />
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-2">
+        {filteredEvents.length === 0 && isLoading ? (
+          <div className="flex flex-col space-y-3">
+            <Skeleton className="h-[125px] rounded-xl" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-[250px]" />
+              <Skeleton className="h-4 w-[200px]" />
+            </div>
           </div>
-        </div>
-      ) : (
-        <>
-          {filteredEvents.map((event) => (
-            <div key={event.id} className="py-6">
-              <NoteCard 
-                key={event.id} 
-                pubkey={event.pubkey} 
-                text={event.content} 
-                event={event} 
-                tags={event.tags} 
-                eventId={event.id} 
-                showViewNoteCardButton={true} 
-              />
-            </div>
-          ))}
-          {!isLoading && filteredEvents.length > 0 && (
-            <div className="flex justify-center p-4">
-              <Button className="w-full md:w-auto" onClick={loadMore}>Load More</Button>
-            </div>
-          )}
-        </>
-      )}
+        ) : (
+          <>
+            {filteredEvents.map((event) => (
+              <div key={event.id} className="py-6">
+                <NoteCard
+                  key={event.id}
+                  pubkey={event.pubkey}
+                  text={event.content}
+                  event={event}
+                  tags={event.tags}
+                  eventId={event.id}
+                  showViewNoteCardButton={true}
+                />
+              </div>
+            ))}
+            {!isLoading && filteredEvents.length > 0 && (
+              <div className="flex justify-center p-4">
+                <Button className="w-full md:w-auto" onClick={loadMore}>Load More</Button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </>
   );
 }
