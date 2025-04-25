@@ -45,12 +45,12 @@ export default function ZapButton({ event }: { event: any }) {
 
     const [lnurlPayInfo, setLnurlPayInfo] = useState<any>(null);
     const [invoice, setInvoice] = useState<string>("");
-    const [customAmount, setCustomAmount] = useState<string>("1000");
+    const [customAmount, setCustomAmount] = useState<string>("21");
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
     const [errorMessage, setErrorMessage] = useState<string>("");
     const [paymentComplete, setPaymentComplete] = useState<boolean>(false);
     const { publish } = useNostr();
-    
+
     // NWC state
     const [useNwc, setUseNwc] = useState<boolean>(false);
     const [nwcClient, setNwcClient] = useState<nwc.NWCClient | null>(null);
@@ -74,11 +74,11 @@ export default function ZapButton({ event }: { event: any }) {
         if (invoice && events.length > invoiceEventsCountRef.current) {
             // Filter events to find new zap receipts related to current invoice
             const newEvents = events.slice(invoiceEventsCountRef.current);
-            
+
             // Check if any new events contain the current invoice
             const relevantEvents = newEvents.filter(zapEvent => {
                 // Look for bolt11 tag containing the invoice
-                return zapEvent.tags.some(tag => 
+                return zapEvent.tags.some(tag =>
                     tag[0] === 'bolt11' && invoice.includes(tag[1].substring(0, 50))
                 );
             });
@@ -97,18 +97,18 @@ export default function ZapButton({ event }: { event: any }) {
     // Initialize NWC client from localStorage
     const initializeNwc = async () => {
         if (typeof window === 'undefined') return;
-        
+
         const connectionUrl = localStorage.getItem(NWC_STORAGE_KEY);
         if (!connectionUrl) return;
-        
+
         try {
             const client = new nwc.NWCClient({
                 nostrWalletConnectUrl: connectionUrl,
             });
-            
+
             // Test the connection by getting wallet info
             await client.getInfo();
-            
+
             setNwcClient(client);
             setUseNwc(true);
         } catch (error) {
@@ -141,9 +141,9 @@ export default function ZapButton({ event }: { event: any }) {
 
         try {
             setIsProcessing(true);
-            
+
             let lnurl;
-            
+
             if (userData.lud06) {
                 lnurl = userData.lud06;
             } else if (userData.lud16) {
@@ -171,25 +171,25 @@ export default function ZapButton({ event }: { event: any }) {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-                const response = await fetch(lnurl, { 
+                const response = await fetch(lnurl, {
                     signal: controller.signal,
                     headers: {
                         'Accept': 'application/json',
                     }
                 });
-                
+
                 clearTimeout(timeoutId);
-                
+
                 // Check content type to ensure it's JSON
                 const contentType = response.headers.get('content-type');
                 if (!contentType || !contentType.includes('application/json')) {
                     console.error("Invalid content type:", contentType);
                     throw new Error("Lightning service returned invalid content type (expected JSON)");
                 }
-                
+
                 // Parse response as JSON
                 const data = await response.json();
-                
+
                 if (!response.ok) {
                     throw new Error(`Error fetching LNURL info: ${data.reason || response.statusText || 'Unknown error'}`);
                 }
@@ -277,20 +277,20 @@ export default function ZapButton({ event }: { event: any }) {
 
             const signedZapRequest = await signEvent(loginType, zapRequestEvent);
             params.append('nostr', JSON.stringify(signedZapRequest));
-            
+
             if (userData?.lud06) {
                 params.append('lnurl', userData.lud06);
             }
-            
+
             let callbackUrl = `${lnurlPayInfo.callback}?${params.toString()}`;
-            
+
             const invoiceResponse = await fetch(callbackUrl);
             const invoiceData = await invoiceResponse.json();
-            
+
             if (!invoiceResponse.ok || !invoiceData.pr) {
                 throw new Error(`Failed to get invoice: ${invoiceData.reason || 'Unknown error'}`);
             }
-            
+
             setInvoice(invoiceData.pr);
         } catch (error) {
             console.error("Error creating zap request:", error);
@@ -340,14 +340,14 @@ export default function ZapButton({ event }: { event: any }) {
                 ],
                 created_at: Math.floor(Date.now() / 1000),
                 pubkey: senderPubkey,
-                id: "", 
-                sig: "", 
+                id: "",
+                sig: "",
             };
 
             // Sign the zap request
             setNwcPaymentStatus("Signing zap request...");
             const signedZapRequest = await signEvent(loginType, zapRequestEvent);
-            
+
             // Get LNURL payment info for the Lightning address
             let recipient = '';
             if (userData?.lud16) {
@@ -359,39 +359,39 @@ export default function ZapButton({ event }: { event: any }) {
             if (!recipient) {
                 throw new Error("Could not determine recipient lightning address");
             }
-            
+
             setNwcPaymentStatus("Getting invoice from recipient...");
-            
+
             // Get LNURL payment info and invoice
             let lnurl;
             let invoice;
-            
+
             if (recipient.includes('@')) {
                 // Handle Lightning Address (lud16)
                 const [name, domain] = recipient.split('@');
                 const url = `https://${domain}/.well-known/lnurlp/${name}`;
-                
+
                 // Get LNURL callback info
                 const lnurlResponse = await fetch(url);
                 const lnurlData = await lnurlResponse.json();
-                
+
                 if (!lnurlData.callback || !lnurlData.allowsNostr) {
                     throw new Error("Lightning address doesn't support Nostr zaps");
                 }
-                
+
                 // Get invoice with zap request
                 const params = new URLSearchParams();
                 params.append('amount', (amountSats * 1000).toString());
                 params.append('nostr', JSON.stringify(signedZapRequest));
-                
+
                 const callbackUrl = `${lnurlData.callback}?${params.toString()}`;
                 const invoiceResponse = await fetch(callbackUrl);
                 const invoiceData = await invoiceResponse.json();
-                
+
                 if (!invoiceResponse.ok || !invoiceData.pr) {
                     throw new Error(`Failed to get invoice: ${invoiceData.reason || 'Unknown error'}`);
                 }
-                
+
                 invoice = invoiceData.pr;
             } else {
                 // Handle LNURL directly (lud06)
@@ -403,37 +403,37 @@ export default function ZapButton({ event }: { event: any }) {
                         throw new Error("Invalid LNURL format");
                     }
                 }
-                
+
                 // Get LNURL callback info
                 const lnurlResponse = await fetch(recipient);
                 const lnurlData = await lnurlResponse.json();
-                
+
                 if (!lnurlData.callback || !lnurlData.allowsNostr) {
                     throw new Error("LNURL doesn't support Nostr zaps");
                 }
-                
+
                 // Get invoice with zap request
                 const params = new URLSearchParams();
                 params.append('amount', (amountSats * 1000).toString());
                 params.append('nostr', JSON.stringify(signedZapRequest));
-                
+
                 const callbackUrl = `${lnurlData.callback}?${params.toString()}`;
                 const invoiceResponse = await fetch(callbackUrl);
                 const invoiceData = await invoiceResponse.json();
-                
+
                 if (!invoiceResponse.ok || !invoiceData.pr) {
                     throw new Error(`Failed to get invoice: ${invoiceData.reason || 'Unknown error'}`);
                 }
-                
+
                 invoice = invoiceData.pr;
             }
-            
+
             // Now pay the invoice using NWC
             setNwcPaymentStatus("Sending payment via NWC...");
-            const paymentResponse = await nwcClient.payInvoice({ 
-                invoice: invoice 
+            const paymentResponse = await nwcClient.payInvoice({
+                invoice: invoice
             });
-            
+
             if (paymentResponse.preimage) {
                 setPaymentPreimage(paymentResponse.preimage);
                 setPaymentComplete(true);
@@ -467,7 +467,7 @@ export default function ZapButton({ event }: { event: any }) {
             setErrorMessage("Please enter a valid amount");
             return;
         }
-        
+
         if (useNwc && nwcClient) {
             await handleNwcPayment(amount);
         } else {
@@ -509,7 +509,7 @@ export default function ZapButton({ event }: { event: any }) {
                 '#e': [event.id],
                 kinds: [9735],
             };
-            
+
             // Manually check relays for new zap events
             const zapPromises = connectedRelays.map(async (relay) => {
                 return new Promise(async (resolve) => {
@@ -517,17 +517,17 @@ export default function ZapButton({ event }: { event: any }) {
                     try {
                         const sub = relay.sub([eventFilter]);
                         const events: any[] = [];
-                        
+
                         sub.on('event', (event) => {
                             // Check if this event contains the current invoice
-                            const hasBolt11 = event.tags.some(tag => 
+                            const hasBolt11 = event.tags.some(tag =>
                                 tag[0] === 'bolt11' && invoice.includes(tag[1].substring(0, 50))
                             );
                             if (hasBolt11) {
                                 events.push(event);
                             }
                         });
-                        
+
                         sub.on('eose', () => {
                             clearTimeout(timeout);
                             resolve(events);
@@ -539,10 +539,10 @@ export default function ZapButton({ event }: { event: any }) {
                     }
                 });
             });
-            
+
             const zapEventsArrays = await Promise.all(zapPromises);
             const newZapEvents = zapEventsArrays.flat();
-            
+
             if (newZapEvents.length > 0) {
                 setPaymentComplete(true);
             }
@@ -574,13 +574,15 @@ export default function ZapButton({ event }: { event: any }) {
                 {/* NWC Payment Mode */}
                 {useNwc && !invoice && (
                     <div className="px-4 pt-4">
-                        <Alert variant="default" className="mb-4 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
-                            <Sparkles className="h-4 w-4" />
-                            <AlertTitle>NWC Enabled</AlertTitle>
-                            <AlertDescription>Payments will be sent directly through your connected NWC wallet</AlertDescription>
-                        </Alert>
+                        {!paymentComplete && (
+                            <Alert variant="default" className="mb-4 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
+                                <Sparkles className="h-4 w-4" />
+                                <AlertTitle>NWC Enabled</AlertTitle>
+                                <AlertDescription>Payments will be sent directly through your connected NWC wallet</AlertDescription>
+                            </Alert>
+                        )}
 
-                        {nwcPaymentStatus && (
+                        {nwcPaymentStatus && !paymentComplete && (
                             <Alert variant="default" className="mb-4 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
                                 {isProcessing ? (
                                     <ReloadIcon className="h-4 w-4 animate-spin" />
@@ -595,48 +597,61 @@ export default function ZapButton({ event }: { event: any }) {
                             <div className="flex flex-col items-center mb-6">
                                 <div className="flex flex-col items-center justify-center mb-4 p-4 rounded-lg bg-green-50 dark:bg-green-900/20 w-[200px] h-[200px]">
                                     <CheckCircledIcon className="h-24 w-24 text-green-500" />
-                                    <p className="text-lg font-semibold text-green-500 mt-4">
+                                    <p className="text-lg font-semibold text-green-500 mt-4 text-center">
                                         Payment Complete!
                                     </p>
                                 </div>
-                                
-                                {paymentPreimage && (
+
+                                {/* {paymentPreimage && (
                                     <div className="w-full overflow-auto p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs mb-4">
                                         <p className="text-xs text-center mb-1">Payment Preimage:</p>
-                                        <code className="break-all">{paymentPreimage}</code>
+                                        <p className="break-all text-center">{paymentPreimage}</p>
                                     </div>
-                                )}
+                                )} */}
+
+                                <div className="flex items-center text-green-500 mb-4">
+                                    <CheckCircledIcon className="mr-2 h-4 w-4" />
+                                    Zap sent successfully!
+                                </div>
+
+                                <Button variant="outline" onClick={() => {
+                                    setPaymentComplete(false);
+                                    setNwcPaymentStatus("");
+                                    setPaymentPreimage("");
+                                }}>
+                                    Send Another Zap
+                                </Button>
                             </div>
                         )}
 
-                        {(!paymentComplete || !isProcessing) && (
+                        {(!paymentComplete || !isProcessing) && !paymentComplete && (
                             <div className="grid grid-cols-3 gap-2 mb-6">
-                                <Button 
-                                    variant={"outline"} 
-                                    className="mx-1" 
+                                <Button
+                                    variant={"outline"}
+                                    className="mx-1"
                                     onClick={() => handleZap(1)}
                                     disabled={isProcessing}
                                 >
                                     1 sat
                                 </Button>
-                                <Button 
-                                    variant={"outline"} 
-                                    className="mx-1" 
+                                <Button
+                                    variant={"outline"}
+                                    className="mx-1"
                                     onClick={() => handleZap(21)}
                                     disabled={isProcessing}
                                 >
                                     21 sats
                                 </Button>
                                 <div className="flex">
-                                    <Input 
-                                        className="mx-1" 
-                                        placeholder="1000 sats" 
+                                    <Input
+                                        className="mx-1"
+                                        placeholder="21"
                                         value={customAmount}
                                         onChange={(e) => setCustomAmount(e.target.value)}
                                         disabled={isProcessing}
                                     />
-                                    <Button 
-                                        variant={"outline"} 
+                                    <Button
+                                        variant={"outline"}
                                         className="mx-1"
                                         onClick={handleCustomZap}
                                         disabled={isProcessing}
@@ -647,8 +662,8 @@ export default function ZapButton({ event }: { event: any }) {
                             </div>
                         )}
 
-                        <hr className="my-4" />
-                        <ZapButtonList events={events} />
+                        {!paymentComplete && <hr className="my-4" />}
+                        {!paymentComplete && <ZapButtonList events={events} />}
                     </div>
                 )}
 
@@ -671,25 +686,27 @@ export default function ZapButton({ event }: { event: any }) {
                                         </Link>
                                     </div>
                                 )}
-                                
-                                <p className="text-sm text-center mb-4">
-                                    {paymentComplete 
-                                        ? "Your payment has been received and confirmed!" 
-                                        : "Scan this QR code with a Lightning wallet to pay the invoice"}
-                                </p>
-                                
-                                <div className="w-full overflow-auto p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs mb-4">
-                                    <code className="break-all">{invoice}</code>
-                                </div>
-                                
+
+                                {!paymentComplete && (
+                                    <>
+                                        <p className="text-sm text-center mb-4">
+                                            Scan this QR code with a Lightning wallet to pay the invoice"
+                                        </p>
+                                        <div className="w-full overflow-auto p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs mb-4">
+                                            <code className="break-all">{invoice}</code>
+                                        </div>
+                                    </>
+                                )}
+
+
                                 {paymentComplete ? (
                                     <div className="flex items-center text-green-500 mb-4">
                                         <CheckCircledIcon className="mr-2 h-4 w-4" />
                                         Zap sent successfully!
                                     </div>
                                 ) : (
-                                    <Button 
-                                        variant="outline" 
+                                    <Button
+                                        variant="outline"
                                         className="mb-4"
                                         onClick={() => checkPaymentStatus()}
                                         disabled={isProcessing}
@@ -703,7 +720,7 @@ export default function ZapButton({ event }: { event: any }) {
                                         )}
                                     </Button>
                                 )}
-                                
+
                                 <Button variant="outline" onClick={() => setInvoice("")}>
                                     {paymentComplete ? "Send Another Zap" : "Back to Zap Options"}
                                 </Button>
@@ -711,32 +728,32 @@ export default function ZapButton({ event }: { event: any }) {
                         ) : (
                             <>
                                 <div className="px-4 pt-4 grid grid-cols-3 gap-2">
-                                    <Button 
-                                        variant={"outline"} 
-                                        className="mx-1" 
+                                    <Button
+                                        variant={"outline"}
+                                        className="mx-1"
                                         onClick={() => handleZap(1)}
                                         disabled={isProcessing || !lnurlPayInfo}
                                     >
                                         1 sat
                                     </Button>
-                                    <Button 
-                                        variant={"outline"} 
-                                        className="mx-1" 
+                                    <Button
+                                        variant={"outline"}
+                                        className="mx-1"
                                         onClick={() => handleZap(21)}
                                         disabled={isProcessing || !lnurlPayInfo}
                                     >
                                         21 sats
                                     </Button>
                                     <div className="flex">
-                                        <Input 
-                                            className="mx-1" 
-                                            placeholder="1000 sats" 
+                                        <Input
+                                            className="mx-1"
+                                            placeholder="1000 sats"
                                             value={customAmount}
                                             onChange={(e) => setCustomAmount(e.target.value)}
                                             disabled={isProcessing}
                                         />
-                                        <Button 
-                                            variant={"outline"} 
+                                        <Button
+                                            variant={"outline"}
                                             className="mx-1"
                                             onClick={handleCustomZap}
                                             disabled={isProcessing || !lnurlPayInfo}
