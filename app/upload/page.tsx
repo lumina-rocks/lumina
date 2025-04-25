@@ -1,17 +1,7 @@
 'use client';
 
 import Head from "next/head";
-import ProfileInfoCard from "@/components/ProfileInfoCard";
-import ProfileFeed from "@/components/ProfileFeed";
-import { useParams } from 'next/navigation'
-import { Event, NostrEvent, finalizeEvent, nip19 } from "nostr-tools";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { SectionIcon, GridIcon } from '@radix-ui/react-icons'
-import TagFeed from "@/components/TagFeed";
-import { FormEvent, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { bytesToHex, hexToBytes } from '@noble/hashes/utils'
+import { useEffect } from "react";
 import UploadComponent from "@/components/UploadComponent";
 
 export default function UploadPage() {
@@ -35,7 +25,7 @@ export default function UploadPage() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <div className="py-6 px-6">
+      <div className="py-2 px-2">
         <UploadComponent />
       </div>
     </>
