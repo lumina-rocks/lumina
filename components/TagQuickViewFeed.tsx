@@ -14,7 +14,7 @@ const TagQuickViewFeed: React.FC<TagQuickViewFeedProps> = ({ tag }) => {
     filter: {
       // since: dateToUnix(now.current), // all new events from now
       // since: 0,
-      limit: 20,
+      limit: 100,
       kinds: [20],
       "#t": [tag],
     },
