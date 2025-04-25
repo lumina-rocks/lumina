@@ -1,19 +1,17 @@
 'use client';
 
 import Head from "next/head";
-import ProfileInfoCard from "@/components/ProfileInfoCard";
-import ProfileFeed from "@/components/ProfileFeed";
 import { useParams } from 'next/navigation'
-import { nip19 } from "nostr-tools";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SectionIcon, GridIcon } from '@radix-ui/react-icons'
 import TagFeed from "@/components/TagFeed";
 import { useEffect } from "react";
+import TagQuickViewFeed from "@/components/TagQuickViewFeed";
 
 export default function Home() {
 
   const params = useParams()
-  let tag = params.tag
+  let tag = Array.isArray(params.tag) ? params.tag[0] : params.tag;
 
   useEffect(() => {
     document.title = `#${tag} | LUMINA`;
@@ -35,8 +33,19 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <div className="py-6 px-6">
-        <TagFeed tag={tag.toString()} />
+      <div className="py-4 px-2 md:py-6 md:px-6">
+        <Tabs defaultValue="QuickView">
+          <TabsList className="mb-4 w-full grid grid-cols-2">
+            <TabsTrigger value="QuickView"><GridIcon /></TabsTrigger>
+            <TabsTrigger value="ProfileFeed"><SectionIcon /></TabsTrigger>
+          </TabsList>
+          <TabsContent value="QuickView">
+            <TagQuickViewFeed tag={tag} />
+          </TabsContent>
+          <TabsContent value="ProfileFeed">
+            <TagFeed tag={tag} />
+          </TabsContent>
+        </Tabs>
       </div>
     </>
   );

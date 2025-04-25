@@ -1,15 +1,9 @@
 'use client';
 
 import Head from "next/head";
-import ProfileInfoCard from "@/components/ProfileInfoCard";
-import ProfileFeed from "@/components/ProfileFeed";
-import { useParams } from 'next/navigation'
-import { nip19 } from "nostr-tools";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SectionIcon, GridIcon } from '@radix-ui/react-icons'
-import TagFeed from "@/components/TagFeed";
 import FollowerFeed from "@/components/FollowerFeed";
-import ProfileQuickViewFeed from "@/components/ProfileQuickViewFeed";
 import FollowerQuickViewFeed from "@/components/FollowerQuickViewFeed";
 import { useEffect } from "react";
 

@@ -1,13 +1,13 @@
 import { useRef } from "react";
 import { useNostrEvents } from "nostr-react";
-import KIND20Card from "./KIND20Card";
 import { getImageUrl } from "@/utils/utils";
+import QuickViewKind20NoteCard from "./QuickViewKind20NoteCard";
 
-interface TagFeedProps {
+interface TagQuickViewFeedProps {
   tag: string;
 }
 
-const TagFeed: React.FC<TagFeedProps> = ({ tag }) => {
+const TagQuickViewFeed: React.FC<TagQuickViewFeedProps> = ({ tag }) => {
   const now = useRef(new Date()); // Make sure current time isn't re-rendered
 
   const { events } = useNostrEvents({
@@ -22,11 +22,11 @@ const TagFeed: React.FC<TagFeedProps> = ({ tag }) => {
 
   return (
     <>
-      <div className="grid lg:grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         {events.map((event) => (
           // <p key={event.id}>{event.pubkey} posted: {event.content}</p>
           <div key={event.id}>
-            <KIND20Card key={event.id} pubkey={event.pubkey} text={event.content} image={getImageUrl(event.tags)} eventId={event.id} tags={event.tags} event={event} showViewNoteCardButton={true} />
+            <QuickViewKind20NoteCard key={event.id} pubkey={event.pubkey} text={event.content} image={getImageUrl(event.tags)} eventId={event.id} tags={event.tags} event={event} linkToNote={false} />
           </div>
         ))}
       </div>
@@ -34,4 +34,4 @@ const TagFeed: React.FC<TagFeedProps> = ({ tag }) => {
   );
 }
 
-export default TagFeed;
+export default TagQuickViewFeed;
