@@ -72,14 +72,20 @@ const FollowButton: React.FC<FollowButtonProps> = ({ pubkey, userPubkey }) => {
         newFollowList = newFollowList.filter(pk => pk !== pubkey)
       }
 
-      // Convert to properly formatted p tags
-      const formattedTags = newFollowList.map(pk => ["p", pk])
+      // Get all non-'p' tags from the original event to preserve them
+      const nonPTags = latestFollowList 
+        ? latestFollowList.tags.filter(tag => tag[0] !== "p") 
+        : []
+      
+      // Convert to properly formatted p tags and combine with non-p tags
+      const pTags = newFollowList.map(pk => ["p", pk])
+      const allTags = [...nonPTags, ...pTags]
 
       // Create the follow list event (NIP-02)
       const followEvent: NostrEvent = {
         kind: 3,
         created_at: Math.floor(Date.now() / 1000),
-        tags: formattedTags,
+        tags: allTags,
         content: "",
         pubkey: "", // Placeholder, will be set by signEvent
         id: "", // Placeholder, will be set by signEvent
