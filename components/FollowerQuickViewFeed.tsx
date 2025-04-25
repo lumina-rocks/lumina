@@ -1,8 +1,7 @@
 import { useRef, useState } from "react";
-import { useNostrEvents, dateToUnix } from "nostr-react";
+import { useNostrEvents } from "nostr-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import QuickViewNoteCard from "./QuickViewNoteCard";
 import QuickViewKind20NoteCard from "./QuickViewKind20NoteCard";
 import { getImageUrl } from "@/utils/utils";
 

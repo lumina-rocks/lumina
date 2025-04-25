@@ -1,15 +1,9 @@
 'use client';
 
 import Head from "next/head";
-import ProfileInfoCard from "@/components/ProfileInfoCard";
-import ProfileFeed from "@/components/ProfileFeed";
-import { useParams } from 'next/navigation'
-import { nip19 } from "nostr-tools";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SectionIcon, GridIcon } from '@radix-ui/react-icons'
-import TagFeed from "@/components/TagFeed";
 import FollowerFeed from "@/components/FollowerFeed";
-import ProfileQuickViewFeed from "@/components/ProfileQuickViewFeed";
 import FollowerQuickViewFeed from "@/components/FollowerQuickViewFeed";
 import { useEffect } from "react";
 
@@ -44,12 +38,12 @@ export default function FeedPage() {
         <Tabs defaultValue="QuickView">
           <TabsList className="mb-4 w-full grid grid-cols-2">
             <TabsTrigger value="QuickView"><GridIcon /></TabsTrigger>
-            <TabsTrigger value="ProfileFeed"><SectionIcon /></TabsTrigger>
+            <TabsTrigger value="ExtendedFeed"><SectionIcon /></TabsTrigger>
           </TabsList>
           <TabsContent value="QuickView">
             <FollowerQuickViewFeed pubkey={pubkey || ''} />
           </TabsContent>
-          <TabsContent value="ProfileFeed">
+          <TabsContent value="ExtendedFeed">
             <FollowerFeed pubkey={pubkey || ''} />
           </TabsContent>
         </Tabs>
