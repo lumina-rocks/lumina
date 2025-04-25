@@ -36,7 +36,14 @@ export function ManageCustomRelays() {
 
   // Check if a relay is currently connected
   const isConnected = (relayUrl: string) => {
-    return connectedRelays?.some(relay => relay.url === relayUrl && relay.status === 1) || false;
+    // Normalize the URL by removing trailing slash
+    const normalizedRelayUrl = relayUrl.endsWith('/') ? relayUrl.slice(0, -1) : relayUrl;
+    
+    return connectedRelays?.some(relay => {
+      // Normalize connected relay URL too
+      const normalizedConnectedUrl = relay.url.endsWith('/') ? relay.url.slice(0, -1) : relay.url;
+      return normalizedConnectedUrl === normalizedRelayUrl && relay.status === 1;
+    }) || false;
   };
 
   if (customRelays.length === 0) {
