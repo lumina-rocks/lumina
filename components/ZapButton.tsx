@@ -690,7 +690,7 @@ export default function ZapButton({ event }: { event: any }) {
                                 {!paymentComplete && (
                                     <>
                                         <p className="text-sm text-center mb-4">
-                                            Scan this QR code with a Lightning wallet to pay the invoice"
+                                            Scan this QR code with a Lightning wallet to pay the invoice
                                         </p>
                                         <div className="w-full overflow-auto p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs mb-4">
                                             <code className="break-all">{invoice}</code>
