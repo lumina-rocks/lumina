@@ -369,11 +369,10 @@ const UploadComponent: React.FC = () => {
               <div className="border-2 border-dashed rounded-lg p-6 transition-colors hover:border-primary/50 hover:bg-muted/50">
                 <div className="flex flex-col items-center space-y-4 text-center">
                   {previewUrl ? (
-                    <div className="w-full max-h-[300px] overflow-hidden rounded-md">
+                    <div className="w-full rounded-md">
                       <img 
                         src={previewUrl} 
-                        alt="Preview" 
-                        className="h-auto w-full object-contain" 
+                        alt="Preview"  
                       />
                     </div>
                   ) : (
