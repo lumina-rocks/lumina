@@ -88,6 +88,17 @@ Umami analytics is disabled by default. To enable:
 - **UI Components**: Radix UI, Lucide icons, shadcn/ui
 - **Protocols**: Nostr, Lightning Network
 
+## ⚡ Support LUMINA
+
+LUMINA is an independent, community-focused project kickstarted and currently mostly developed by a single passionate developer. Your support helps keep this decentralized platform alive and growing!
+
+### How to support:
+- **Geyser Fund**: Donate at [geyser.fund/lumina](https://geyser.fund/lumina)
+- **Lightning Address**: Send sats directly to `lumina@geyser.fund`
+- **Code Contributions**: PRs are welcome!
+
+Every contribution helps build a better, more open social media landscape.
+
 ## 🤝 Contributing
 
 Contributions, issues, and feature requests are welcome! Feel free to check [issues page](https://github.com/lumina-rocks/lumina/issues).
@@ -96,3 +107,4 @@ Contributions, issues, and feature requests are welcome! Feel free to check [iss
 
 - [Website](https://lumina.rocks)
 - [GitHub Repository](https://github.com/lumina-rocks/lumina)
+- [Support Us](https://geyser.fund/lumina)
