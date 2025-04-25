@@ -49,6 +49,11 @@ export function AvatarDropdown() {
             Settings
           </Link>
         </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/profile/settings/nwc">
+            NWC
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => {
           window.localStorage.clear();
           window.location.href = "/";
