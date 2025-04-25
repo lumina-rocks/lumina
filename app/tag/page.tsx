@@ -78,9 +78,9 @@ export default function TagPage() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <div className="pb-2 px-2">
+      <div className="px-2 md:px-6">
         <Tabs defaultValue="trending" className="mt-4">
-          <TabsList className="mb-4">
+          <TabsList className="mb-4 w-full grid grid-cols-2">
             <TabsTrigger value="trending">Trending Tags</TabsTrigger>
             <TabsTrigger value="followed">My Tags</TabsTrigger>
           </TabsList>
