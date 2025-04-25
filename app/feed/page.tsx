@@ -38,12 +38,12 @@ export default function FeedPage() {
         <Tabs defaultValue="QuickView">
           <TabsList className="mb-4 w-full grid grid-cols-2">
             <TabsTrigger value="QuickView"><GridIcon /></TabsTrigger>
-            <TabsTrigger value="ProfileFeed"><SectionIcon /></TabsTrigger>
+            <TabsTrigger value="ExtendedFeed"><SectionIcon /></TabsTrigger>
           </TabsList>
           <TabsContent value="QuickView">
             <FollowerQuickViewFeed pubkey={pubkey || ''} />
           </TabsContent>
-          <TabsContent value="ProfileFeed">
+          <TabsContent value="ExtendedFeed">
             <FollowerFeed pubkey={pubkey || ''} />
           </TabsContent>
         </Tabs>
