@@ -6,7 +6,7 @@ import type React from "react"
 import { type ChangeEvent, type FormEvent, useState, useEffect, useCallback } from "react"
 import { Button } from "./ui/button"
 import { Textarea } from "./ui/textarea"
-import { ReloadIcon } from "@radix-ui/react-icons"
+import { ReloadIcon, UploadIcon, ImageIcon } from "@radix-ui/react-icons"
 import { Input } from "./ui/input"
 import { encode } from "blurhash"
 import {
@@ -22,6 +22,8 @@ import { signEvent } from "@/utils/utils"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
 
 // Function to strip metadata from image files
 async function stripImageMetadata(file: File): Promise<File> {
@@ -344,56 +346,112 @@ const UploadComponent: React.FC = () => {
 
   return (
     <>
-      <div>
-        <form className="space-y-4" onSubmit={onSubmit}>
-          <Textarea
-            name="description"
-            rows={6}
-            placeholder="Your description"
-            id="description"
-            className="w-full"
-          ></Textarea>
-            <div className="grid w-full max-w-sm items-center gap-1.5">
-            <Input
-              id="file"
-              name="file"
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={handleFileChange}
-            />
+      <Card className="w-full max-w-2xl mx-auto shadow-md">
+        <CardHeader>
+          <CardTitle>Share Content</CardTitle>
+          <CardDescription>Upload an image with your description to the Nostr network</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form className="space-y-6" onSubmit={onSubmit}>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                name="description"
+                rows={4}
+                placeholder="What's on your mind? Add #hashtags to categorize your post."
+                id="description"
+                className="w-full resize-none"
+              />
             </div>
-          <div className="grid grid-cols-2 w-full max-w-sm items-center gap-1.5">
-            {/* <select value={serverChoice} onChange={handleServerChange} className="w-full">
-              <option value="nostr.download">nostr.download</option>
-              <option value="blossom.primal.net">blossom.primal.net</option>
-            </select> */}
-            Upload to
-            <Select onValueChange={handleServerChange} value={serverChoice}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={serverChoice} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="blossom.band">blossom.band</SelectItem>
-                <SelectItem value="media.lumina.rocks">media.lumina.rocks</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center justify-between w-full max-w-sm gap-2 mt-2">
-            <Label htmlFor="nip89-toggle" className="text-sm">
-              Enable client tagging (NIP-89)
-            </Label>
-            <Switch id="nip89-toggle" checked={enableNip89} onCheckedChange={setEnableNip89} />
-          </div>
-          {previewUrl && <img src={previewUrl || "/placeholder.svg"} alt="Preview" className="w-full pt-4" />}
-          {isLoading ? (
-            <Button className="w-full" disabled>
-              Uploading.. <ReloadIcon className="m-2 h-4 w-4 animate-spin" />
-            </Button>
-          ) : (
-            <Button className="w-full">Upload</Button>
-          )}
-        </form>
-      </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="file">Image</Label>
+              <div className="border-2 border-dashed rounded-lg p-6 transition-colors hover:border-primary/50 hover:bg-muted/50">
+                <div className="flex flex-col items-center space-y-4 text-center">
+                  {previewUrl ? (
+                    <div className="w-full rounded-md">
+                      <img 
+                        src={previewUrl} 
+                        alt="Preview"  
+                      />
+                    </div>
+                  ) : (
+                    <ImageIcon className="h-10 w-10 text-muted-foreground" />
+                  )}
+                  
+                  <div className="space-y-2">
+                    <div className="text-sm font-medium">
+                      {previewUrl ? "Replace image" : "Add image"}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Supported formats: JPEG, PNG, WebP
+                    </div>
+                  </div>
+                  
+                  <label 
+                    htmlFor="file" 
+                    className={`relative cursor-pointer rounded-md px-4 py-2 text-sm font-medium ring-offset-background transition-colors 
+                      ${previewUrl ? 'bg-muted hover:bg-muted/80' : 'bg-primary text-primary-foreground hover:bg-primary/90'}`}
+                  >
+                    {previewUrl ? "Change file" : "Select file"}
+                    <Input
+                      id="file"
+                      name="file"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handleFileChange}
+                      className="sr-only"
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <Separator className="my-4" />
+            
+            <div className="space-y-4">
+              <div className="flex flex-row items-center justify-between">
+                <div className="flex flex-col space-y-1">
+                  <Label htmlFor="server-choice">Upload destination</Label>
+                  <p className="text-xs text-muted-foreground">Choose where to store your image</p>
+                </div>
+                <Select onValueChange={handleServerChange} value={serverChoice}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder={serverChoice} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="blossom.band">blossom.band</SelectItem>
+                    <SelectItem value="media.lumina.rocks">media.lumina.rocks</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col space-y-1">
+                  <Label htmlFor="nip89-toggle">Client tagging</Label>
+                  <p className="text-xs text-muted-foreground">Enable NIP-89 client identification</p>
+                </div>
+                <Switch id="nip89-toggle" checked={enableNip89} onCheckedChange={setEnableNip89} />
+              </div>
+            </div>
+            
+            <div className="pt-4">
+              {isLoading ? (
+                <Button className="w-full" disabled>
+                  <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
+                  Uploading...
+                </Button>
+              ) : (
+                <Button type="submit" className="w-full">
+                  <UploadIcon className="mr-2 h-4 w-4" />
+                  Share to Nostr
+                </Button>
+              )}
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+      
       <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
         <DrawerContent>
           <DrawerHeader>
