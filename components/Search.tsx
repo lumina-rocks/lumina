@@ -4,36 +4,38 @@ import { queryProfile } from "nostr-tools/nip05"
 import { nip19 } from "nostr-tools"
 import { useState } from 'react';
 import { ReloadIcon } from "@radix-ui/react-icons";
-// import { useRouter } from 'next/router';
 import { useRouter } from 'next/navigation';
 
 export function Search() {
   const router = useRouter();
 
   const [inputValue, setInputValue] = useState('');
-  const [isLoading, setIsLoading] = useState(false); // Neuer Zustand für das Laden
+  const [isLoading, setIsLoading] = useState(false);
 
   const calculateAndRedirect = async () => {
     setIsLoading(true);
 
-    if (inputValue.startsWith('npub')) { // npub Search
+    let value = inputValue.trim();
+    value = value.replaceAll('nostr:', '');
+
+    if (value.startsWith('npub')) { // npub Search
       // window.location.href = `/profile/${inputValue}`;
-      router.push(`/profile/${inputValue}`);
-    } else if (inputValue.startsWith('#')) { // Hashtag Search
+      router.push(`/profile/${value}`);
+    } else if (value.startsWith('#')) { // Hashtag Search
       // window.location.href = `/tag/${inputValue.replaceAll('#', '')}`;
-      router.push(`/tag/${inputValue.replaceAll('#', '')}`);
-    } else if(inputValue.includes('@')) { // NIP-05 Search
+      router.push(`/tag/${value.replaceAll('#', '')}`);
+    } else if(value.includes('@')) { // NIP-05 Search
       // if inputValue starts with @, then add a "_" at the beginning
-      if(inputValue.startsWith('@')) {
-        setInputValue('_' + inputValue);
+      if(value.startsWith('@')) {
+        setInputValue('_' + value);
       }
 
-      let profile = await queryProfile(inputValue);
+      let profile = await queryProfile(value);
       if(profile?.pubkey !== undefined) { // Only redirect if profile is found
         router.push(`/profile/${nip19.npubEncode(profile?.pubkey)}`);
       }
     } else {
-      router.push(`/search/${inputValue}`);
+      router.push(`/search/${value}`);
     }
     setIsLoading(false);
   }
