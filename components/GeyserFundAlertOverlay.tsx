@@ -7,14 +7,19 @@ import { Button } from "@/components/ui/button";
 export function GeyserFundAlertOverlay() {
   const [isVisible, setIsVisible] = useState(false);
   
-  // Show the alert after a short delay for better UX
+  // Check if the feature is enabled via environment variable
+  const showGeyserFund = process.env.NEXT_PUBLIC_SHOW_GEYSER_FUND === 'true';
+  
+  // Show the alert after a short delay for better UX, but only if enabled
   useEffect(() => {
+    if (!showGeyserFund) return;
+    
     const timer = setTimeout(() => {
       setIsVisible(true);
     }, 1000);
     
     return () => clearTimeout(timer);
-  }, []);
+  }, [showGeyserFund]);
   
   // Store dismissal in localStorage to avoid showing again in the same session
   const handleDismiss = () => {
@@ -30,7 +35,8 @@ export function GeyserFundAlertOverlay() {
     }
   }, []);
   
-  if (!isVisible) return null;
+  // Don't render anything if the feature is disabled or not visible
+  if (!showGeyserFund || !isVisible) return null;
   
   return (
     <div className="fixed bottom-4 right-4 left-4 md:left-auto md:w-96 z-50 animate-fade-in mb-14">
