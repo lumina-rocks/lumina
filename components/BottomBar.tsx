@@ -4,7 +4,7 @@ import { BellIcon, GlobeIcon, HomeIcon, RowsIcon, UploadIcon } from "@radix-ui/r
 import Link from "next/link"
 import { FormEvent, JSX, SVGProps, useEffect, useState } from "react"
 import { useRouter, usePathname } from 'next/navigation'
-import { SearchIcon, TagIcon } from "lucide-react";
+import { HashIcon, SearchIcon, TagIcon } from "lucide-react";
 
 export default function BottomBar() {
   const router = useRouter();
@@ -63,7 +63,8 @@ export default function BottomBar() {
       )}
       {/* {pubkey && ( */}
         <Link className={`flex flex-col items-center justify-center w-full text-xs gap-1 px-4 ${isActive('/tag', pathname)}`} href="/tag">
-          <TagIcon className={`h-6 w-6`} />
+        {/* <TagIcon className={`h-6 w-6`} /> */}
+          <HashIcon className={`h-6 w-6`} />
           <span className="sr-only">Tags</span>
         </Link>
       {/* )} */}
