@@ -8,10 +8,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import TagCard from "@/components/TagCard";
 
 export default function TagPage() {
-  useEffect(() => {
-    document.title = `Tags | LUMINA`;
-  }, []);
-
   const [trendingTags, setTrendingTags] = useState<string[]>([]);
   
   let pubkey = '';
