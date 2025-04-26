@@ -1,5 +1,6 @@
 "use client";
 
+import { GeyserFundAlertOverlay } from "@/components/GeyserFundAlertOverlay";
 import { Search } from "@/components/Search";
 import { TrendingAccounts } from "@/components/TrendingAccounts";
 import { TrendingImages } from "@/components/TrendingImages";
@@ -20,6 +21,7 @@ export default function Home() {
       {/* <TrendingAccounts /> */}
       {/* <TrendingImages /> */}
       <TrendingImagesNew />
+      <GeyserFundAlertOverlay />
     </>
   );
 }
