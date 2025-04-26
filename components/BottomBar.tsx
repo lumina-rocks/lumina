@@ -61,12 +61,12 @@ export default function BottomBar() {
           <span className="sr-only">Upload</span>
         </Link>
       )}
-      {pubkey && (
+      {/* {pubkey && ( */}
         <Link className={`flex flex-col items-center justify-center w-full text-xs gap-1 px-4 ${isActive('/tag', pathname)}`} href="/tag">
           <TagIcon className={`h-6 w-6`} />
           <span className="sr-only">Tags</span>
         </Link>
-      )}
+      {/* )} */}
       <Link className={`flex flex-col items-center justify-center w-full text-xs gap-1 px-4 ${isActive('/search', pathname)}`} href="/search">
         <SearchIcon className={`h-6 w-6`} />
         <span className="sr-only">Search</span>

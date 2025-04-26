@@ -80,9 +80,9 @@ export default function TagPage() {
       </Head>
       <div className="px-2 md:px-6">
         <Tabs defaultValue="trending" className="mt-4">
-          <TabsList className="mb-4 w-full grid grid-cols-2">
+          <TabsList className="mb-4 w-full grid grid-cols-{pubkey ? '2' : '1'}">
             <TabsTrigger value="trending">Trending Tags</TabsTrigger>
-            <TabsTrigger value="followed">My Tags</TabsTrigger>
+            {pubkey && <TabsTrigger value="followed">My Tags</TabsTrigger>}
           </TabsList>
           
           <TabsContent value="trending">
@@ -105,25 +105,27 @@ export default function TagPage() {
             </div>
           </TabsContent>
           
-          <TabsContent value="followed">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {isFollowLoading ? (
-                Array(4).fill(0).map((_, i) => (
-                  <div key={i}>
-                    <Skeleton className="h-[110px] rounded-xl" />
+          {pubkey && (
+            <TabsContent value="followed">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {isFollowLoading ? (
+                  Array(4).fill(0).map((_, i) => (
+                    <div key={i}>
+                      <Skeleton className="h-[110px] rounded-xl" />
+                    </div>
+                  ))
+                ) : uniqueFollowedTags.length > 0 ? (
+                  uniqueFollowedTags.map(tag => (
+                    <TagCard key={tag} tag={tag} />
+                  ))
+                ) : (
+                  <div className="col-span-full text-center py-10">
+                    <p className="text-muted-foreground">No followed tags found. Follow tags to see them here.</p>
                   </div>
-                ))
-              ) : uniqueFollowedTags.length > 0 ? (
-                uniqueFollowedTags.map(tag => (
-                  <TagCard key={tag} tag={tag} />
-                ))
-              ) : (
-                <div className="col-span-full text-center py-10">
-                  <p className="text-muted-foreground">No followed tags found. Follow tags to see them here.</p>
-                </div>
-              )}
-            </div>
-          </TabsContent>
+                )}
+              </div>
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </>
