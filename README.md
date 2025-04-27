@@ -93,7 +93,7 @@ Umami analytics is disabled by default. To enable:
 LUMINA is an independent, community-focused project kickstarted and currently mostly developed by a single passionate developer. Your support helps keep this decentralized platform alive and growing!
 
 ### How to support:
-- **Geyser Fund**: Donate at [geyser.fund/lumina](https://geyser.fund/lumina)
+- **Geyser Fund**: Donate at [geyser.fund/project/lumina](https://geyser.fund/project/lumina)
 - **Lightning Address**: Send sats directly to `lumina@geyser.fund`
 - **Code Contributions**: PRs are welcome!
 
@@ -107,4 +107,4 @@ Contributions, issues, and feature requests are welcome! Feel free to check [iss
 
 - [Website](https://lumina.rocks)
 - [GitHub Repository](https://github.com/lumina-rocks/lumina)
-- [Support Us](https://geyser.fund/lumina)
+- [Support Us](https://geyser.fund/project/lumina)
