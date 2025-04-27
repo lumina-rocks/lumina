@@ -13,10 +13,27 @@ import { Avatar, AvatarImage } from "@/components/ui/avatar";
 export default function ZapButtonListItem({ event }: { event: NostrEvent }) {
 
     let pubkey = event.pubkey;
-    for(let i = 0; i < event.tags.length; i++) {
-        if(event.tags[i][0] === 'P') {
-            pubkey = event.tags[i][1];
-            break;
+    
+    // Try to extract pubkey from description tag if available
+    const descriptionTag = event.tags.find(tag => tag[0] === 'description');
+    if (descriptionTag && descriptionTag[1]) {
+        try {
+            const descriptionEvent = JSON.parse(descriptionTag[1]);
+            if (descriptionEvent.pubkey) {
+                pubkey = descriptionEvent.pubkey;
+            }
+        } catch (e) {
+            console.error('Failed to parse description tag:', e);
+        }
+    }
+    
+    // Fallback to 'p' tag if description doesn't have a pubkey
+    if (pubkey === event.pubkey) {
+        for(let i = 0; i < event.tags.length; i++) {
+            if(event.tags[i][0] === 'P' || event.tags[i][0] === 'p') {
+                pubkey = event.tags[i][1];
+                break;
+            }
         }
     }
 
