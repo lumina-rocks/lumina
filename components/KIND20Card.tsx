@@ -13,7 +13,7 @@ import Link from "next/link"
 import ViewCopyButton from "./ViewCopyButton"
 import type { Event as NostrEvent } from "nostr-tools"
 import ZapButton from "./ZapButton"
-import Image from "next/image"
+import Image from "@/components/Image"
 
 interface KIND20CardProps {
   pubkey: string

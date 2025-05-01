@@ -8,7 +8,7 @@ import {
   SmallCardContent,
 } from "@/components/ui/card"
 import Link from 'next/link';
-import Image from 'next/image';
+import Image from '@/components/Image';
 import { extractDimensions } from '@/utils/utils';
 
 interface QuickViewKind20NoteCardProps {
@@ -40,7 +40,7 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubke
         <div className="h-full w-full">
           <div className='relative w-full h-full'>
             <Image 
-              src={image || "/placeholder.svg"} 
+              src={image} 
               alt={text}
               fill
               sizes="(max-width: 768px) 100vw, 300px"
