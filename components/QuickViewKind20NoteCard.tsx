@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card"
 import Link from 'next/link';
 import Image from 'next/image';
-import { extractDimensions } from '@/utils/utils';
+import { extractDimensions, getProxiedImageUrl } from '@/utils/utils';
 
 interface QuickViewKind20NoteCardProps {
   pubkey: string;
@@ -22,7 +22,7 @@ interface QuickViewKind20NoteCardProps {
 }
 
 const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubkey, text, image, eventId, tags, event, linkToNote }) => {
-  const {data, isLoading} = useProfile({
+  const { data, isLoading } = useProfile({
     pubkey,
   });
   const [imageError, setImageError] = useState(false);
@@ -33,6 +33,9 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubke
   const encodedNoteId = nip19.noteEncode(event.id)
 
   const { width, height } = extractDimensions(event);
+  
+  const useImgProxy = process.env.NEXT_PUBLIC_ENABLE_IMGPROXY === "true"
+  const proxiedImageUrl = useImgProxy ? getProxiedImageUrl(image, 400, 400) : image;
 
   const card = (
     <Card className="aspect-square overflow-hidden">
@@ -40,7 +43,7 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubke
         <div className="h-full w-full">
           <div className='relative w-full h-full'>
             <img 
-              src={image || "/placeholder.svg"} 
+              src={proxiedImageUrl || "/placeholder.svg"} 
               alt={text}
               className='w-full h-full rounded lg:rounded-lg object-cover' 
               loading="lazy"
