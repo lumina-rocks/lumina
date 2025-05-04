@@ -14,6 +14,7 @@ import ViewCopyButton from "./ViewCopyButton"
 import type { Event as NostrEvent } from "nostr-tools"
 import ZapButton from "./ZapButton"
 import Image from "next/image"
+import { getProxiedImageUrl } from "@/utils/utils"
 
 interface KIND20CardProps {
   pubkey: string
@@ -49,20 +50,9 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
   const profileImageSrc = userData?.picture || "https://robohash.org/" + pubkey
   const uploadedVia = tags.find((tag) => tag[0] === "client")?.[1]
 
-  // Create proxied image URL
-  const getProxiedImageUrl = (url: string) => {
-    if (!url.startsWith("http")) return url;
-    try {
-      // Encode the URL to be used in the proxy
-      const encodedUrl = encodeURIComponent(url);
-      return `https://imgproxy.lumina.rocks/resize:fit:1200:800/plain/${encodedUrl}`;
-    } catch (error) {
-      console.error("Error creating proxied image URL:", error);
-      return url;
-    }
-  }
+  const useImgProxy = process.env.NEXT_PUBLIC_ENABLE_IMGPROXY === "true"
 
-  const proxiedImageUrl = getProxiedImageUrl(image);
+  const proxiedImageUrl = useImgProxy ? getProxiedImageUrl(image, 1200, 800) : image;
 
   return (
     <>
