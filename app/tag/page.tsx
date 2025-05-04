@@ -76,9 +76,9 @@ export default function TagPage() {
       </Head>
       <div className="px-2 md:px-6">
         <Tabs defaultValue="trending" className="mt-4">
-          <TabsList className="mb-4 w-full grid grid-cols-{pubkey ? '2' : '1'}">
+          <TabsList className="mb-4 w-full grid grid-cols-1">
             <TabsTrigger value="trending">Trending Tags</TabsTrigger>
-            {pubkey && <TabsTrigger value="followed">My Tags</TabsTrigger>}
+            {/* {pubkey && <TabsTrigger value="followed">My Tags</TabsTrigger>} */}
           </TabsList>
           
           <TabsContent value="trending">
