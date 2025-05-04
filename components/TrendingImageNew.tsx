@@ -10,6 +10,7 @@ import {
 import Link from 'next/link';
 import { Avatar } from './ui/avatar';
 import { AvatarImage } from '@radix-ui/react-avatar';
+import { getProxiedImageUrl } from '@/utils/utils';
 
 interface TrendingImageNewProps {
   event: {
@@ -39,20 +40,9 @@ const TrendingImageNew: React.FC<TrendingImageNewProps> = ({ event }) => {
   const imageUrl = event.tags.find(tag => tag[0] === 'imeta' && tag[1]?.startsWith('url '))
     ?.slice(1)[0]?.replace('url ', '');
 
-  // Create proxied image URL
-  const getProxiedImageUrl = (url: string) => {
-    if (!url || !url.startsWith("http")) return url;
-    try {
-      // Encode the URL to be used in the proxy
-      const encodedUrl = encodeURIComponent(url);
-      return `https://imgproxy.lumina.rocks/resize:fit:800:600/plain/${encodedUrl}`;
-    } catch (error) {
-      console.error("Error creating proxied image URL:", error);
-      return url;
-    }
-  }
+  const useImgProxy = process.env.NEXT_PUBLIC_ENABLE_IMGPROXY === "true";
 
-  const proxiedImageUrl = imageUrl ? getProxiedImageUrl(imageUrl) : null;
+  const proxiedImageUrl = useImgProxy && imageUrl ? getProxiedImageUrl(imageUrl, 800, 600) : imageUrl;
   const hrefProfile = `/profile/${nip19.npubEncode(event.pubkey)}`;
   const hrefNote = `/note/${nip19.noteEncode(event.id)}`;
   const profileImageSrc = userData?.picture || "https://robohash.org/" + event.pubkey;

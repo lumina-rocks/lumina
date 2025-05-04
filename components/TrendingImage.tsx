@@ -13,6 +13,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Avatar } from './ui/avatar';
 import { AvatarImage } from '@radix-ui/react-avatar';
+import { getProxiedImageUrl } from '@/utils/utils';
 
 interface TrendingImageProps {
   eventId: string;
@@ -47,20 +48,9 @@ const TrendingImage: React.FC<TrendingImageProps> = ({ eventId, pubkey }) => {
   const hrefNote = `/note/${nip19.noteEncode(eventId)}`;
   const profileImageSrc = userData?.picture || "https://robohash.org/" + pubkey;
 
-  // Create proxied image URL
-  const getProxiedImageUrl = (url: string) => {
-    if (!url || !url.startsWith("http")) return url;
-    try {
-      // Encode the URL to be used in the proxy
-      const encodedUrl = encodeURIComponent(url);
-      return `https://imgproxy.lumina.rocks/resize:fit:800:600/plain/${encodedUrl}`;
-    } catch (error) {
-      console.error("Error creating proxied image URL:", error);
-      return url;
-    }
-  }
+  const useImgProxy = process.env.NEXT_PUBLIC_ENABLE_IMGPROXY === "true";
 
-  const proxiedImageSrc = imageSrc && imageSrc.length > 0 ? getProxiedImageUrl(imageSrc[0]) : null;
+  const proxiedImageSrc = useImgProxy && imageSrc && imageSrc.length > 0 ? getProxiedImageUrl(imageSrc[0], 800, 600) : imageSrc && imageSrc.length > 0 ? imageSrc[0] : null;
 
   return (
     <>
