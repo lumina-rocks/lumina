@@ -5,6 +5,7 @@ import {
     nip19,
 } from "nostr-tools";
 import Link from "next/link";
+import { useProfileValue } from "@nostr-dev-kit/ndk-hooks";
 
 export function RecentZap({ zap }: { zap: any }) {
 
@@ -15,9 +16,7 @@ export function RecentZap({ zap }: { zap: any }) {
         }
     }
 
-    const { data: userData, isLoading: userDataLoading } = useProfile({
-        pubkey: zapperPubkey,
-    });
+    const userData = useProfileValue(zapperPubkey);
 
     console.log('zap', zap)
 

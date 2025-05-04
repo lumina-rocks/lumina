@@ -9,8 +9,8 @@ import { SectionIcon, GridIcon } from '@radix-ui/react-icons'
 import ProfileQuickViewFeed from "@/components/ProfileQuickViewFeed";
 import ProfileTextFeed from "@/components/ProfileTextFeed";
 import ProfileGalleryViewFeed from "@/components/ProfileGalleryViewFeed";
-import { useProfile } from "nostr-react";
 import { useMemo, useEffect } from "react";
+import { useProfileValue } from "@nostr-dev-kit/ndk-hooks";
 
 export default function ProfilePage() {
 
@@ -29,7 +29,7 @@ export default function ProfilePage() {
     return 'npub' + parts[1].slice(0, 4) + ':' + parts[1].slice(-3);
   }, [pubkey]);
 
-  const { data: userData, isLoading } = useProfile({ pubkey });
+  const userData = useProfileValue(pubkey);
   const title = userData?.username || userData?.display_name || userData?.name || userData?.npub || npubShortened;
 
   useEffect(() => {

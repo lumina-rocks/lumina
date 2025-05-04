@@ -5,12 +5,11 @@ import {
     nip19,
 } from "nostr-tools";
 import Link from "next/link";
+import { useProfileValue } from "@nostr-dev-kit/ndk-hooks";
 
 export function RecentFollower({ follower }: { follower: any }) {
 
-    const { data: userData, isLoading: userDataLoading } = useProfile({
-        pubkey: follower.pubkey,
-    });
+    const userData = useProfileValue(follower.pubkey);
 
     let encoded = nip19.npubEncode(follower.pubkey);
     let parts = encoded.split('npub');

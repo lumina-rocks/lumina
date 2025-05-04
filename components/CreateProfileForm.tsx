@@ -27,6 +27,7 @@ import {
     TooltipTrigger 
 } from "@/components/ui/tooltip";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useProfileValue } from '@nostr-dev-kit/ndk-hooks';
 
 export function CreateProfileForm() {
     const { publish } = useNostr();
@@ -60,14 +61,13 @@ export function CreateProfileForm() {
     }, []);
 
     // Try to load existing profile data if available
-    const { data: userData, isLoading: profileLoading } = useProfile({
-        pubkey,
-    });
+    const userData = useProfileValue(pubkey);
+
 
     useEffect(() => {
         if (userData) {
             setUsername(userData.name || "");
-            setDisplayName(userData.display_name || "");
+            setDisplayName(userData.display_name ? String(userData.display_name) : "");
             setBio(userData.about || "");
             setPicture(userData.picture || "");
             setWebsite(userData.website || "");

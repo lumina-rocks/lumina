@@ -13,6 +13,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Avatar } from './ui/avatar';
 import { AvatarImage } from '@radix-ui/react-avatar';
+import { useProfileValue } from '@nostr-dev-kit/ndk-hooks';
 
 interface TrendingImageProps {
   eventId: string;
@@ -20,9 +21,7 @@ interface TrendingImageProps {
 }
 
 const TrendingImage: React.FC<TrendingImageProps> = ({ eventId, pubkey }) => {
-  const { data: userData } = useProfile({
-    pubkey,
-  });
+  const userData = useProfileValue(pubkey);
 
   const { events } = useNostrEvents({
     filter: {

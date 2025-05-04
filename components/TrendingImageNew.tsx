@@ -9,7 +9,7 @@ import {
 import Link from 'next/link';
 import { Avatar } from './ui/avatar';
 import { AvatarImage } from '@radix-ui/react-avatar';
-import { useProfile, useProfileValue } from '@nostr-dev-kit/ndk-hooks';
+import { useProfileValue } from '@nostr-dev-kit/ndk-hooks';
 
 interface TrendingImageNewProps {
   event: {
