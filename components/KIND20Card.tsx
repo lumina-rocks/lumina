@@ -14,7 +14,7 @@ import ViewCopyButton from "./ViewCopyButton"
 import type { Event as NostrEvent } from "nostr-tools"
 import ZapButton from "./ZapButton"
 import Image from "next/image"
-import { useProfileValue } from "@nostr-dev-kit/ndk-hooks"
+import { NDKEvent, useProfileValue } from "@nostr-dev-kit/ndk-hooks"
 
 interface KIND20CardProps {
   pubkey: string
@@ -22,7 +22,7 @@ interface KIND20CardProps {
   image: string
   eventId: string
   tags: string[][]
-  event: NostrEvent
+  event: NDKEvent
   showViewNoteCardButton: boolean
 }
 
