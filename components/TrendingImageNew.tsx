@@ -1,5 +1,4 @@
 import React from 'react';
-import { useProfile } from "nostr-react";
 import { nip19 } from "nostr-tools";
 import {
   Card,
@@ -10,6 +9,7 @@ import {
 import Link from 'next/link';
 import { Avatar } from './ui/avatar';
 import { AvatarImage } from '@radix-ui/react-avatar';
+import { useProfileValue } from '@nostr-dev-kit/ndk-hooks';
 
 interface TrendingImageNewProps {
   event: {
@@ -22,9 +22,7 @@ interface TrendingImageNewProps {
 }
 
 const TrendingImageNew: React.FC<TrendingImageNewProps> = ({ event }) => {
-  const { data: userData } = useProfile({
-    pubkey: event.pubkey,
-  });
+  const userData = useProfileValue(event.pubkey);
 
   const npubShortened = (() => {
     let encoded = nip19.npubEncode(event.pubkey);

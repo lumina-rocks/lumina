@@ -10,15 +10,14 @@ import {
     nip19,
 } from "nostr-tools";
 import { RecentZapsCard } from './RecentZapsCard';
+import { useProfileValue } from '@nostr-dev-kit/ndk-hooks';
 
 interface ProfileInfoCardProps {
     pubkey: string;
 }
 
 const ProfileInfoCard: React.FC<ProfileInfoCardProps> = ({ pubkey }) => {
-    const { data: userData, isLoading: userDataLoading } = useProfile({
-        pubkey,
-    });
+    const userData = useProfileValue(pubkey);
 
     const { events: followers, isLoading: followersLoading } = useNostrEvents({
         filter: {

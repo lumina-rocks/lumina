@@ -8,6 +8,7 @@ import {
 } from "nostr-tools";
 import { Avatar, AvatarImage } from './ui/avatar';
 import Link from 'next/link';
+import { useProfileValue } from '@nostr-dev-kit/ndk-hooks';
 
 interface NotificationProps {
     event: NostrEvent;
@@ -18,9 +19,7 @@ const Notification: React.FC<NotificationProps> = ({ event }) => {
     let sats = 0;
     let reactedToId = '';
 
-    const { data: userData, isLoading: userDataLoading } = useProfile({
-        pubkey: sender,
-    });
+    const userData = useProfileValue(sender);
 
     if (!event) {
         return null;

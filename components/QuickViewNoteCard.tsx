@@ -10,6 +10,7 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { PlayIcon, StackIcon, VideoIcon } from '@radix-ui/react-icons';
+import { useProfileValue } from '@nostr-dev-kit/ndk-hooks';
 
 interface NoteCardProps {
   pubkey: string;
@@ -21,9 +22,8 @@ interface NoteCardProps {
 }
 
 const QuickViewNoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tags, event, linkToNote }) => {
-  const { data: userData } = useProfile({
-    pubkey,
-  });
+  const userData = useProfileValue(pubkey);
+
 
   const title = userData?.username || userData?.display_name || userData?.name || userData?.npub || nip19.npubEncode(pubkey);
   text = text.replaceAll('\n', ' ');

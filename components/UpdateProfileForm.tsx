@@ -14,6 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Globe, Image, ImageIcon, BadgeCheck, Zap } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useProfileValue } from '@nostr-dev-kit/ndk-hooks';
 
 export function UpdateProfileForm() {
     const { publish } = useNostr();
@@ -39,10 +40,9 @@ export function UpdateProfileForm() {
             nsec = hexToBytes(nsecHex);
         }
     }
+    
+    const userData = useProfileValue(pubkey);
 
-    const { data: userData, isLoading: isUserDataLoading } = useProfile({
-        pubkey,
-    });
 
     const [username, setUsername] = useState<string | undefined>('');
     const [displayName, setDisplayName] = useState<string | undefined>('');
@@ -57,7 +57,11 @@ export function UpdateProfileForm() {
     useEffect(() => {
         if (userData && !isDataLoaded) {
             setUsername(userData.name);
-            setDisplayName(userData.display_name);
+            setDisplayName(
+                userData.display_name !== undefined && userData.display_name !== null
+                    ? String(userData.display_name)
+                    : undefined
+            );
             setBio(userData.about);
             setPicture(userData.picture);
             setBanner(userData.banner);
@@ -158,7 +162,7 @@ export function UpdateProfileForm() {
         }
     }
 
-    if (isUserDataLoading && !isDataLoaded) {
+    if (!isDataLoaded) {
         return (
             <div className="w-full space-y-6">
                 <div className="flex items-center gap-4">

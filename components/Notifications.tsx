@@ -9,15 +9,14 @@ import {
     nip19,
 } from "nostr-tools";
 import Notification from './Notification';
+import { useProfileValue } from '@nostr-dev-kit/ndk-hooks';
 
 interface NotificationsProps {
     pubkey: string;
 }
 
 const Notifications: React.FC<NotificationsProps> = ({ pubkey }) => {
-    const { data: userData, isLoading: userDataLoading } = useProfile({
-        pubkey,
-    });
+    const userData = useProfileValue(pubkey);
 
     // const { events: followers, isLoading: followersLoading } = useNostrEvents({
     //     filter: {

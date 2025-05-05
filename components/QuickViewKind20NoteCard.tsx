@@ -22,9 +22,6 @@ interface QuickViewKind20NoteCardProps {
 }
 
 const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubkey, text, image, eventId, tags, event, linkToNote }) => {
-  const {data, isLoading} = useProfile({
-    pubkey,
-  });
   const [imageError, setImageError] = useState(false);
 
   if (!image || !image.startsWith("http") || imageError) return null;

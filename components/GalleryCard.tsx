@@ -10,6 +10,7 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { PlayIcon, StackIcon, VideoIcon } from '@radix-ui/react-icons';
+import { useProfileValue } from '@nostr-dev-kit/ndk-hooks';
 
 interface GalleryCardProps {
   pubkey: string;
@@ -19,9 +20,7 @@ interface GalleryCardProps {
 }
 
 const GalleryCard: React.FC<GalleryCardProps> = ({ pubkey, eventId, imageUrl, linkToNote }) => {
-  const { data: userData } = useProfile({
-    pubkey,
-  });
+  const userData = useProfileValue(pubkey);
 
   const encodedNoteId = nip19.noteEncode(eventId);
 

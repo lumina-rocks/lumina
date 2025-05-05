@@ -28,6 +28,7 @@ import { Avatar, AvatarImage } from '@/components/ui/avatar';
 import ViewRawButton from '@/components/ViewRawButton';
 import ViewNoteButton from './ViewNoteButton';
 import Link from 'next/link';
+import { useProfileValue } from '@nostr-dev-kit/ndk-hooks';
 
 interface CommentCardProps {
   pubkey: string;
@@ -38,9 +39,7 @@ interface CommentCardProps {
 }
 
 const NoteCard: React.FC<CommentCardProps> = ({ pubkey, text, eventId, tags, event }) => {
-  const { data: userData } = useProfile({
-    pubkey,
-  });
+  const userData = useProfileValue(pubkey);
 
   const title = userData?.username || userData?.display_name || userData?.name || userData?.npub || nip19.npubEncode(pubkey);
   const imageSrc = text.match(/https?:\/\/[^ ]*\.(png|jpg|gif|jpeg)/g);

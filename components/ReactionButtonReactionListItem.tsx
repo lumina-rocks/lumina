@@ -9,14 +9,13 @@ import {
     nip19,
 } from "nostr-tools";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { useProfileValue } from "@nostr-dev-kit/ndk-hooks";
 
 export default function ReactionButtonReactionListItem({ event }: { event: NostrEvent }) {
 
     let pubkey = event.pubkey;
 
-    const { data: userData } = useProfile({
-        pubkey,
-    });
+    const userData = useProfileValue(pubkey);
 
     const title = userData?.username || userData?.display_name || userData?.name || nip19.npubEncode(pubkey).slice(0, 8) + ':' + nip19.npubEncode(pubkey).slice(-3);;
     const createdAt = new Date(event.created_at * 1000);
@@ -32,7 +31,7 @@ export default function ReactionButtonReactionListItem({ event }: { event: Nostr
                 <div className="flex items-center space-x-2 p-1">
                     {/* <img src={profileImageSrc} className="w-8 h-8 rounded-full" /> */}
                     <Avatar>
-                        <AvatarImage src={profileImageSrc} alt={title} />
+                        <AvatarImage src={profileImageSrc} alt={String(title)} />
                     </Avatar>
                     <span>{title}</span>
                     <span className="pl-2">{content}</span>
