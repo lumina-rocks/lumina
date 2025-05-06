@@ -49,9 +49,14 @@ export default function ZapButtonListItem({ event }: { event: NostrEvent }) {
     var lightningPayReq = require('bolt11');
     event.tags.forEach((tag) => {
         if (tag[0] === 'bolt11') {
-            let decoded = lightningPayReq.decode(tag[1]);
-            // console.log(decoded.satoshis);
-            sats =  decoded.satoshis;
+            try {
+                let decoded = lightningPayReq.decode(tag[1]);
+                // console.log(decoded.satoshis);
+                sats =  decoded.satoshis;
+            } catch (e) {
+                console.error("Error decoding bolt11 tag:", e);
+                return null;
+            }
         }
     });
 

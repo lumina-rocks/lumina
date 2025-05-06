@@ -126,8 +126,15 @@ export default function ZapButton({ event }: { event: any }) {
     events.forEach((event) => {
         event.tags.forEach((tag) => {
             if (tag[0] === 'bolt11') {
-                let decoded = lightningPayReq.decode(tag[1]);
-                sats = sats + decoded.satoshis;
+                try {
+                    lightningPayReq.decode(tag[1]);
+                    let decoded = lightningPayReq.decode(tag[1]);
+                    sats = sats + decoded.satoshis;
+                } catch (e) {
+                    console.error("Error decoding bolt11 tag:", e);
+                    console.log(tag[1]);
+                    return null;
+                }
             }
         });
     });
