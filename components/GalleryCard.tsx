@@ -31,7 +31,13 @@ const GalleryCard: React.FC<GalleryCardProps> = ({ pubkey, eventId, imageUrl, li
         <div>
           <div className='d-flex justify-content-center align-items-center'>
             <div style={{ position: 'relative' }}>
-              <img src={imageUrl} className='rounded lg:rounded-lg' style={{ maxWidth: '100%', maxHeight: '75vh', objectFit: 'contain', margin: 'auto' }} alt={eventId} />
+              <img 
+                src={imageUrl} 
+                className='rounded lg:rounded-lg w-full h-full object-cover' 
+                style={{ maxHeight: '75vh', margin: 'auto' }} 
+                alt={eventId}
+                loading="lazy"
+              />
             </div>
           </div>
         </div>

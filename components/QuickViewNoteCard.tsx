@@ -45,7 +45,12 @@ const QuickViewNoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tag
               <div className="absolute top-2 right-2 w-7 h-7 lg:w-12 lg:h-12 bg-black bg-opacity-40 rounded-lg flex items-center justify-center">
                 <StackIcon className='absolute w-7 h-7 lg:w-12 lg:h-12'/>
               </div>
-              <img src={imageSrc[0]} className='rounded lg:rounded-lg' style={{ maxWidth: '100%', maxHeight: '75vh', objectFit: 'contain', margin: 'auto' }} alt={text} />
+              <img src={imageSrc[0]} 
+                className='rounded lg:rounded-lg w-full h-auto object-cover' 
+                style={{ maxHeight: '75vh', margin: 'auto' }} 
+                alt={text} 
+                loading="lazy"
+              />
             </div>
           ) : imageSrc && imageSrc.length > 0 ? (
             <div style={{ position: 'relative' }}>
@@ -54,7 +59,12 @@ const QuickViewNoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tag
                   <PlayIcon className='absolute w-7 h-7 lg:w-12 lg:h-12' />
                 </div>
               }
-              <img src={imageSrc[0]} className='rounded lg:rounded-lg' style={{ maxWidth: '100%', maxHeight: '75vh', objectFit: 'contain', margin: 'auto' }} alt={text} />
+              <img src={imageSrc[0]} 
+                className='rounded lg:rounded-lg w-full h-auto object-cover' 
+                style={{ maxHeight: '75vh', margin: 'auto' }} 
+                alt={text} 
+                loading="lazy"
+              />
             </div>
           ) : videoSrc && videoSrc.length > 0 ? (
             <div style={{ position: 'relative' }}>

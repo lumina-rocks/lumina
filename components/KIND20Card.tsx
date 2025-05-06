@@ -80,18 +80,15 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
             <div className="w-full">
               <div className="w-full flex justify-center">
                 <div className="relative w-full h-auto min-h-[300px] max-h-[80vh] flex justify-center">
-                  <Image
+                  <img
                     src={image}
                     alt={text}
-                    className="rounded-lg object-contain max-w-full h-auto"
+                    className="rounded-lg w-full h-auto object-contain"
                     onError={() => setImageError(true)}
-                    priority
-                    width={1200}
-                    height={800}
+                    loading="lazy"
                     style={{
                       maxHeight: "80vh",
-                      width: "auto",
-                      maxWidth: "100%"
+                      margin: "auto"
                     }}
                   />
                 </div>

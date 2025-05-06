@@ -63,7 +63,13 @@ const TrendingImageNew: React.FC<TrendingImageNewProps> = ({ event }) => {
             {imageUrl && (
               <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
                 <Link href={hrefNote}>
-                  <img src={imageUrl} className='rounded lg:rounded-lg' style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={text} />
+                  <img 
+                    src={imageUrl} 
+                    className='rounded lg:rounded-lg w-full h-full object-cover' 
+                    style={{ margin: 'auto' }} 
+                    alt={text}
+                    loading="lazy"
+                  />
                 </Link>
               </div>
             )}
