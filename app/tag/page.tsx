@@ -64,7 +64,7 @@ export default function TagPage() {
         setTrendingTags(sortedTags);
       }
     }
-  }, [globalEvents, trendingTags.length]); // Only depend on the number of trending tags, not their content
+  }, [globalEvents, trendingTags]); // Depend on the full trendingTags array to capture content and order changes
 
   return (
     <>
