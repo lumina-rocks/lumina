@@ -26,7 +26,7 @@ export default function TagPage() {
   const { events: globalEvents, isLoading: isGlobalLoading } = useNostrEvents({
     filter: {
       kinds: [20],
-      limit: 20,
+      limit: 100,
     },
   });
 
