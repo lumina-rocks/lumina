@@ -10,6 +10,7 @@ import {
 import Link from 'next/link';
 import { Avatar } from './ui/avatar';
 import { AvatarImage } from '@radix-ui/react-avatar';
+import { getProxiedImageUrl } from '@/utils/utils';
 
 interface TrendingImageNewProps {
   event: {
@@ -39,6 +40,9 @@ const TrendingImageNew: React.FC<TrendingImageNewProps> = ({ event }) => {
   const imageUrl = event.tags.find(tag => tag[0] === 'imeta' && tag[1]?.startsWith('url '))
     ?.slice(1)[0]?.replace('url ', '');
 
+  const useImgProxy = process.env.NEXT_PUBLIC_ENABLE_IMGPROXY === "true";
+
+  const proxiedImageUrl = useImgProxy && imageUrl ? getProxiedImageUrl(imageUrl, 800, 600) : imageUrl;
   const hrefProfile = `/profile/${nip19.npubEncode(event.pubkey)}`;
   const hrefNote = `/note/${nip19.noteEncode(event.id)}`;
   const profileImageSrc = userData?.picture || "https://robohash.org/" + event.pubkey;
@@ -60,10 +64,10 @@ const TrendingImageNew: React.FC<TrendingImageNewProps> = ({ event }) => {
       <SmallCardContent>
         <div className='p-2'>
           <div className='d-flex justify-content-center align-items-center'>
-            {imageUrl && (
+            {proxiedImageUrl && (
               <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
                 <Link href={hrefNote}>
-                  <img src={imageUrl} className='rounded lg:rounded-lg' style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={text} />
+                  <img src={proxiedImageUrl} className='rounded lg:rounded-lg' style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={text} />
                 </Link>
               </div>
             )}

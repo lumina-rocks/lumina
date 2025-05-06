@@ -13,6 +13,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Avatar } from './ui/avatar';
 import { AvatarImage } from '@radix-ui/react-avatar';
+import { getProxiedImageUrl } from '@/utils/utils';
 
 interface TrendingImageProps {
   eventId: string;
@@ -47,6 +48,10 @@ const TrendingImage: React.FC<TrendingImageProps> = ({ eventId, pubkey }) => {
   const hrefNote = `/note/${nip19.noteEncode(eventId)}`;
   const profileImageSrc = userData?.picture || "https://robohash.org/" + pubkey;
 
+  const useImgProxy = process.env.NEXT_PUBLIC_ENABLE_IMGPROXY === "true";
+
+  const proxiedImageSrc = useImgProxy && imageSrc && imageSrc.length > 0 ? getProxiedImageUrl(imageSrc[0], 800, 600) : imageSrc && imageSrc.length > 0 ? imageSrc[0] : null;
+
   return (
     <>
       <Card>
@@ -63,16 +68,12 @@ const TrendingImage: React.FC<TrendingImageProps> = ({ eventId, pubkey }) => {
         <SmallCardContent>
           <div className='p-2'>
             <div className='d-flex justify-content-center align-items-center'>
-              {imageSrc && imageSrc.length > 0 && (
+              {proxiedImageSrc && (
                 <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
                   <Link href={hrefNote}>
-                    <img src={imageSrc[0]} className='rounded lg:rounded-lg' style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={text} />
+                    <img src={proxiedImageSrc} className='rounded lg:rounded-lg' style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={text} />
                   </Link>
                 </div>
-                // <img src={imageSrc[0]} style={{ maxWidth: '100%', maxHeight: '100vh', objectFit: 'cover', margin: 'auto' }} alt={text} />
-                // <div style={{ position: 'relative', width: '100%', maxHeight: '100vh' }}>
-                //   <Image src={imageSrc[0]} alt={text} layout='fill' objectFit='contain' />
-                // </div>
               )}
             </div>
           </div>
