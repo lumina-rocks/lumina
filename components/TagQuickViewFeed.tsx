@@ -54,7 +54,7 @@ const TagQuickViewFeed: React.FC<TagQuickViewFeedProps> = ({ tag }) => {
         ) : (
           events.map((event) => (
             <div key={event.id}>
-              <QuickViewKind20NoteCard pubkey={event.pubkey} text={event.content} image={getImageUrl(event.tags)} eventId={event.id} tags={event.tags} event={event} linkToNote={false} />
+              <QuickViewKind20NoteCard pubkey={event.pubkey} text={event.content} image={getImageUrl(event.tags)} eventId={event.id} tags={event.tags} event={event} linkToNote={true} />
             </div>
           ))
         )}
