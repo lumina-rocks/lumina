@@ -34,24 +34,18 @@ const FollowButton: React.FC<FollowButtonProps> = ({ pubkey, userPubkey }) => {
     return [...events].sort((a, b) => (b.created_at || 0) - (a.created_at || 0))[0]
   }, [events])
 
-  // Extract the list of pubkeys the user is following
-  const followingPubkeys = useMemo(() => {
-    if (!latestFollowList) return []
-    return latestFollowList.tags
-      .filter(tag => tag[0] === "p")
-      .map(tag => tag[1])
-  }, [latestFollowList])
-
-  // Determine if the user is following the profile
+  // Check if the user is following the profile
   useEffect(() => {
-    if (!isPending) {
-      const following = followingPubkeys.includes(pubkey)
+    if (!isPending && latestFollowList) {
+      const following = latestFollowList.tags
+        .filter(tag => tag[0] === "p")
+        .some(tag => tag[1] === pubkey)
       setIsFollowing(following)
     }
-  }, [followingPubkeys, pubkey, isPending])
+  }, [latestFollowList, pubkey, isPending])
 
   const handleFollow = useCallback(async () => {
-    if (!userPubkey || isPending || isLoading) return
+    if (!userPubkey || isPending || isLoading || !latestFollowList) return
 
     setIsPending(true)
     // Optimistically update UI
@@ -59,34 +53,35 @@ const FollowButton: React.FC<FollowButtonProps> = ({ pubkey, userPubkey }) => {
     setIsFollowing(newFollowingState)
 
     try {
-      // Create a new follow list based on current follows
-      let newFollowList = [...followingPubkeys]
+      // Create a new tags array that maintains the original structure
+      let newTags = [...latestFollowList.tags]
       
       if (newFollowingState) {
         // Add to follow list if not already there
-        if (!newFollowList.includes(pubkey)) {
-          newFollowList.push(pubkey)
+        if (!newTags.some(tag => tag[0] === "p" && tag[1] === pubkey)) {
+          // // Find the last 'p' tag to preserve ordering
+          // const lastPTagIndex = [...newTags].reverse().findIndex(tag => tag[0] === "p")
+          
+          // if (lastPTagIndex >= 0) {
+          //   // Insert after the last 'p' tag (accounting for reverse indexing)
+          //   const insertPosition = newTags.length - lastPTagIndex
+          //   newTags.splice(insertPosition, 0, ["p", pubkey])
+          // } else {
+            // No existing 'p' tags, add to the end
+          newTags.push(["p", pubkey])
+          // }
         }
       } else {
-        // Remove from follow list
-        newFollowList = newFollowList.filter(pk => pk !== pubkey)
+        // Remove from follow list while preserving order
+        newTags = newTags.filter(tag => !(tag[0] === "p" && tag[1] === pubkey))
       }
 
-      // Get all non-'p' tags from the original event to preserve them
-      const nonPTags = latestFollowList 
-        ? latestFollowList.tags.filter(tag => tag[0] !== "p") 
-        : []
-      
-      // Convert to properly formatted p tags and combine with non-p tags
-      const pTags = newFollowList.map(pk => ["p", pk])
-      const allTags = [...nonPTags, ...pTags]
-
-      // Create the follow list event (NIP-02)
+      // Create the follow list event (NIP-02) with preserved tag structure
       const followEvent: NostrEvent = {
         kind: 3,
         created_at: Math.floor(Date.now() / 1000),
-        tags: allTags,
-        content: "",
+        tags: newTags,
+        content: latestFollowList.content || "", // Preserve original content
         pubkey: "", // Placeholder, will be set by signEvent
         id: "", // Placeholder, will be set by signEvent
         sig: "", // Placeholder, will be set by signEvent
@@ -97,7 +92,7 @@ const FollowButton: React.FC<FollowButtonProps> = ({ pubkey, userPubkey }) => {
       
       if (signedEvent) {
         publish(signedEvent)
-        // Don't need to update local state since the useEffect will catch the new event
+        // The useEffect will catch the new event
       } else {
         // Revert the optimistic update if signing fails
         setIsFollowing(!newFollowingState)
@@ -114,7 +109,7 @@ const FollowButton: React.FC<FollowButtonProps> = ({ pubkey, userPubkey }) => {
         setIsPending(false)
       }, 1500)
     }
-  }, [userPubkey, isPending, isLoading, isFollowing, followingPubkeys, pubkey, loginType, publish])
+  }, [userPubkey, isPending, isLoading, isFollowing, latestFollowList, pubkey, loginType, publish])
 
   // Determine the button text based on current state
   const buttonText = useMemo(() => {
@@ -127,7 +122,7 @@ const FollowButton: React.FC<FollowButtonProps> = ({ pubkey, userPubkey }) => {
     <Button
       className="w-full"
       onClick={handleFollow}
-      disabled={isLoading || !userPubkey || isPending}
+      disabled={isLoading || !userPubkey || isPending || !latestFollowList}
       variant={isFollowing ? "outline" : "default"}
     >
       {(isLoading || isPending) && (
