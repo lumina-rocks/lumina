@@ -93,8 +93,10 @@ const NoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tags, event,
                             <img
                               key={index}
                               src={src}
-                              className='rounded lg:rounded-lg'
-                              style={{ maxWidth: '100%', maxHeight: '66vh', objectFit: 'contain', margin: 'auto' }}
+                              className='rounded lg:rounded-lg w-full h-auto object-contain'
+                              style={{ maxHeight: '66vh', margin: 'auto' }}
+                              alt={textWithoutImage || "Post image"}
+                              loading="lazy"
                             />
                           </CarouselItem>
                         ))}
@@ -103,7 +105,14 @@ const NoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tags, event,
                       <CarouselNext />
                     </Carousel>
                   ) : (
-                    imageSrc ? <img src={imageSrc[0]} className='rounded lg:rounded-lg' style={{ maxWidth: '100%', maxHeight: '66vh', objectFit: 'contain', margin: 'auto' }} /> : ""
+                    imageSrc ? 
+                    <img 
+                      src={imageSrc[0]} 
+                      className='rounded lg:rounded-lg w-full h-auto object-contain' 
+                      style={{ maxHeight: '66vh', margin: 'auto' }}
+                      alt={textWithoutImage || "Post image"}
+                      loading="lazy"
+                    /> : ""
                   )}
                 </div>
                 <div className='w-full h-full px-10'>

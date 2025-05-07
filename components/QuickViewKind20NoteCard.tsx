@@ -35,18 +35,17 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubke
   const { width, height } = extractDimensions(event);
 
   const card = (
-    <Card className="aspect-square">
+    <Card className="aspect-square overflow-hidden">
       <SmallCardContent className="h-full p-0">
         <div className="h-full w-full">
           <div className='relative w-full h-full'>
-            <Image 
+            <img 
               src={image || "/placeholder.svg"} 
               alt={text}
-              fill
-              sizes="(max-width: 768px) 100vw, 300px"
-              className='rounded lg:rounded-lg object-cover' 
-              priority
+              className='w-full h-full rounded lg:rounded-lg object-cover' 
+              loading="lazy"
               onError={() => setImageError(true)}
+              style={{ objectPosition: 'center' }}
             />
           </div>
         </div>
