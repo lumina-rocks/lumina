@@ -11,7 +11,6 @@ import {
     CardDescription,
     CardFooter,
     CardHeader,
-    CardTitle,
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -315,54 +314,47 @@ export function LoginForm() {
 
     return (
         <>
-            <Card className="w-full max-w-xl">
-                <CardHeader>
-                    <CardTitle className="text-2xl">Login to Lumina</CardTitle>
-                    <CardDescription>
-                        Login to your account with nostr extension, bunker, or with your nsec.
-                    </CardDescription>
+            <Card className="w-full max-w-4xl ">
+                <CardHeader className="pb-2">
                 </CardHeader>
-                <CardContent className="grid gap-4">
-                    <div className="grid grid-cols-8 gap-2">
+                <CardContent className="grid gap-6 py-2">
+                    <div className="flex items-center gap-2">
                         <Button 
-                            className="w-full col-span-7" 
+                            className="flex-1 flex items-center justify-center gap-2 text-base py-5 font-semibold bg-primary/90 hover:bg-primary"
                             onClick={handleExtensionLogin} 
                             disabled={isLoading || isExtensionLoading}
                         >
                             {isExtensionLoading ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Connecting...
-                                </>
-                            ) : "Sign in with Extension (NIP-07)"}
+                                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Connecting...</>
+                            ) : <><span className="">Sign in with Extension (NIP-07)</span></>}
                         </Button>
                         <Link target="_blank" href="https://www.getflamingo.org/">
-                            <Button variant={"outline"} disabled={isLoading}><InfoIcon /></Button>
+                            <Button variant="ghost" size="icon" className="h-10 w-10" title="What is this?"><InfoIcon /></Button>
                         </Link>
                     </div>
-                    <div className="grid grid-cols-8 gap-2">
+                    <div className="flex items-center gap-2">
                         <Button 
-                            className="w-full col-span-7" 
+                            className="flex-1 flex items-center justify-center gap-2 text-base py-5 font-semibold bg-purple-600/90 hover:bg-purple-700"
                             onClick={handleAmber} 
                             disabled={isLoading || isAmberLoading}
                         >
                             {isAmberLoading ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Connecting...
-                                </>
-                            ) : "Sign in with Amber"}
+                                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Connecting...</>
+                            ) : <span>Sign in with Amber</span>}
                         </Button>
                         <Link target="_blank" href="https://github.com/greenart7c3/Amber">
-                            <Button variant={"outline"} disabled={isLoading}><InfoIcon /></Button>
+                            <Button variant="ghost" size="icon" className="h-10 w-10" title="What is Amber?"><InfoIcon /></Button>
                         </Link>
                     </div>
-                    <hr />
-                    or
-                    <Accordion type="single" collapsible>
-                        <AccordionItem value="item-1">
-                            <AccordionTrigger>Login with Bunker (NIP-46)</AccordionTrigger>
-                            <AccordionContent>
+                    <div className="flex items-center gap-2 my-2">
+                        <div className="flex-1 h-px bg-muted" />
+                        <span className="text-xs text-muted-foreground">or</span>
+                        <div className="flex-1 h-px bg-muted" />
+                    </div>
+                    <Accordion type="single" collapsible className="rounded-lg border bg-muted/30">
+                        <AccordionItem value="bunker">
+                            <AccordionTrigger className="px-4 py-2 text-base font-medium">Login with Bunker (NIP-46)</AccordionTrigger>
+                            <AccordionContent className="px-4 pb-4">
                                 <div className="grid gap-2">
                                     <Label htmlFor="bunkerUrl">Bunker URL</Label>
                                     <div className="flex gap-2">
@@ -385,29 +377,23 @@ export function LoginForm() {
                                     </div>
                                     {bunkerError && <p className="text-red-500 text-sm">{bunkerError}</p>}
                                     <Button 
-                                        className="w-full" 
+                                        className="w-full mt-2" 
                                         onClick={handleBunkerLogin} 
                                         disabled={isLoading || isBunkerLoading}
                                     >
                                         {isBunkerLoading ? (
-                                            <>
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                Connecting...
-                                            </>
+                                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Connecting...</>
                                         ) : "Sign in with Bunker"}
                                     </Button>
-                                    <p className="text-sm text-muted-foreground">
+                                    <p className="text-xs text-muted-foreground mt-1">
                                         Use a NIP-46 compatible bunker URL that starts with bunker:// or nostrconnect://
                                     </p>
                                 </div>
                             </AccordionContent>
                         </AccordionItem>
-                    </Accordion>
-                    or
-                    <Accordion type="single" collapsible>
-                        <AccordionItem value="item-1">
-                            <AccordionTrigger>Login with npub (read-only)</AccordionTrigger>
-                            <AccordionContent>
+                        <AccordionItem value="npub">
+                            <AccordionTrigger className="px-4 py-2 text-base font-medium">Login with npub (read-only)</AccordionTrigger>
+                            <AccordionContent className="px-4 pb-4">
                                 <div className="grid gap-2">
                                     <Label htmlFor="npub">npub</Label>
                                     <Input 
@@ -418,26 +404,20 @@ export function LoginForm() {
                                         disabled={isLoading || isNpubLoading}
                                     />
                                     <Button 
-                                        className="w-full" 
+                                        className="w-full mt-2" 
                                         onClick={handleNpubLogin}
                                         disabled={isLoading || isNpubLoading}
                                     >
                                         {isNpubLoading ? (
-                                            <>
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                Signing in...
-                                            </>
+                                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Signing in...</>
                                         ) : "Sign in"}
                                     </Button>
                                 </div>
                             </AccordionContent>
                         </AccordionItem>
-                    </Accordion>
-                    or
-                    <Accordion type="single" collapsible>
-                        <AccordionItem value="item-1">
-                            <AccordionTrigger>Login with nsec (not recommended)</AccordionTrigger>
-                            <AccordionContent>
+                        <AccordionItem value="nsec">
+                            <AccordionTrigger className="px-4 py-2 text-base font-medium">Login with nsec (not recommended)</AccordionTrigger>
+                            <AccordionContent className="px-4 pb-4">
                                 <div className="grid gap-2">
                                     <Label htmlFor="nsec">nsec</Label>
                                     <Input 
@@ -448,15 +428,12 @@ export function LoginForm() {
                                         disabled={isLoading || isNsecLoading}
                                     />
                                     <Button 
-                                        className="w-full" 
+                                        className="w-full mt-2" 
                                         onClick={handleNsecLogin}
                                         disabled={isLoading || isNsecLoading}
                                     >
                                         {isNsecLoading ? (
-                                            <>
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                Signing in...
-                                            </>
+                                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Signing in...</>
                                         ) : "Sign in"}
                                     </Button>
                                 </div>
@@ -464,7 +441,8 @@ export function LoginForm() {
                         </AccordionItem>
                     </Accordion>
                 </CardContent>
-                <CardFooter>
+                <CardFooter className="flex flex-col items-center gap-2 pt-2">
+                    <span className="text-xs text-muted-foreground">Your keys never leave your device.</span>
                 </CardFooter>
             </Card>
             
