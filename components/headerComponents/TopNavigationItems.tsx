@@ -16,9 +16,9 @@ export function TopNavigationItems({ items }: TopNavigationItemsProps) {
       <Link href="/" className="flex items-center space-x-2">
         {/* <Icons.logo className="h-6 w-6" /> */}
         <span className="inline-block font-bold">{siteConfig.name}</span>
-        <span className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
+        {/* <span className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
           v{siteConfig.version}
-        </span>
+        </span> */}
       </Link>
       {/* TOP NAVIGATION ITEMS */}
       {/* {items?.length ? (
