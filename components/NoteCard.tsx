@@ -31,6 +31,7 @@ import Link from 'next/link';
 import ViewCopyButton from './ViewCopyButton';
 import { Event as NostrEvent } from "nostr-tools";
 import ZapButton from './ZapButton';
+import { useProfileValue } from '@nostr-dev-kit/ndk-hooks';
 
 interface NoteCardProps {
   pubkey: string;
@@ -42,9 +43,7 @@ interface NoteCardProps {
 }
 
 const NoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tags, event, showViewNoteCardButton }) => {
-  const { data: userData } = useProfile({
-    pubkey,
-  });
+  const userData = useProfileValue(pubkey);
 
   const title = userData?.username || userData?.display_name || userData?.name || userData?.npub || nip19.npubEncode(pubkey);
   // text = text.replaceAll('\n', '<br />');

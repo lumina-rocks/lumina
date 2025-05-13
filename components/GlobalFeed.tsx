@@ -3,17 +3,29 @@ import KIND20Card from "./KIND20Card";
 import { getImageUrl } from "@/utils/utils";
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { useSubscribe } from "@nostr-dev-kit/ndk-hooks";
 
 const GlobalFeed: React.FC = () => {
   const now = useRef(new Date());
   const [limit, setLimit] = useState(20);
 
-  const { events, isLoading } = useNostrEvents({
-    filter: {
-      limit: limit,
-      kinds: [20],
-    },
-  });
+  // const { events, isLoading } = useNostrEvents({
+  //   filter: {
+  //     limit: limit,
+  //     kinds: [20],
+  //   },
+  // });
+
+  const events = useSubscribe(
+    [
+      {
+        limit: limit,
+        kinds: [20],
+      }
+    ],
+    undefined,
+    [limit]
+  ).events;
 
   const loadMore = () => {
     setLimit(prevLimit => prevLimit + 20);
@@ -40,11 +52,9 @@ const GlobalFeed: React.FC = () => {
           );
         })}
       </div>
-      {!isLoading && (
-        <div className="flex justify-center p-4">
-          <Button className="w-full md:w-auto" onClick={loadMore}>Load More</Button>
-        </div>
-      )}
+      <div className="flex justify-center p-4">
+        <Button className="w-full md:w-auto" onClick={loadMore}>Load More</Button>
+      </div>
     </>
   );
 }

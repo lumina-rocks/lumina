@@ -12,9 +12,10 @@ import {
 import { Textarea } from "./ui/textarea";
 import { CodeIcon } from "@radix-ui/react-icons";
 import { Event as NostrEvent } from "nostr-tools";
+import { NDKEvent } from "@nostr-dev-kit/ndk";
 
 interface ViewRawButtonProps {
-    event: NostrEvent;
+    event: NDKEvent;
 }
 
 export default function ViewRawButton({ event }: ViewRawButtonProps) {
@@ -28,7 +29,7 @@ export default function ViewRawButton({ event }: ViewRawButtonProps) {
                     <DrawerTitle>Raw Event</DrawerTitle>
                     <DrawerDescription>This shows the raw event data.</DrawerDescription>
                 </DrawerHeader>
-                <Textarea rows={20} disabled>{JSON.stringify(event, null, 2)}</Textarea>
+                <Textarea rows={20} disabled>{JSON.stringify(event.rawEvent(), null, 2)}</Textarea>
                 <DrawerFooter>
                     <DrawerClose asChild>
                         <div>

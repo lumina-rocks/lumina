@@ -15,13 +15,13 @@ import { Input } from "./ui/input";
 import React, { useRef } from 'react';
 import { useToast } from "./ui/use-toast";
 import { Event as NostrEvent, nip19 } from "nostr-tools";
+import { NDKEvent } from "@nostr-dev-kit/ndk";
 
 interface ViewCopyButtonProps {
-    event: NostrEvent;
+    event: NDKEvent;
 }
 
 export default function ViewCopyButton({ event }: ViewCopyButtonProps) {
-    const jsonEvent = JSON.stringify(event, null, 2);
     const inputRef = useRef(null);
     const inputRefID = useRef(null);
     const { toast } = useToast()

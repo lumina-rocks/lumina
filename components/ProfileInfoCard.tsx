@@ -23,6 +23,7 @@ import { Input } from './ui/input';
 import { Share1Icon, LightningBoltIcon, GlobeIcon } from '@radix-ui/react-icons';
 import { toast } from './ui/use-toast';
 import { Globe } from 'lucide-react';
+import { useProfileValue } from '@nostr-dev-kit/ndk-hooks';
 
 interface ProfileInfoCardProps {
   pubkey: string;
@@ -37,7 +38,7 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = React.memo(({ pubkey }) 
     host = window.location.host;
   }
 
-  const { data: userData, isLoading } = useProfile({ pubkey });
+  const userData = useProfileValue(pubkey);
 
   const npubShortened = useMemo(() => {
     let encoded = nip19.npubEncode(pubkey);
@@ -119,7 +120,7 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = React.memo(({ pubkey }) 
         <CardHeader>
           <div className="flex items-center gap-6">
             <Avatar className="h-24 w-24">
-              <AvatarImage className="object-cover w-full h-full" src={userData?.picture} alt={title} />
+              <AvatarImage className="object-cover w-full h-full" src={userData?.picture} alt={typeof title === 'string' ? title : String(title)} />
             </Avatar>
             <div className="flex flex-col gap-1.5">
               <Link href={`/profile/${nip19.npubEncode(pubkey)}`}>

@@ -11,6 +11,8 @@ import { Toaster } from "@/components/ui/toaster"
 import Script from "next/script";
 import Umami from "@/components/Umami";
 import { useEffect, useState } from "react";
+import NDK from '@nostr-dev-kit/ndk';
+import { useNDKInit } from '@nostr-dev-kit/ndk-hooks'; // Assuming package name
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,6 +25,25 @@ export default function RootLayout({
     "wss://relay.nostr.band",
     "wss://relay.damus.io",
   ]);
+  
+  // 1. Configure your NDK instance (e.g., in src/ndk.ts or similar)
+  const ndk = new NDK({
+    explicitRelayUrls: relayUrls,
+    // Add signer or cache adapter if needed
+  });
+  
+  // 2. Connect the instance immediately
+  ndk.connect()
+    .then(() => console.log('NDK connected'))
+    .catch((e) => console.error('NDK connection error:', e));
+    
+  const initializeNDK = useNDKInit(); // Hook returns the function directly
+
+  useEffect(() => {
+    // 3. Initialize stores once the component mounts
+    initializeNDK(ndk);
+  }, [initializeNDK]); // Dependency ensures this runs if initializeNDK changes, though unlikely
+
 
   useEffect(() => {
     // Load custom relays from localStorage
@@ -30,10 +51,10 @@ export default function RootLayout({
       const customRelays = JSON.parse(localStorage.getItem("customRelays") || "[]");
       if (customRelays.length > 0) {
         // Remove trailing slashes from any relay URLs
-        const sanitizedRelays = customRelays.map((relay: string) => 
+        const sanitizedRelays = customRelays.map((relay: string) =>
           relay.endsWith('/') ? relay.slice(0, -1) : relay
         );
-        
+
         setRelayUrls(prevRelays => {
           // Combine default relays with custom relays, removing duplicates
           const allRelays = [...prevRelays, ...sanitizedRelays];
@@ -64,9 +85,9 @@ export default function RootLayout({
           <Toaster />
           <Umami />
           <div className="main-content pb-14">
-            <NostrProvider relayUrls={relayUrls} debug={false}>
-              {children}
-            </NostrProvider>
+            {/* <NostrProvider relayUrls={relayUrls} debug={false}> */}
+            {children}
+            {/* </NostrProvider> */}
           </div>
           <BottomBar />
         </ThemeProvider>

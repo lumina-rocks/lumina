@@ -11,15 +11,14 @@ import {
 } from "@/components/ui/card"
 import { Avatar, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
+import { useProfileValue } from '@nostr-dev-kit/ndk-hooks';
 
 interface TrendingAccountProps {
   pubkey: string;
 }
 
 const TrendingAccount: React.FC<TrendingAccountProps> = ({ pubkey }) => {
-  const { data: userData } = useProfile({
-    pubkey,
-  });
+  const userData = useProfileValue(pubkey);
 
   const title = userData?.username || userData?.display_name || userData?.name || userData?.npub || nip19.npubEncode(pubkey);
   const hrefProfile = `/profile/${nip19.npubEncode(pubkey)}`;

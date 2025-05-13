@@ -4,18 +4,30 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import QuickViewKind20NoteCard from "./QuickViewKind20NoteCard";
 import { getImageUrl } from "@/utils/utils";
+import { useSubscribe } from "@nostr-dev-kit/ndk-hooks";
 
 const GlobalQuickViewFeed: React.FC = () => {
   const now = useRef(new Date());
   const [limit, setLimit] = useState(25);
 
-  const { events, isLoading } = useNostrEvents({
-    filter: {
-      limit: limit,
-      kinds: [20],
-      since: Math.floor((now.current.getTime() - 24 * 60 * 60 * 1000) / 1000), // Last 24 hours
-    },
-  });
+  // const { events, isLoading } = useNostrEvents({
+  //   filter: {
+  //     limit: limit,
+  //     kinds: [20],
+  //     since: Math.floor((now.current.getTime() - 24 * 60 * 60 * 1000) / 1000), // Last 24 hours
+  //   },
+  // });
+
+  const events = useSubscribe(
+    [
+      {
+        limit: limit,
+        kinds: [20],
+      }
+    ],
+    undefined,
+    [limit]
+  ).events;
 
   const loadMore = () => {
     setLimit(prevLimit => prevLimit + 25);
@@ -24,7 +36,7 @@ const GlobalQuickViewFeed: React.FC = () => {
   return (
     <>
       <div className="grid grid-cols-3 gap-2">
-        {events.length === 0 && isLoading ? (
+        {events.length === 0 ? (
           <>
             <div>
               <Skeleton className="h-[33vh] rounded-xl" />
@@ -60,11 +72,9 @@ const GlobalQuickViewFeed: React.FC = () => {
           ))
         )}
       </div>
-      {!isLoading && (
-        <div className="flex justify-center p-4">
-          <Button className="w-full md:w-auto" onClick={loadMore}>Load More</Button>
-        </div>
-      )}
+      <div className="flex justify-center p-4">
+        <Button className="w-full md:w-auto" onClick={loadMore}>Load More</Button>
+      </div>
     </>
   );
 }

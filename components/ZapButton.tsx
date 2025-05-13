@@ -23,6 +23,7 @@ import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { signEvent } from "@/utils/utils";
 import { nwc } from "@getalby/sdk";
 import { Sparkles, Zap } from "lucide-react";
+import { useProfileValue } from "@nostr-dev-kit/ndk-hooks";
 
 // NWC connection storage key (same as used in NostrWalletConnect.tsx)
 const NWC_STORAGE_KEY = "lumina-nwc-connection";
@@ -117,9 +118,7 @@ export default function ZapButton({ event }: { event: any }) {
         }
     };
 
-    const { data: userData } = useProfile({
-        pubkey: event.pubkey,
-    });
+    const userData = useProfileValue(event.pubkey);
 
     let sats = 0;
     var lightningPayReq = require('bolt11');
