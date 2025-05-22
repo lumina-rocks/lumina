@@ -14,6 +14,7 @@ import ViewCopyButton from "./ViewCopyButton"
 import type { Event as NostrEvent } from "nostr-tools"
 import ZapButton from "./ZapButton"
 import Image from "next/image"
+import { renderTextWithLinkedTags } from "@/utils/textUtils"
 
 interface KIND20CardProps {
   pubkey: string
@@ -95,7 +96,7 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
               </div>
             </div>
             <div className="p-4">
-              <div className="break-word overflow-hidden">{text}</div>
+              <div className="break-word overflow-hidden">{renderTextWithLinkedTags(text, tags)}</div>
               <hr className="my-4" />
               <div className="space-x-4 flex justify-between items-start">
                 <div className="flex space-x-4">

@@ -31,6 +31,7 @@ import Link from 'next/link';
 import ViewCopyButton from './ViewCopyButton';
 import { Event as NostrEvent } from "nostr-tools";
 import ZapButton from './ZapButton';
+import { renderTextWithLinkedTags } from '@/utils/textUtils';
 
 interface NoteCardProps {
   pubkey: string;
@@ -142,7 +143,7 @@ const NoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tags, event,
             }
             <br />
             <div className='break-word overflow-hidden'>
-              {textWithoutImage}
+              {renderTextWithLinkedTags(textWithoutImage, tags)}
             </div>
           </div>
           <hr />
