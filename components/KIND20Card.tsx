@@ -1,7 +1,7 @@
 import type React from "react"
 import { useProfile } from "nostr-react"
 import { nip19 } from "nostr-tools"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
@@ -16,10 +16,21 @@ import ZapButton from "./ZapButton"
 import Image from "next/image"
 import { renderTextWithLinkedTags } from "@/utils/textUtils"
 
+// Function to extract all images from a kind 20 event's imeta tags
+const extractImagesFromEvent = (tags: string[][]): string[] => {
+  return tags
+    .filter(tag => tag[0] === 'imeta')
+    .map(tag => {
+      const urlItem = tag.find(item => item.startsWith('url '))
+      return urlItem ? urlItem.split(' ')[1] : null
+    })
+    .filter(Boolean) as string[]
+}
+
 interface KIND20CardProps {
   pubkey: string
   text: string
-  image: string
+  image: string // keeping for backward compatibility
   eventId: string
   tags: string[][]
   event: NostrEvent
@@ -38,9 +49,21 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
   const { data: userData } = useProfile({
     pubkey,
   })
-  const [imageError, setImageError] = useState(false);
-
-  if (!image || !image.startsWith("http") || imageError) return null;
+  const [currentImage, setCurrentImage] = useState(0);
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  const [api, setApi] = useState<any>(null);
+  
+  // Extract all images from imeta tags
+  const imetaImages = extractImagesFromEvent(tags);
+  
+  // Use provided image as fallback if no imeta images are found
+  const allImages = imetaImages.length > 0 ? imetaImages : (image && image.startsWith("http") ? [image] : []);
+  
+  // Filter out images with errors
+  const validImages = allImages.filter(img => !imageErrors[img]);
+  
+  // If no valid images are available, don't render the card
+  if (validImages.length === 0) return null;
   
   const title =
     userData?.username || userData?.display_name || userData?.name || userData?.npub || nip19.npubEncode(pubkey)
@@ -49,6 +72,32 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
   const hrefProfile = `/profile/${nip19.npubEncode(pubkey)}`
   const profileImageSrc = userData?.picture || "https://robohash.org/" + pubkey
   const uploadedVia = tags.find((tag) => tag[0] === "client")?.[1]
+  
+  // Handle image error by marking that specific image as having an error
+  const handleImageError = (errorImage: string) => {
+    setImageErrors(prev => ({
+      ...prev,
+      [errorImage]: true
+    }));
+  }
+
+  // Update current image index when carousel slides
+  useEffect(() => {
+    if (!api) return;
+    
+    const onSelect = () => {
+      setCurrentImage(api.selectedScrollSnap());
+    };
+    
+    api.on('select', onSelect);
+    
+    // Initial selection
+    onSelect();
+    
+    return () => {
+      api.off('select', onSelect);
+    };
+  }, [api]);
 
   return (
     <>
@@ -79,21 +128,45 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
           </CardHeader>
           <CardContent className="p-0">
             <div className="w-full">
-              <div className="w-full flex justify-center">
-                <div className="relative w-full h-auto min-h-[300px] max-h-[80vh] flex justify-center">
-                  <img
-                    src={image}
-                    alt={text}
-                    className="rounded-lg w-full h-auto object-contain"
-                    onError={() => setImageError(true)}
-                    loading="lazy"
-                    style={{
-                      maxHeight: "80vh",
-                      margin: "auto"
-                    }}
-                  />
-                </div>
-              </div>
+              {validImages.length > 0 && (
+                <Carousel 
+                  className="w-full" 
+                  setApi={setApi}
+                >
+                  <CarouselContent>
+                    {validImages.map((imageUrl, index) => (
+                      <CarouselItem key={`${imageUrl}-${index}`}>
+                        <div className="w-full flex justify-center">
+                          <div className="relative w-full h-auto min-h-[300px] max-h-[80vh] flex justify-center">
+                            <img
+                              src={imageUrl}
+                              alt={text}
+                              className="rounded-lg w-full h-auto object-contain"
+                              onError={() => handleImageError(imageUrl)}
+                              loading="lazy"
+                              style={{
+                                maxHeight: "80vh",
+                                margin: "auto"
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  {validImages.length > 1 && (
+                    <>
+                      <CarouselPrevious className="left-2" />
+                      <CarouselNext className="right-2" />
+                      <div className="absolute bottom-4 left-0 right-0 flex justify-center">
+                        <div className="bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm">
+                          {`${currentImage + 1} / ${validImages.length}`}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </Carousel>
+              )}
             </div>
             <div className="p-4">
               <div className="break-word overflow-hidden">{renderTextWithLinkedTags(text, tags)}</div>
