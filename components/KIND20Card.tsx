@@ -62,17 +62,6 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
   // Filter out images with errors
   const validImages = allImages.filter(img => !imageErrors[img]);
   
-  // If no valid images are available, don't render the card
-  if (validImages.length === 0) return null;
-  
-  const title =
-    userData?.username || userData?.display_name || userData?.name || userData?.npub || nip19.npubEncode(pubkey)
-  text = text.replaceAll("\n", " ")
-  const createdAt = new Date(event.created_at * 1000)
-  const hrefProfile = `/profile/${nip19.npubEncode(pubkey)}`
-  const profileImageSrc = userData?.picture || "https://robohash.org/" + pubkey
-  const uploadedVia = tags.find((tag) => tag[0] === "client")?.[1]
-  
   // Handle image error by marking that specific image as having an error
   const handleImageError = (errorImage: string) => {
     setImageErrors(prev => ({
@@ -98,6 +87,17 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
       api.off('select', onSelect);
     };
   }, [api]);
+  
+  // If no valid images are available, don't render the card
+  if (validImages.length === 0) return null;
+  
+  const title =
+    userData?.username || userData?.display_name || userData?.name || userData?.npub || nip19.npubEncode(pubkey)
+  text = text.replaceAll("\n", " ")
+  const createdAt = new Date(event.created_at * 1000)
+  const hrefProfile = `/profile/${nip19.npubEncode(pubkey)}`
+  const profileImageSrc = userData?.picture || "https://robohash.org/" + pubkey
+  const uploadedVia = tags.find((tag) => tag[0] === "client")?.[1]
 
   return (
     <>
