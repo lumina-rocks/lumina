@@ -111,6 +111,11 @@ const UploadComponent: React.FC = () => {
   const [shouldFetch, setShouldFetch] = useState(false)
   const [serverChoice, setServerChoice] = useState("blossom.band")
   const [enableNip89, setEnableNip89] = useState(false)
+  const [searchTag, setSearchTag] = useState("")
+  const [showUserSuggestions, setShowUserSuggestions] = useState(false)
+  const [cursorPosition, setCursorPosition] = useState(0)
+  const [textAreaValue, setTextAreaValue] = useState("")
+  const [mentionedProfiles, setMentionedProfiles] = useState<Array<{pubkey: string, name: string}>>([])
 
   const { events, isLoading: isNoteLoading } = useNostrEvents({
     filter: shouldFetch
@@ -122,6 +127,51 @@ const UploadComponent: React.FC = () => {
       : { ids: [], kinds: [20], limit: 1 },
     enabled: shouldFetch,
   })
+  
+  const { events: profiles } = useNostrEvents({
+    filter: {
+      kinds: [0],
+      ...(searchTag ? { search: searchTag } : {}),
+      limit: 20, // Increase the limit to get more potential matches
+    },
+    enabled: searchTag.length > 0 && showUserSuggestions,
+  })
+
+  // Add a useEffect to log profile results for debugging
+  useEffect(() => {
+    if (profiles && profiles.length > 0) {
+      console.log("Found profiles:", profiles.length)
+      
+      // Sort and log profiles by match score for debugging
+      const sortedProfiles = profiles.map(profile => {
+        try {
+          const content = JSON.parse(profile.content || '{}')
+          const name = content.name || content.display_name || 'Unknown User'
+          
+          // Calculate match score
+          let matchScore = 0
+          const lowerSearchTag = searchTag.toLowerCase()
+          const lowerName = name.toLowerCase()
+          
+          if (lowerName === lowerSearchTag) {
+            matchScore = 1000
+          } else if (lowerName.startsWith(lowerSearchTag)) {
+            matchScore = 500
+          } else if (lowerName.includes(lowerSearchTag)) {
+            matchScore = 100
+          }
+          
+          return { pubkey: profile.pubkey, name, matchScore }
+        } catch (e) {
+          return null
+        }
+      })
+      .filter(Boolean)
+      .sort((a, b) => b!.matchScore - a!.matchScore)
+      
+      console.log("Sorted profiles by match score:", sortedProfiles)
+    }
+  }, [profiles, searchTag])
 
   useEffect(() => {
     if (uploadedNoteId) {
@@ -167,7 +217,30 @@ const UploadComponent: React.FC = () => {
   }
 
   const handleTextChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
-    const { value } = event.target
+    const { value, selectionStart } = event.target
+    setTextAreaValue(value)
+    setCursorPosition(selectionStart || 0)
+
+    // Find if we're in the middle of typing a username (after @ but not after nostr:)
+    const textBeforeCursor = value.substring(0, selectionStart || 0)
+    const atSignIndex = textBeforeCursor.lastIndexOf('@')
+    const nostrIndex = textBeforeCursor.lastIndexOf('nostr:')
+    
+    // Only trigger username search if we have an @ that isn't part of a nostr: prefix
+    // and isn't followed immediately by a space or newline
+    if (atSignIndex !== -1 && (nostrIndex === -1 || nostrIndex < atSignIndex - 5)) {
+      const textAfterAt = textBeforeCursor.substring(atSignIndex + 1)
+      // Only show suggestions if we're within a word after @ and there's no space
+      if (!textAfterAt.includes('\n')) {
+        console.log("Search tag:", textAfterAt)
+        setSearchTag(textAfterAt)
+        setShowUserSuggestions(true)
+        return value
+      }
+    }
+    
+    setShowUserSuggestions(false)
+    setSearchTag("")
 
     // Replace links only if they contain https://lumina.rocks
     let updatedValue = value;
@@ -188,12 +261,68 @@ const UploadComponent: React.FC = () => {
     setServerChoice(value)
   }
 
+  const insertMention = (profile: NostrEvent) => {
+    if (!profile.content) return
+
+    try {
+      // Try to parse the profile content to get the name
+      const profileContent = JSON.parse(profile.content)
+      const username = profileContent.name || profileContent.display_name || 'user'
+      const npub = nip19.npubEncode(profile.pubkey)
+      
+      // Find the position of the @ that started this mention
+      const textBeforeCursor = textAreaValue.substring(0, cursorPosition)
+      const atSignIndex = textBeforeCursor.lastIndexOf('@')
+      
+      if (atSignIndex !== -1) {
+        // Replace the @searchText with "nostr:npub..." format
+        const newValue = 
+          textAreaValue.substring(0, atSignIndex) + 
+          `nostr:${npub} ` + // Use nostr:npub format and add a space after
+          textAreaValue.substring(cursorPosition)
+        
+        setTextAreaValue(newValue)
+        
+        // Update the form textarea
+        const textarea = document.getElementById('description') as HTMLTextAreaElement
+        if (textarea) {
+          textarea.value = newValue
+          // Focus and set cursor position after the inserted mention and the space
+          textarea.focus()
+          const newPosition = atSignIndex + npub.length + 7 // "nostr:" (6) + npub + space (1)
+          textarea.setSelectionRange(newPosition, newPosition)
+          
+          // Trigger a change event to update any listeners
+          const event = new Event('input', { bubbles: true })
+          textarea.dispatchEvent(event)
+        }
+        
+        // Add to mentioned profiles for tagging in the note
+        setMentionedProfiles(prev => {
+          // Check if profile is already mentioned to avoid duplicates
+          if (!prev.some(p => p.pubkey === profile.pubkey)) {
+            return [...prev, { pubkey: profile.pubkey, name: username }]
+          }
+          return prev
+        })
+      }
+      
+      // Hide suggestions and clear search
+      setShowUserSuggestions(false)
+      setSearchTag("")
+      
+      console.log(`Inserted mention for ${username} as nostr:${npub}`)
+    } catch (error) {
+      console.error("Failed to parse profile content", error)
+    }
+  }
+
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setIsLoading(true)
 
     const formData = new FormData(event.currentTarget)
-    const desc = formData.get("description") as string
+    const desc = textAreaValue // Use the state value instead of getting from form
     let file = formData.get("file") as File
     let sha256 = ""
     let finalNoteContent = desc
@@ -278,6 +407,11 @@ const UploadComponent: React.FC = () => {
             sha256 = responseJson.sha256
 
             const noteTags = hashtags.map((tag) => ["t", tag])
+            
+            // Add mentioned profiles as p tags
+            mentionedProfiles.forEach(profile => {
+              noteTags.push(["p", profile.pubkey, "", profile.name])
+            })
 
             let blurhash = ""
             if (file && file.type.startsWith("image/")) {
@@ -336,6 +470,7 @@ const UploadComponent: React.FC = () => {
 
             // If we got a signed event, publish it to nostr
             if (signedEvent) {
+              console.log("final Event with tags: ", signedEvent.tags)
               console.log("final Event: ")
               console.log(signedEvent)
               publish(signedEvent)
@@ -373,14 +508,90 @@ const UploadComponent: React.FC = () => {
           <form className="space-y-6" onSubmit={onSubmit}>
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
-              <Textarea
-                name="description"
-                rows={4}
-                placeholder="What's on your mind? Add #hashtags to categorize your post."
-                id="description"
-                className="w-full resize-none"
-                onChange={handleTextChange}
-              />
+              <div className="relative">
+                <Textarea
+                  name="description"
+                  rows={4}
+                  placeholder="What's on your mind? Add #hashtags or type @ to mention users (will convert to nostr:npub...)."
+                  id="description"
+                  className="w-full resize-none"
+                  onChange={handleTextChange}
+                  value={textAreaValue}
+                />
+                {showUserSuggestions && (
+                  <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 max-h-60 overflow-auto">
+                    {profiles && profiles.length > 0 ? (
+                      <ul className="py-1">
+                        {profiles.map((profile) => {
+                          try {
+                            const content = JSON.parse(profile.content || '{}')
+                            const name = content.name || content.display_name || 'Unknown User'
+                            const picture = content.picture || null
+                            
+                            // Calculate match score for sorting (higher is better)
+                            let matchScore = 0
+                            const lowerSearchTag = searchTag.toLowerCase()
+                            const lowerName = name.toLowerCase()
+
+                            // Exact match gets highest score
+                            if (lowerName === lowerSearchTag) {
+                              matchScore = 1000
+                            } 
+                            // Starting with the search term gets high score
+                            else if (lowerName.startsWith(lowerSearchTag)) {
+                              matchScore = 500
+                            }
+                            // Contains the search term gets medium score
+                            else if (lowerName.includes(lowerSearchTag)) {
+                              matchScore = 100
+                            }
+                            // Set a data attribute for sorting
+                            return { profile, content, name, picture, matchScore }
+                          } catch (e) {
+                            return null
+                          }
+                        })
+                        .filter(Boolean)
+                        // Sort by match score (highest first)
+                        .sort((a, b) => b!.matchScore - a!.matchScore)
+                        .map(item => {
+                          const { profile, name, picture } = item!
+                          return (
+                            <li 
+                              key={profile.pubkey}
+                              className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer flex items-center gap-2"
+                              onClick={() => insertMention(profile)}
+                            >
+                              {picture && (
+                                <img 
+                                  src={picture} 
+                                  alt={name} 
+                                  className="w-6 h-6 rounded-full"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).style.display = 'none'
+                                  }}
+                                />
+                              )}
+                              <span>{name}</span>
+                              <span className="text-xs text-gray-500 truncate">
+                                {nip19.npubEncode(profile.pubkey).slice(0, 10)}...
+                              </span>
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    ) : searchTag.length > 0 ? (
+                      <div className="px-4 py-3 text-sm text-gray-500">
+                        Searching for users matching "{searchTag}"...
+                      </div>
+                    ) : (
+                      <div className="px-4 py-3 text-sm text-gray-500">
+                        Type to search for users
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
             
             <div className="space-y-2">
