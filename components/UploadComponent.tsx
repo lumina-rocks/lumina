@@ -166,6 +166,24 @@ const UploadComponent: React.FC = () => {
     }
   }
 
+  const handleTextChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+    const { value } = event.target
+
+    // Replace links only if they contain https://lumina.rocks
+    let updatedValue = value;
+    
+    // Replace https://lumina.rocks/profile/npub1... with "nostr:npub1..."
+    updatedValue = updatedValue.replace(/https:\/\/lumina\.rocks\/profile\/(npub[1-9a-zA-Z]{0,64})/g, "nostr:$1");
+    
+    // Replace https://lumina.rocks/note/note1... with "nostr:note1..."
+    updatedValue = updatedValue.replace(/https:\/\/lumina\.rocks\/note\/(note[1-9a-zA-Z]{0,64})/g, "nostr:$1");
+    
+    // Update the textarea with the modified value
+    event.target.value = updatedValue;
+    
+    return updatedValue
+  }
+
   const handleServerChange = (value: string) => {
     setServerChoice(value)
   }
@@ -361,6 +379,7 @@ const UploadComponent: React.FC = () => {
                 placeholder="What's on your mind? Add #hashtags to categorize your post."
                 id="description"
                 className="w-full resize-none"
+                onChange={handleTextChange}
               />
             </div>
             
