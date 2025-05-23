@@ -28,7 +28,7 @@ interface CardOptionsDropdownProps {
 }
 
 export default function CardOptionsDropdown({ event }: CardOptionsDropdownProps) {
-    const jsonEvent = JSON.stringify(event, null, 2);
+    const jsonEvent = useMemo(() => JSON.stringify(event, null, 2), [event]);
     const inputRef = useRef(null);
     const inputRefID = useRef(null);
     const { toast } = useToast();
