@@ -72,7 +72,7 @@ export default function CardOptionsDropdown({ event }: CardOptionsDropdownProps)
         <>
             <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="ml-auto">
+                    <Button variant="ghost" size="icon" className="ml-auto" aria-label="Options">
                         <DotsVerticalIcon className="h-4 w-4" />
                     </Button>
                 </DropdownMenuTrigger>
