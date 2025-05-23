@@ -7,13 +7,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
 import ReactionButton from "@/components/ReactionButton"
 import { Avatar, AvatarImage } from "@/components/ui/avatar"
-import ViewRawButton from "@/components/ViewRawButton"
 import ViewNoteButton from "./ViewNoteButton"
 import Link from "next/link"
-import ViewCopyButton from "./ViewCopyButton"
 import type { Event as NostrEvent } from "nostr-tools"
 import ZapButton from "./ZapButton"
 import Image from "next/image"
+import CardOptionsDropdown from "./CardOptionsDropdown"
 import { renderTextWithLinkedTags } from "@/utils/textUtils"
 
 // Function to extract all images from a kind 20 event's imeta tags
@@ -103,8 +102,8 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
     <>
       <div key={event.id}>
         <Card className="my-4">
-          <CardHeader>
-            <CardTitle>
+          <CardHeader className="flex flex-row items-center">
+            <CardTitle className="flex-1">
               <Link href={hrefProfile} style={{ textDecoration: "none" }}>
                 <TooltipProvider>
                   <Tooltip>
@@ -125,6 +124,7 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
                 </TooltipProvider>
               </Link>
             </CardTitle>
+            <CardOptionsDropdown event={event} />
           </CardHeader>
           <CardContent className="p-0">
             <div className="w-full">
@@ -176,10 +176,6 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
                   <ReactionButton event={event} />
                   <ZapButton event={event} />
                   {showViewNoteCardButton && <ViewNoteButton event={event} />}
-                </div>
-                <div className="flex space-x-2">
-                  <ViewCopyButton event={event} />
-                  <ViewRawButton event={event} />
                 </div>
               </div>
             </div>
