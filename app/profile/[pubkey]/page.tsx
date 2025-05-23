@@ -16,11 +16,18 @@ export default function ProfilePage() {
 
   const params = useParams()
   let pubkey = Array.isArray(params.pubkey) ? params.pubkey[0] : params.pubkey;
-  // check if pubkey contains "npub"
-  // if so, then we need to convert it to a pubkey
+  // check if pubkey contains "npub" or "nprofile"
+  // if so, we need to convert it to a hex pubkey
   if (pubkey.includes("npub")) {
     // convert npub to pubkey
     pubkey = nip19.decode(pubkey.toString()).data.toString()
+  } else if (pubkey.includes("nprofile")) {
+    // convert nprofile to pubkey
+    const decoded = nip19.decode(pubkey.toString());
+    if (decoded.type === 'nprofile') {
+      const profileData = decoded.data as { pubkey: string; relays?: string[] };
+      pubkey = profileData.pubkey;
+    }
   }
   
   const npubShortened = useMemo(() => {
