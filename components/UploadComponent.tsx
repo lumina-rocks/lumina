@@ -241,7 +241,7 @@ const UploadComponent: React.FC = () => {
     
     setShowUserSuggestions(false)
     setSearchTag("")
-    
+
     // Replace links only if they contain https://lumina.rocks
     let updatedValue = value;
     
@@ -512,7 +512,7 @@ const UploadComponent: React.FC = () => {
                 <Textarea
                   name="description"
                   rows={4}
-                  placeholder="What's on your mind? Add #hashtags or type @ to mention users (will convert to nostr:npub...)."
+                  placeholder="What&apos;s on your mind? Add #hashtags or type @ to mention users (will convert to nostr:npub...)."
                   id="description"
                   className="w-full resize-none"
                   onChange={handleTextChange}
@@ -582,7 +582,7 @@ const UploadComponent: React.FC = () => {
                       </ul>
                     ) : searchTag.length > 0 ? (
                       <div className="px-4 py-3 text-sm text-gray-500">
-                        Searching for users matching "{searchTag}"...
+                        Searching for users matching &quot;{searchTag}&quot;...
                       </div>
                     ) : (
                       <div className="px-4 py-3 text-sm text-gray-500">
