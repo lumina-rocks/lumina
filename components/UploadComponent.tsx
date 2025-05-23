@@ -178,8 +178,10 @@ const UploadComponent: React.FC = () => {
     // Replace https://lumina.rocks/note/note1... with "nostr:note1..."
     updatedValue = updatedValue.replace(/https:\/\/lumina\.rocks\/note\/(note[1-9a-zA-Z]{0,64})/g, "nostr:$1");
     
-    // Update the state with the modified value
-    setTextValue(updatedValue);
+    // Update the textarea with the modified value
+    event.target.value = updatedValue;
+    
+    return updatedValue
   }
 
   const handleServerChange = (value: string) => {
