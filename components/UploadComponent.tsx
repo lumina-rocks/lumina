@@ -241,7 +241,7 @@ const UploadComponent: React.FC = () => {
     
     setShowUserSuggestions(false)
     setSearchTag("")
-
+    
     // Replace links only if they contain https://lumina.rocks
     let updatedValue = value;
     
