@@ -238,9 +238,16 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = React.memo(({ pubkey }) 
       <Card>
         <CardHeader>
           <div className="flex items-center gap-6">
-            <Avatar className="h-24 w-24">
-              <AvatarImage className="object-cover w-full h-full" src={userData?.picture} alt={title} />
-            </Avatar>
+            <div className="relative">
+              <Avatar className={`h-24 w-24 ${userPubkey && userPubkey !== pubkey && isFollowingUser ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}>
+                <AvatarImage className="object-cover w-full h-full" src={userData?.picture} alt={title} />
+              </Avatar>
+              {userPubkey && userPubkey !== pubkey && isFollowingUser && (
+                <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full p-1" title="Follows you">
+                  <UserCheck className="h-4 w-4" />
+                </div>
+              )}
+            </div>
             <div className="flex flex-col gap-1.5">
               <Link href={`/profile/${nip19.npubEncode(pubkey)}`}>
                 <div className="text-2xl">{title}</div>
@@ -248,12 +255,6 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = React.memo(({ pubkey }) 
               <div className="text-sm text-muted-foreground">
                 <NIP05 nip05={nip05?.toString() ?? ''} pubkey={pubkey} />
               </div>
-              {userPubkey && userPubkey !== pubkey && isFollowingUser && (
-                <div className="text-xs text-muted-foreground flex items-center gap-1">
-                  <UserCheck className="h-4 w-4 text-primary" />
-                  <span className="text-primary">Follows you</span>
-                </div>
-              )}
               {lightningAddress && (
                 <div className="text-sm text-muted-foreground flex items-center gap-1 cursor-pointer hover:text-purple-400 transition-colors" onClick={handleCopyLightningAddress}>
                   <LightningBoltIcon className="h-4 w-4 text-yellow-500" />
