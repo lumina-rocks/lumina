@@ -9,6 +9,7 @@ import {
     nip19,
 } from "nostr-tools";
 import Notification from './Notification';
+import { format, isSameDay, parseISO } from 'date-fns';
 
 interface NotificationsProps {
     pubkey: string;
@@ -52,10 +53,46 @@ const Notifications: React.FC<NotificationsProps> = ({ pubkey }) => {
     //     }
     // });
 
-    // Create a combined and properly sorted array of all notifications
-    // const allNotifications = [...(zaps || []), ...(reactions || [])].sort(
-    //     (a, b) => (b.created_at || 0) - (a.created_at || 0)
-    // );
+    // Sort all notifications by date (newest first)
+    const sortedEvents = [...events].sort(
+        (a, b) => (b.created_at || 0) - (a.created_at || 0)
+    );
+
+    // Group notifications by date
+    const groupedNotifications = () => {
+        const groups: { [key: string]: typeof events } = {};
+        
+        sortedEvents.forEach(event => {
+            const date = new Date(event.created_at * 1000);
+            const dateKey = format(date, 'yyyy-MM-dd');
+            
+            if (!groups[dateKey]) {
+                groups[dateKey] = [];
+            }
+            
+            groups[dateKey].push(event);
+        });
+        
+        return groups;
+    };
+
+    // Get formatted date heading based on date
+    const getDateHeading = (dateStr: string) => {
+        const date = parseISO(dateStr);
+        const today = new Date();
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        if (isSameDay(date, today)) {
+            return "Today";
+        } else if (isSameDay(date, yesterday)) {
+            return "Yesterday";
+        } else {
+            return format(date, 'EEEE, MMMM d, yyyy');
+        }
+    };
+
+    const notificationGroups = groupedNotifications();
 
     return (
         <>
@@ -67,8 +104,19 @@ const Notifications: React.FC<NotificationsProps> = ({ pubkey }) => {
                     </CardHeader>
                     <CardContent>
                         {events.length > 0 ? (
-                            events.map((notification, index) => (
-                                <Notification key={index} event={notification} />
+                            Object.keys(notificationGroups).map(dateKey => (
+                                <div key={dateKey} className="mb-6">
+                                    <div className="sticky top-0 bg-background/95 backdrop-blur-sm py-2 mb-2 border-b">
+                                        <h3 className="text-sm font-medium text-muted-foreground">
+                                            {getDateHeading(dateKey)}
+                                        </h3>
+                                    </div>
+                                    <div className="space-y-1">
+                                        {notificationGroups[dateKey].map((notification) => (
+                                            <Notification key={notification.id} event={notification} />
+                                        ))}
+                                    </div>
+                                </div>
                             ))
                         ) : (
                             <div className="text-center py-4 text-muted-foreground">No notifications yet</div>

@@ -1,6 +1,5 @@
 import React from 'react';
 import { useNostrEvents, useProfile } from "nostr-react";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from '@/components/ui/card';
 import {
     NostrEvent,
     Event,
@@ -8,6 +7,7 @@ import {
 } from "nostr-tools";
 import { Avatar, AvatarImage } from './ui/avatar';
 import Link from 'next/link';
+import { format } from 'date-fns';
 
 interface NotificationProps {
     event: NostrEvent;
@@ -52,60 +52,69 @@ const Notification: React.FC<NotificationProps> = ({ event }) => {
 
     let name = userData?.name ?? nip19.npubEncode(event.pubkey).slice(0, 8) + ':' + nip19.npubEncode(event.pubkey).slice(-3);
     let createdAt = new Date(event.created_at * 1000);
+    
+    const formatTime = (date: Date) => {
+        return format(date, 'h:mm a');
+    };
 
-    return (
-        <>
-            <div className='pt-6 px-6'>
-                {/* ZAP */}
-                {event.kind === 9735 && (
-                    <div className='grid grid-cols-6 justify-center items-center'>
-                        <p className='col-span-1'>{sats} sats ⚡️</p>
-                        <div className='col-span-1'>
-                            <Avatar>
-                                <AvatarImage src={userData?.picture} alt={name} />
-                            </Avatar>
+    const getNotificationContent = () => {
+        switch (event.kind) {
+            case 9735: // ZAP
+                return (
+                    <div className='flex items-center space-x-3 p-3 hover:bg-muted/50 rounded-md transition-colors'>
+                        <div className='flex-shrink-0 w-10 text-center font-medium text-amber-500'>
+                            {sats} ⚡️
                         </div>
-                        <div className='col-span-4'>
-                            <p>{name} zapped you</p>
-                            <p>{createdAt.toLocaleDateString() + ' ' + createdAt.toLocaleTimeString()}</p>
-                        </div>
-                    </div>
-                )}
-                {/* FOLLOW */}
-                {event.kind === 3 && (
-                    <div className='grid grid-cols-6 justify-center items-center'>
-                        <p className='col-span-1'>{event.content}</p>
-                        <div className='col-span-1'>
-                            <Avatar>
-                                <AvatarImage src={userData?.picture} alt={name} />
-                            </Avatar>
-                        </div>
-                        <div className='col-span-4'>
-                            <p>{name} started following you</p>
-                            <p>{createdAt.toLocaleDateString() + ' ' + createdAt.toLocaleTimeString()}</p>
+                        <Avatar className='flex-shrink-0'>
+                            <AvatarImage src={userData?.picture} alt={name} />
+                        </Avatar>
+                        <div className='flex-1 min-w-0'>
+                            <p className='text-sm font-medium'>{name} <span className='text-muted-foreground font-normal'>zapped you</span></p>
+                            <p className='text-xs text-muted-foreground'>{formatTime(createdAt)}</p>
                         </div>
                     </div>
-                )}
-                {/* REACTION */}
-                {event.kind === 7 && (
-                    <Link href={"/note/" + reactedToId}>
-                        <div className='grid grid-cols-6 justify-center items-center'>
-                            <p className='col-span-1'>{event.content}</p>
-                            <div className='col-span-1'>
-                                <Avatar>
-                                    <AvatarImage src={userData?.picture} alt={name} />
-                                </Avatar>
+                );
+            case 3: // FOLLOW
+                return (
+                    <div className='flex items-center space-x-3 p-3 hover:bg-muted/50 rounded-md transition-colors'>
+                        <div className='flex-shrink-0 w-10 text-center font-medium text-blue-500'>
+                            👋
+                        </div>
+                        <Avatar className='flex-shrink-0'>
+                            <AvatarImage src={userData?.picture} alt={name} />
+                        </Avatar>
+                        <div className='flex-1 min-w-0'>
+                            <p className='text-sm font-medium'>{name} <span className='text-muted-foreground font-normal'>started following you</span></p>
+                            <p className='text-xs text-muted-foreground'>{formatTime(createdAt)}</p>
+                        </div>
+                    </div>
+                );
+            case 7: // REACTION
+                return (
+                    <Link href={"/note/" + reactedToId} className='block'>
+                        <div className='flex items-center space-x-3 p-3 hover:bg-muted/50 rounded-md transition-colors'>
+                            <div className='flex-shrink-0 w-10 text-center text-lg'>
+                                {event.content}
                             </div>
-                            <div className='col-span-4'>
-                                <p>{name} reacted to you</p>
-                                <p>{createdAt.toLocaleDateString() + ' ' + createdAt.toLocaleTimeString()}</p>
+                            <Avatar className='flex-shrink-0'>
+                                <AvatarImage src={userData?.picture} alt={name} />
+                            </Avatar>
+                            <div className='flex-1 min-w-0'>
+                                <p className='text-sm font-medium'>{name} <span className='text-muted-foreground font-normal'>reacted to your post</span></p>
+                                <p className='text-xs text-muted-foreground'>{formatTime(createdAt)}</p>
                             </div>
                         </div>
                     </Link>
-                )}
-            </div>
-            <hr className='mt-6' />
-        </>
+                );
+            default:
+                return null;
+        }
+    };
+
+    return (
+        <div className='notification-item'>
+            {getNotificationContent()}
+        </div>
     );
 }
 
