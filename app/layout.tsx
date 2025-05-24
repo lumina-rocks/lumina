@@ -59,7 +59,7 @@ export default function RootLayout({
           defaultTheme="dark"
           enableSystem
           disableTransitionOnChange
-          themes={["light", "dark", "purple-light", "purple-dark", "system"]}
+          themes={["light", "dark", "purple-light", "purple-dark", "vintage-light", "vintage-dark", "system"]}
         >
           <TopNavigation />
           <Toaster />
