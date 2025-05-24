@@ -25,12 +25,11 @@ import {
 } from "@/components/ui/carousel"
 import ReactionButton from '@/components/ReactionButton';
 import { Avatar, AvatarImage } from '@/components/ui/avatar';
-import ViewRawButton from '@/components/ViewRawButton';
 import ViewNoteButton from './ViewNoteButton';
 import Link from 'next/link';
-import ViewCopyButton from './ViewCopyButton';
 import { Event as NostrEvent } from "nostr-tools";
 import ZapButton from './ZapButton';
+import CardOptionsDropdown from './CardOptionsDropdown';
 import { renderTextWithLinkedTags } from '@/utils/textUtils';
 
 interface NoteCardProps {
@@ -60,8 +59,8 @@ const NoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tags, event,
   return (
     <>
       <Card>
-        <CardHeader>
-          <CardTitle>
+        <CardHeader className="flex flex-row items-center">
+          <CardTitle className="flex-1">
             <Link href={hrefProfile} style={{ textDecoration: 'none' }}>
               <TooltipProvider>
                 <Tooltip>
@@ -80,6 +79,7 @@ const NoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tags, event,
               </TooltipProvider>
             </Link>
           </CardTitle>
+          <CardOptionsDropdown event={event} />
         </CardHeader>
         <CardContent>
           <div className='py-4'>
@@ -147,15 +147,11 @@ const NoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tags, event,
             </div>
           </div>
           <hr />
-          <div className='py-4 space-x-4 flex justify-between items-start'>
+          <div className='py-4 space-x-4 flex'>
             <div className='flex space-x-4'>
               <ReactionButton event={event} />
               <ZapButton event={event} />
               {showViewNoteCardButton && <ViewNoteButton event={event} />}
-            </div>
-            <div className='flex space-x-2'>
-              <ViewCopyButton event={event} />
-              <ViewRawButton event={event} />
             </div>
           </div>
         </CardContent>
