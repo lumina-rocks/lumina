@@ -55,3 +55,18 @@ export async function signEvent(loginType: string | null, event: NostrEvent): Pr
   console.log(eventSigned);
   return eventSigned;
 }
+
+// Create proxied image URL
+export const getProxiedImageUrl = (url: string, width: number, height: number) => {
+  if (!url.startsWith("http")) return url;
+  try {
+    // Encode the URL to be used in the proxy
+    const encodedUrl = encodeURIComponent(url);
+    const imgproxyEnv = process.env.NEXT_PUBLIC_IMGPROXY_URL;
+    const imgproxyUrl = new URL(imgproxyEnv || "https://imgproxy.example.com");
+    return `${imgproxyUrl}_/resize:fit:${width}:${height}/plain/${encodedUrl}`;
+  } catch (error) {
+    console.error("Error creating proxied image URL:", error);
+    return url;
+  }
+}
