@@ -22,7 +22,7 @@ import {
 import { Input } from './ui/input';
 import { Share1Icon, LightningBoltIcon, GlobeIcon } from '@radix-ui/react-icons';
 import { toast } from './ui/use-toast';
-import { Globe } from 'lucide-react';
+import { Globe, UserCheck } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { MusicIcon, ActivityIcon } from 'lucide-react';
 
@@ -59,6 +59,27 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = React.memo(({ pubkey }) 
       limit: 1,
     },
   });
+
+  // Fetch follow list (NIP-02) to check if profile owner follows the logged-in user
+  const { events: followListEvents } = useNostrEvents({
+    filter: {
+      authors: [pubkey],
+      kinds: [3], // NIP-02 follow list event kind
+      limit: 1,
+    },
+    enabled: !!userPubkey, // Only fetch if a user is logged in
+  });
+
+  // Check if the profile owner follows the logged-in user
+  const isFollowingUser = useMemo(() => {
+    if (!userPubkey || followListEvents.length === 0) return false;
+    
+    const followList = followListEvents[0];
+    if (!followList) return false;
+    
+    // Look for a 'p' tag with the logged-in user's pubkey
+    return followList.tags.some(tag => tag[0] === 'p' && tag[1] === userPubkey);
+  }, [followListEvents, userPubkey]);
 
   // Get the latest status events by type
   const userStatuses = useMemo(() => {
@@ -227,6 +248,12 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = React.memo(({ pubkey }) 
               <div className="text-sm text-muted-foreground">
                 <NIP05 nip05={nip05?.toString() ?? ''} pubkey={pubkey} />
               </div>
+              {userPubkey && userPubkey !== pubkey && isFollowingUser && (
+                <div className="text-xs text-muted-foreground flex items-center gap-1">
+                  <UserCheck className="h-4 w-4 text-primary" />
+                  <span className="text-primary">Follows you</span>
+                </div>
+              )}
               {lightningAddress && (
                 <div className="text-sm text-muted-foreground flex items-center gap-1 cursor-pointer hover:text-purple-400 transition-colors" onClick={handleCopyLightningAddress}>
                   <LightningBoltIcon className="h-4 w-4 text-yellow-500" />
