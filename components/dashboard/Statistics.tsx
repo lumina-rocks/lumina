@@ -19,6 +19,7 @@ import {
     Heart, Gift, Sparkles 
 } from "lucide-react";
 import Link from "next/link";
+import ProfileInfoCard from '../ProfileInfoCard';
 
 interface ProfileInfoCardProps {
     pubkey: string;
@@ -267,7 +268,7 @@ const NostrInsights: React.FC<ProfileInfoCardProps> = ({ pubkey }) => {
         <>
             <div className='pt-6 px-6'>
                 {/* Profile Card */}
-                <Card className="mb-6">
+                {/* <Card className="mb-6">
                     <CardContent className="pt-6">
                         <div className="flex flex-row items-center space-x-4">
                             <Avatar className="h-20 w-20">
@@ -288,7 +289,8 @@ const NostrInsights: React.FC<ProfileInfoCardProps> = ({ pubkey }) => {
                             </div>
                         </div>
                     </CardContent>
-                </Card>
+                </Card> */}
+                <ProfileInfoCard pubkey={pubkey} />
 
                 {/* Tabs for different insights */}
                 <Tabs defaultValue="overview" className="w-full">
