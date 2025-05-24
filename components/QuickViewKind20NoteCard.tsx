@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card"
 import Link from 'next/link';
 import Image from 'next/image';
-import { extractDimensions } from '@/utils/utils';
+import { extractDimensions, getProxiedImageUrl } from '@/utils/utils';
 
 interface QuickViewKind20NoteCardProps {
   pubkey: string;
@@ -28,6 +28,10 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubke
   const [imageError, setImageError] = useState(false);
 
   if (!image || !image.startsWith("http") || imageError) return null;
+
+  const useImgProxy = process.env.NEXT_PUBLIC_ENABLE_IMGPROXY === "true"
+
+  image = useImgProxy ? getProxiedImageUrl(image, 500, 0) : image;
 
   text = text.replaceAll('\n', ' ');
   const encodedNoteId = nip19.noteEncode(event.id)
