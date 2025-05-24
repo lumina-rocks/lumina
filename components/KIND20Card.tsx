@@ -14,6 +14,7 @@ import ZapButton from "./ZapButton"
 import Image from "next/image"
 import CardOptionsDropdown from "./CardOptionsDropdown"
 import { renderTextWithLinkedTags } from "@/utils/textUtils"
+import { getProxiedImageUrl } from "@/utils/utils"
 
 // Function to extract all images from a kind 20 event's imeta tags
 const extractImagesFromEvent = (tags: string[][]): string[] => {
@@ -25,6 +26,8 @@ const extractImagesFromEvent = (tags: string[][]): string[] => {
     })
     .filter(Boolean) as string[]
 }
+
+const useImgProxy = process.env.NEXT_PUBLIC_ENABLE_IMGPROXY === "true"
 
 interface KIND20CardProps {
   pubkey: string
@@ -134,25 +137,28 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
                   setApi={setApi}
                 >
                   <CarouselContent>
-                    {validImages.map((imageUrl, index) => (
-                      <CarouselItem key={`${imageUrl}-${index}`}>
-                        <div className="w-full flex justify-center">
-                          <div className="relative w-full h-auto min-h-[300px] max-h-[80vh] flex justify-center">
-                            <img
-                              src={imageUrl}
-                              alt={text}
-                              className="rounded-lg w-full h-auto object-contain"
-                              // onError={() => handleImageError(imageUrl)}
-                              loading="lazy"
-                              style={{
-                                maxHeight: "80vh",
-                                margin: "auto"
-                              }}
-                            />
+                    {validImages.map((imageUrl, index) => {
+                      const image = useImgProxy ? getProxiedImageUrl(imageUrl, 1200, 0) : imageUrl;
+                      return (
+                        <CarouselItem key={`${imageUrl}-${index}`}>
+                          <div className="w-full flex justify-center">
+                            <div className="relative w-full h-auto min-h-[300px] max-h-[80vh] flex justify-center">
+                              <img
+                                src={image}
+                                alt={text}
+                                className="rounded-lg w-full h-auto object-contain"
+                                // onError={() => handleImageError(imageUrl)}
+                                loading="lazy"
+                                style={{
+                                  maxHeight: "80vh",
+                                  margin: "auto"
+                                }}
+                              />
+                            </div>
                           </div>
-                        </div>
-                      </CarouselItem>
-                    ))}
+                        </CarouselItem>
+                      );
+                    })}
                   </CarouselContent>
                   {validImages.length > 1 && (
                     <>
