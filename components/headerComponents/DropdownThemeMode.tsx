@@ -43,6 +43,18 @@ export function DropdownThemeMode() {
         <DropdownMenuItem onClick={() => setTheme("vintage-dark")}>
           Vintage Dark
         </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("neo-brutalism-light")}>
+          Neo Brutalism Light
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("neo-brutalism-dark")}>
+          Neo Brutalism Dark
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("nature-light")}>
+          Nature Light
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("nature-dark")}>
+          Nature Dark
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("system")}>
           System
         </DropdownMenuItem>
