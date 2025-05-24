@@ -57,11 +57,11 @@ export function renderTextWithLinkedTags(content: string, eventTags: string[][])
 }
 
 /**
- * Replace nostr:npub references with @username in content
- * @param content The text content that may contain nostr:npub references
+ * Replace nostr:npub and nostr:nprofile references with @username in content
+ * @param content The text content that may contain nostr:npub or nostr:nprofile references
  * @param eventTags The tags array from a Nostr event
  * @param userData Optional object containing profile data for referenced users 
- * @returns Text with replaced nostr:npub references
+ * @returns Text with replaced nostr:npub and nostr:nprofile references
  */
 export function replaceNostrReferences(
   content: string, 
