@@ -96,6 +96,14 @@ export default function CardOptionsDropdown({ event }: CardOptionsDropdownProps)
         }
 
         const loginType = window.localStorage.getItem('loginType');
+        if (!loginType) {
+            toast({
+                description: 'Login type is missing. Please log in again.',
+                title: 'Error',
+                variant: 'destructive'
+            });
+            return;
+        }
 
         // Create a kind 5 event (deletion request) as per NIP-09
         const deletionEvent: NostrEvent = {
