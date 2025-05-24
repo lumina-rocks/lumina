@@ -55,14 +55,14 @@ const ProfileTextFeed: React.FC<ProfileTextFeedProps> = ({ pubkey }) => {
                 />
               </div>
             ))}
-            {!isLoading && filteredEvents.length > 0 && (
-              <div className="flex justify-center p-4">
-                <Button className="w-full md:w-auto" onClick={loadMore}>Load More</Button>
-              </div>
-            )}
           </>
         )}
       </div>
+      {!isLoading && filteredEvents.length > 0 && (
+        <div className="flex justify-center p-4">
+          <Button className="w-full" onClick={loadMore}>Load More</Button>
+        </div>
+      )}
     </>
   );
 }

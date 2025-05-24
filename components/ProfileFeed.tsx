@@ -54,11 +54,6 @@ const ProfileFeed: React.FC<ProfileFeedProps> = ({ pubkey }) => {
                 />
               ) : null;
             })}
-            {!isLoading && (
-              <div className="flex justify-center p-4">
-                <Button className="w-full md:w-auto" onClick={loadMore}>Load More</Button>
-              </div>
-            )}
           </>
         ) : (
           <div className="flex flex-col items-center justify-center py-10 text-gray-500">
@@ -66,6 +61,11 @@ const ProfileFeed: React.FC<ProfileFeedProps> = ({ pubkey }) => {
           </div>
         )}
       </div>
+      {!isLoading && (
+        <div className="flex justify-center p-4">
+          <Button className="w-full" onClick={loadMore}>Load More</Button>
+        </div>
+      )}
     </>
   );
 }
