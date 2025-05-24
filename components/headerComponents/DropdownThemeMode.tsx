@@ -31,6 +31,12 @@ export function DropdownThemeMode() {
         <DropdownMenuItem onClick={() => setTheme("dark")}>
           Dark
         </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("purple-light")}>
+          Purple Light
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("purple-dark")}>
+          Purple Dark
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("system")}>
           System
         </DropdownMenuItem>
