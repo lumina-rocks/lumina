@@ -9,7 +9,7 @@ import {
     nip19,
 } from "nostr-tools";
 import Notification from './Notification';
-import { format, isSameDay } from 'date-fns';
+import { format, isSameDay, parseISO } from 'date-fns';
 
 interface NotificationsProps {
     pubkey: string;
@@ -78,7 +78,7 @@ const Notifications: React.FC<NotificationsProps> = ({ pubkey }) => {
 
     // Get formatted date heading based on date
     const getDateHeading = (dateStr: string) => {
-        const date = new Date(dateStr);
+        const date = parseISO(dateStr);
         const today = new Date();
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
@@ -112,8 +112,8 @@ const Notifications: React.FC<NotificationsProps> = ({ pubkey }) => {
                                         </h3>
                                     </div>
                                     <div className="space-y-1">
-                                        {notificationGroups[dateKey].map((notification, index) => (
-                                            <Notification key={`${dateKey}-${index}`} event={notification} />
+                                        {notificationGroups[dateKey].map((notification) => (
+                                            <Notification key={notification.id} event={notification} />
                                         ))}
                                     </div>
                                 </div>
