@@ -22,7 +22,7 @@ import {
 import { Input } from './ui/input';
 import { Share1Icon, LightningBoltIcon, GlobeIcon } from '@radix-ui/react-icons';
 import { toast } from './ui/use-toast';
-import { Globe } from 'lucide-react';
+import { Globe, UserCheck } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { MusicIcon, ActivityIcon } from 'lucide-react';
 
@@ -59,6 +59,27 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = React.memo(({ pubkey }) 
       limit: 1,
     },
   });
+
+  // Fetch follow list (NIP-02) to check if profile owner follows the logged-in user
+  const { events: followListEvents } = useNostrEvents({
+    filter: {
+      authors: [pubkey],
+      kinds: [3], // NIP-02 follow list event kind
+      limit: 1,
+    },
+    enabled: !!userPubkey, // Only fetch if a user is logged in
+  });
+
+  // Check if the profile owner follows the logged-in user
+  const isFollowingUser = useMemo(() => {
+    if (!userPubkey || followListEvents.length === 0) return false;
+    
+    const followList = followListEvents[0];
+    if (!followList) return false;
+    
+    // Look for a 'p' tag with the logged-in user's pubkey
+    return followList.tags.some(tag => tag[0] === 'p' && tag[1] === userPubkey);
+  }, [followListEvents, userPubkey]);
 
   // Get the latest status events by type
   const userStatuses = useMemo(() => {
@@ -217,9 +238,16 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = React.memo(({ pubkey }) 
       <Card>
         <CardHeader>
           <div className="flex items-center gap-6">
-            <Avatar className="h-24 w-24">
-              <AvatarImage className="object-cover w-full h-full" src={userData?.picture} alt={title} />
-            </Avatar>
+            <div className="relative">
+              <Avatar className={`h-24 w-24 ${userPubkey && userPubkey !== pubkey && isFollowingUser ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}>
+                <AvatarImage className="object-cover w-full h-full" src={userData?.picture} alt={title} />
+              </Avatar>
+              {userPubkey && userPubkey !== pubkey && isFollowingUser && (
+                <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full p-1" title="Follows you">
+                  <UserCheck className="h-4 w-4" aria-label='Follows you' />
+                </div>
+              )}
+            </div>
             <div className="flex flex-col gap-1.5">
               <Link href={`/profile/${nip19.npubEncode(pubkey)}`}>
                 <div className="text-2xl">{title}</div>
