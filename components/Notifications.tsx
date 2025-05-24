@@ -106,7 +106,7 @@ const Notifications: React.FC<NotificationsProps> = ({ pubkey }) => {
                         {events.length > 0 ? (
                             Object.keys(notificationGroups).map(dateKey => (
                                 <div key={dateKey} className="mb-6">
-                                    <div className="sticky top-0 bg-background/95 backdrop-blur-sm py-2 mb-2 border-b">
+                                    <div className="sticky top-0 backdrop-blur-sm py-2 mb-2 border-b">
                                         <h3 className="text-sm font-medium text-muted-foreground">
                                             {getDateHeading(dateKey)}
                                         </h3>
