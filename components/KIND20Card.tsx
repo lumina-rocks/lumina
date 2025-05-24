@@ -142,7 +142,7 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
                               src={imageUrl}
                               alt={text}
                               className="rounded-lg w-full h-auto object-contain"
-                              onError={() => handleImageError(imageUrl)}
+                              // onError={() => handleImageError(imageUrl)}
                               loading="lazy"
                               style={{
                                 maxHeight: "80vh",

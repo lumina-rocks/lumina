@@ -22,6 +22,9 @@ import { Input } from "./ui/input";
 import { useRef, useState } from 'react';
 import { useToast } from "./ui/use-toast";
 import { Event as NostrEvent, nip19 } from "nostr-tools";
+import { Trash2 } from "lucide-react";
+import { useNostr } from "nostr-react";
+import { signEvent } from "@/utils/utils";
 
 interface CardOptionsDropdownProps {
     event: NostrEvent;
@@ -32,9 +35,12 @@ export default function CardOptionsDropdown({ event }: CardOptionsDropdownProps)
     const inputRef = useRef(null);
     const inputRefID = useRef(null);
     const { toast } = useToast();
+    const { publish } = useNostr();
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [shareDrawerOpen, setShareDrawerOpen] = useState(false);
     const [rawDrawerOpen, setRawDrawerOpen] = useState(false);
+    const [deleteDrawerOpen, setDeleteDrawerOpen] = useState(false);
+    const [deleteReason, setDeleteReason] = useState('');
     
     const handleCopyLink = async () => {
         try {
@@ -62,6 +68,65 @@ export default function CardOptionsDropdown({ event }: CardOptionsDropdownProps)
         } catch (err) {
             toast({
                 description: 'Error copying Note ID to clipboard',
+                title: 'Error',
+                variant: 'destructive'
+            });
+        }
+    };
+    
+    const handleRequestDeletion = async () => {
+        // Check if the user is the owner of the event
+        const userPubkey = window.localStorage.getItem('pubkey');
+        if (!userPubkey) {
+            toast({
+                description: 'You need to be logged in to request deletion',
+                title: 'Error',
+                variant: 'destructive'
+            });
+            return;
+        }
+
+        if (userPubkey !== event.pubkey) {
+            toast({
+                description: 'You can only request deletion of your own posts',
+                title: 'Error',
+                variant: 'destructive'
+            });
+            return;
+        }
+
+        const loginType = window.localStorage.getItem('loginType');
+
+        // Create a kind 5 event (deletion request) as per NIP-09
+        const deletionEvent: NostrEvent = {
+            kind: 5,
+            created_at: Math.floor(Date.now() / 1000),
+            content: deleteReason,
+            tags: [
+                ["e", event.id],
+                ["k", event.kind.toString()]
+            ],
+            pubkey: "",
+            id: "",
+            sig: "",
+        };
+
+        // Sign the event
+        const signedEvent = await signEvent(loginType, deletionEvent);
+
+        if (signedEvent) {
+            // Publish the deletion request
+            publish(signedEvent);
+            
+            toast({
+                description: 'Deletion request has been published',
+                title: 'Success'
+            });
+            
+            setDeleteDrawerOpen(false);
+        } else {
+            toast({
+                description: 'Failed to sign deletion request',
                 title: 'Error',
                 variant: 'destructive'
             });
@@ -98,6 +163,19 @@ export default function CardOptionsDropdown({ event }: CardOptionsDropdownProps)
                         <CodeIcon className="mr-2 h-4 w-4" />
                         View Raw
                     </DropdownMenuItem>
+
+                    {/* Delete option (only visible for the owner) */}
+                    {window.localStorage.getItem('pubkey') === event.pubkey && (
+                        <DropdownMenuItem 
+                            onClick={() => {
+                                setDropdownOpen(false);
+                                setTimeout(() => setDeleteDrawerOpen(true), 100);
+                            }}
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Request Deletion
+                        </DropdownMenuItem>
+                    )}
                 </DropdownMenuContent>
             </DropdownMenu>
 
@@ -140,6 +218,50 @@ export default function CardOptionsDropdown({ event }: CardOptionsDropdownProps)
                         <DrawerClose asChild>
                             <Button variant="outline">Close</Button>
                         </DrawerClose>
+                    </DrawerFooter>
+                </DrawerContent>
+            </Drawer>
+
+            {/* Deletion Request Drawer */}
+            <Drawer open={deleteDrawerOpen} onOpenChange={setDeleteDrawerOpen}>
+                <DrawerContent>
+                    <DrawerHeader>
+                        <DrawerTitle>Request Deletion</DrawerTitle>
+                        <DrawerDescription>
+                            This will publish a deletion request (NIP-09) for this event. Clients and relays may hide or delete this event when they see your request.
+                        </DrawerDescription>
+                    </DrawerHeader>
+                    <div className="px-4 pb-4">
+                        <div className="space-y-2 mb-4">
+                            <label htmlFor="delete-reason" className="text-sm font-medium">
+                                Reason for deletion (optional)
+                            </label>
+                            <Textarea 
+                                id="delete-reason"
+                                placeholder="Why do you want to delete this event?"
+                                value={deleteReason}
+                                onChange={(e) => setDeleteReason(e.target.value)}
+                                rows={3}
+                            />
+                        </div>
+                        <div className="bg-muted p-3 rounded-md text-sm mb-4">
+                            <p className="font-medium mb-1">Note:</p>
+                            <p className="text-muted-foreground">
+                                Deletion requests cannot be guaranteed to remove content from all relays and clients. 
+                                Some relays may choose to ignore deletion requests, and previously downloaded content may still be available in clients.
+                            </p>
+                        </div>
+                    </div>
+                    <DrawerFooter className="flex-row space-x-2">
+                        <DrawerClose asChild>
+                            <Button variant="outline">Cancel</Button>
+                        </DrawerClose>
+                        <Button 
+                            variant="destructive" 
+                            onClick={handleRequestDeletion}
+                        >
+                            Request Deletion
+                        </Button>
                     </DrawerFooter>
                 </DrawerContent>
             </Drawer>

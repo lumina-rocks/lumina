@@ -44,7 +44,7 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubke
               alt={text}
               className='w-full h-full rounded lg:rounded-lg object-cover' 
               loading="lazy"
-              onError={() => setImageError(true)}
+              // onError={() => setImageError(true)}
               style={{ objectPosition: 'center' }}
             />
           </div>
