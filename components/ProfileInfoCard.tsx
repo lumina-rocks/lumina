@@ -244,7 +244,7 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = React.memo(({ pubkey }) 
               </Avatar>
               {userPubkey && userPubkey !== pubkey && isFollowingUser && (
                 <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full p-1" title="Follows you">
-                  <UserCheck className="h-4 w-4" />
+                  <UserCheck className="h-4 w-4" aria-label='Follows you' />
                 </div>
               )}
             </div>
