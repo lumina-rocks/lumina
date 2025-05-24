@@ -441,7 +441,6 @@ const UploadComponent: React.FC = () => {
                   <SelectContent>
                     <SelectItem value="blossom.band">blossom.band</SelectItem>
                     <SelectItem value="blossom.primal.net">blossom.primal.net</SelectItem>
-                    <SelectItem value="media.lumina.rocks">media.lumina.rocks</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
