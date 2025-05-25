@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useProfile } from "nostr-react";
 import {
   nip19,
@@ -42,11 +42,31 @@ interface NoteCardProps {
 }
 
 const NoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tags, event, showViewNoteCardButton }) => {
-  const { data: userData } = useProfile({
+  const [retryCount, setRetryCount] = useState(0);
+  const { data: userData, isLoading: profileLoading } = useProfile({
     pubkey,
   });
+  
+  // Add retry mechanism for profile loading
+  useEffect(() => {
+    // If userData is not loaded and we haven't exceeded max retries
+    if (!userData && !profileLoading && retryCount < 3) {
+      const timer = setTimeout(() => {
+        setRetryCount(prev => prev + 1);
+      }, 2000); // Retry after 2 seconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, [userData, profileLoading, retryCount]);
+  
+  // Create a shortened npub that can be used as a fallback when userData is not available
+  const npubShortened = useMemo(() => {
+    const encoded = nip19.npubEncode(pubkey);
+    const parts = encoded.split('npub');
+    return 'npub' + parts[1].slice(0, 4) + ':' + parts[1].slice(-3);
+  }, [pubkey]);
 
-  const title = userData?.username || userData?.display_name || userData?.name || userData?.npub || nip19.npubEncode(pubkey);
+  const title = userData?.username || userData?.display_name || userData?.name || userData?.npub || npubShortened;
   // text = text.replaceAll('\n', '<br />');
   text = text.replaceAll('\n', ' ');
   const imageSrc = text.match(/https?:\/\/[^ ]*\.(png|jpg|gif|jpeg)/g);

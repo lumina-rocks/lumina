@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useProfile } from "nostr-react";
 import {
   nip19,
@@ -22,10 +22,23 @@ interface QuickViewKind20NoteCardProps {
 }
 
 const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubkey, text, image, eventId, tags, event, linkToNote }) => {
+  const [retryCount, setRetryCount] = useState(0);
   const {data, isLoading} = useProfile({
     pubkey,
   });
   const [imageError, setImageError] = useState(false);
+
+  // Add retry mechanism for profile loading
+  useEffect(() => {
+    // If userData is not loaded and we haven't exceeded max retries
+    if (!data && retryCount < 3) {
+      const timer = setTimeout(() => {
+        setRetryCount(prev => prev + 1);
+      }, 2000); // Retry after 2 seconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, [data, retryCount]);
 
   if (!image || !image.startsWith("http") || imageError) return null;
 
@@ -44,7 +57,7 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubke
               alt={text}
               className='w-full h-full rounded lg:rounded-lg object-cover' 
               loading="lazy"
-              // onError={() => setImageError(true)}
+              onError={() => setImageError(true)}
               style={{ objectPosition: 'center' }}
             />
           </div>

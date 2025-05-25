@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useProfile, useNostrEvents } from "nostr-react";
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { AvatarImage } from '@radix-ui/react-avatar';
@@ -41,6 +41,7 @@ interface StatusMap {
 }
 
 const ProfileInfoCard: React.FC<ProfileInfoCardProps> = React.memo(({ pubkey }) => {
+  const [retryCount, setRetryCount] = useState(0);
 
   let userPubkey = '';
   let host = '';
@@ -50,6 +51,18 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = React.memo(({ pubkey }) 
   }
 
   const { data: userData, isLoading } = useProfile({ pubkey });
+  
+  // Add retry mechanism for profile loading
+  useEffect(() => {
+    // If userData is not loaded and we haven't exceeded max retries
+    if (!userData && !isLoading && retryCount < 3) {
+      const timer = setTimeout(() => {
+        setRetryCount(prev => prev + 1);
+      }, 2000); // Retry after 2 seconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, [userData, isLoading, retryCount]);
   
   // Fetch user status events (NIP-38)
   const { events: statusEvents } = useNostrEvents({

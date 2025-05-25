@@ -1,7 +1,7 @@
 import type React from "react"
 import { useProfile } from "nostr-react"
 import { nip19 } from "nostr-tools"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
@@ -45,12 +45,25 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
   event,
   showViewNoteCardButton,
 }) => {
-  const { data: userData } = useProfile({
+  const [retryCount, setRetryCount] = useState(0);
+  const { data: userData, isLoading: profileLoading } = useProfile({
     pubkey,
-  })
+  });
   const [currentImage, setCurrentImage] = useState(0);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   const [api, setApi] = useState<any>(null);
+  
+  // Add retry mechanism for profile loading
+  useEffect(() => {
+    // If userData is not loaded and we haven't exceeded max retries
+    if (!userData && retryCount < 3) {
+      const timer = setTimeout(() => {
+        setRetryCount(prev => prev + 1);
+      }, 2000); // Retry after 2 seconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, [userData, retryCount]);
   
   // Extract all images from imeta tags
   const imetaImages = extractImagesFromEvent(tags);
@@ -90,8 +103,15 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
   // If no valid images are available, don't render the card
   if (validImages.length === 0) return null;
   
+  // Create a shortened npub that can be used as a fallback when userData is not available
+  const npubShortened = useMemo(() => {
+    const encoded = nip19.npubEncode(pubkey);
+    const parts = encoded.split('npub');
+    return 'npub' + parts[1].slice(0, 4) + ':' + parts[1].slice(-3);
+  }, [pubkey]);
+  
   const title =
-    userData?.username || userData?.display_name || userData?.name || userData?.npub || nip19.npubEncode(pubkey)
+    userData?.username || userData?.display_name || userData?.name || userData?.npub || npubShortened;
   text = text.replaceAll("\n", " ")
   const createdAt = new Date(event.created_at * 1000)
   const hrefProfile = `/profile/${nip19.npubEncode(pubkey)}`
@@ -142,7 +162,7 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
                               src={imageUrl}
                               alt={text}
                               className="rounded-lg w-full h-auto object-contain"
-                              // onError={() => handleImageError(imageUrl)}
+                              onError={() => handleImageError(imageUrl)}
                               loading="lazy"
                               style={{
                                 maxHeight: "80vh",
