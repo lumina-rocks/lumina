@@ -59,7 +59,7 @@ const NoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tags, event,
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center">
+        <CardHeader className="flex flex-row items-center space-y-0">
           <CardTitle className="flex-1">
             <Link href={hrefProfile} style={{ textDecoration: 'none' }}>
               <TooltipProvider>

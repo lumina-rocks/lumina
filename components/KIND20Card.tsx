@@ -115,7 +115,7 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
     <>
       <div key={event.id}>
         <Card className="my-4">
-          <CardHeader className="flex flex-row items-center">
+          <CardHeader className="flex flex-row items-center space-y-0">
             <CardTitle className="flex-1">
               <Link href={hrefProfile} style={{ textDecoration: "none" }}>
                 <TooltipProvider>
