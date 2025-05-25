@@ -67,6 +67,26 @@ docker run -p 3000:3000 lumina
 
 ## ⚙️ Configuration
 
+### Image Proxy (imgproxy)
+
+LUMINA supports image proxying via imgproxy to optimize image loading, resize images on-the-fly, and enhance privacy. To enable:
+
+1. Edit the `.env` file in the `lumina` directory:
+   ```
+   NEXT_PUBLIC_ENABLE_IMGPROXY=true
+   NEXT_PUBLIC_IMGPROXY_URL=https://your-imgproxy-instance.com/
+   ```
+
+2. Make sure your imgproxy instance is properly configured and accessible.
+
+3. Restart the application to apply changes.
+
+The imgproxy feature:
+- Resizes images to appropriate dimensions for better performance
+- Falls back to direct image URLs if the proxy fails
+- Provides faster loading times for large images
+- Can be disabled by setting `NEXT_PUBLIC_ENABLE_IMGPROXY=false`
+
 ### Umami Analytics
 
 Umami analytics is disabled by default. To enable:
