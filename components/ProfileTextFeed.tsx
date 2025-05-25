@@ -10,7 +10,7 @@ interface ProfileTextFeedProps {
 
 const ProfileTextFeed: React.FC<ProfileTextFeedProps> = ({ pubkey }) => {
   const now = useRef(new Date());
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(100);
 
   const { events, isLoading } = useNostrEvents({
     filter: {
