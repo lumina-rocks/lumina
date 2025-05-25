@@ -13,7 +13,7 @@ import type { Event as NostrEvent } from "nostr-tools"
 import ZapButton from "./ZapButton"
 import Image from "next/image"
 import CardOptionsDropdown from "./CardOptionsDropdown"
-import { renderTextWithLinkedTags } from "@/utils/textUtils"
+import { renderTextWithLinkedTags, renderTextWithLinks } from "@/utils/textUtils"
 
 // Function to extract all images from a kind 20 event's imeta tags
 const extractImagesFromEvent = (tags: string[][]): string[] => {
@@ -169,7 +169,7 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
               )}
             </div>
             <div className="p-4">
-              <div className="break-word overflow-hidden">{renderTextWithLinkedTags(text, tags)}</div>
+              <div className="break-word overflow-hidden">{renderTextWithLinks(text, tags, { [pubkey]: userData || {} })}</div>
               <hr className="my-4" />
               <div className="space-x-4 flex justify-between items-start">
                 <div className="flex space-x-4">
