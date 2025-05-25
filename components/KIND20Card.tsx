@@ -53,6 +53,7 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
   })
   const [currentImage, setCurrentImage] = useState(0);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  const [imagesWithoutProxy, setImagesWithoutProxy] = useState<Record<string, boolean>>({});
   const [api, setApi] = useState<any>(null);
   
   // Extract all images from imeta tags
@@ -64,12 +65,21 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
   // Filter out images with errors
   const validImages = allImages.filter(img => !imageErrors[img]);
   
-  // Handle image error by marking that specific image as having an error
+  // Handle image error by first trying without proxy, then marking as error if that fails too
   const handleImageError = (errorImage: string) => {
-    setImageErrors(prev => ({
-      ...prev,
-      [errorImage]: true
-    }));
+    if (imagesWithoutProxy[errorImage]) {
+      // Already tried without proxy, mark as error
+      setImageErrors(prev => ({
+        ...prev,
+        [errorImage]: true
+      }));
+    } else {
+      // Try without proxy
+      setImagesWithoutProxy(prev => ({
+        ...prev,
+        [errorImage]: true
+      }));
+    }
   }
 
   // Update current image index when carousel slides
@@ -138,7 +148,8 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
                 >
                   <CarouselContent>
                     {validImages.map((imageUrl, index) => {
-                      const image = useImgProxy ? getProxiedImageUrl(imageUrl, 1200, 0) : imageUrl;
+                      const shouldUseProxy = useImgProxy && !imagesWithoutProxy[imageUrl];
+                      const image = shouldUseProxy ? getProxiedImageUrl(imageUrl, 1200, 0) : imageUrl;
                       return (
                         <CarouselItem key={`${imageUrl}-${index}`}>
                           <div className="w-full flex justify-center">
@@ -147,7 +158,7 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
                                 src={image}
                                 alt={text}
                                 className="rounded-lg w-full h-auto object-contain"
-                                // onError={() => handleImageError(imageUrl)}
+                                onError={() => handleImageError(imageUrl)}
                                 loading="lazy"
                                 style={{
                                   maxHeight: "80vh",

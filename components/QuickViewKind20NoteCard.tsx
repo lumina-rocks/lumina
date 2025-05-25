@@ -26,10 +26,12 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubke
     pubkey,
   });
   const [imageError, setImageError] = useState(false);
+  const [tryWithoutProxy, setTryWithoutProxy] = useState(false);
 
-  if (!image || !image.startsWith("http") || imageError) return null;
+  if (!image || !image.startsWith("http")) return null;
+  if (imageError && tryWithoutProxy) return null;
 
-  const useImgProxy = process.env.NEXT_PUBLIC_ENABLE_IMGPROXY === "true"
+  const useImgProxy = process.env.NEXT_PUBLIC_ENABLE_IMGPROXY === "true" && !tryWithoutProxy;
 
   image = useImgProxy ? getProxiedImageUrl(image, 500, 0) : image;
 
@@ -48,7 +50,13 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubke
               alt={text}
               className='w-full h-full rounded lg:rounded-lg object-cover' 
               loading="lazy"
-              // onError={() => setImageError(true)}
+              onError={() => {
+                if (tryWithoutProxy) {
+                  setImageError(true);
+                } else {
+                  setTryWithoutProxy(true);
+                }
+              }}
               style={{ objectPosition: 'center' }}
             />
           </div>
