@@ -154,7 +154,7 @@ export default function RelaysPage() {
   return (
     <div className="py-4 px-2 md:py-6 md:px-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold">Nostr Relays</h2>
+        <h2 className="text-2xl mr-2 font-bold">Relays</h2>
         <div className="flex space-x-2">
           <Button 
             variant="outline" 
