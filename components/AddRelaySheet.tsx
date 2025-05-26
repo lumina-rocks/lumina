@@ -85,7 +85,6 @@ export function AddRelaySheet({ onRelayAdded }: AddRelaySheetProps) {
       <SheetTrigger asChild>
         <Button variant="outline" className="gap-2">
           <PlusCircle className="h-4 w-4" />
-          Add Relay
         </Button>
       </SheetTrigger>
       <SheetContent>

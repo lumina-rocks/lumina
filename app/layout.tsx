@@ -30,10 +30,10 @@ export default function RootLayout({
       const customRelays = JSON.parse(localStorage.getItem("customRelays") || "[]");
       if (customRelays.length > 0) {
         // Remove trailing slashes from any relay URLs
-        const sanitizedRelays = customRelays.map((relay: string) => 
+        const sanitizedRelays = customRelays.map((relay: string) =>
           relay.endsWith('/') ? relay.slice(0, -1) : relay
         );
-        
+
         setRelayUrls(prevRelays => {
           // Combine default relays with custom relays, removing duplicates
           const allRelays = [...prevRelays, ...sanitizedRelays];
@@ -61,11 +61,11 @@ export default function RootLayout({
           disableTransitionOnChange
           themes={["light", "dark", "purple-light", "purple-dark", "vintage-light", "vintage-dark", "neo-brutalism-light", "neo-brutalism-dark", "nature-light", "nature-dark", "system"]}
         >
-          <TopNavigation />
-          <Toaster />
           <Umami />
           <div className="main-content pb-14">
             <NostrProvider relayUrls={relayUrls} debug={false}>
+              <TopNavigation />
+              <Toaster />
               {children}
             </NostrProvider>
           </div>
