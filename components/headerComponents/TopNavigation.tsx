@@ -4,10 +4,11 @@ import { siteConfig } from "@/config/site"
 import { useEffect, useState } from "react"
 import { TopNavigationItems } from "./TopNavigationItems"
 import { DropdownThemeMode } from "./DropdownThemeMode"
-import LoginButton from "./LoginButton"
 import { AvatarDropdown } from "./AvatarDropdown"
-import RegisterButton from "./RegisterButton"
 import ConnectedRelaysButton from "@/components/headerComponents/ConnectedRelaysButton"
+import AuthButton from "./AuthButton"
+import { Button } from "@/components/ui/button"
+import { UserIcon } from "lucide-react"
 
 export function TopNavigation() {
   const [pubkey, setPubkey] = useState<string | null>(null)
@@ -28,6 +29,11 @@ export function TopNavigation() {
             <nav className="flex items-center space-x-2">
               <ConnectedRelaysButton />
               <DropdownThemeMode />
+              {/* Placeholder for auth button to prevent layout shift */}
+              <Button variant="outline" className="flex items-center gap-2" disabled>
+                <UserIcon className="h-[1.2rem] w-[1.2rem]" />
+                <span className="hidden sm:inline">Account</span>
+              </Button>
             </nav>
           </div>
         </div>
@@ -43,9 +49,7 @@ export function TopNavigation() {
           <nav className="flex items-center space-x-2">
             <ConnectedRelaysButton />
             <DropdownThemeMode />
-            {pubkey === null ? <RegisterButton /> : null}
-            {pubkey === null ? <LoginButton /> : null}
-            {pubkey !== null ? <AvatarDropdown /> : null}
+            {pubkey !== null ? <AvatarDropdown /> : <AuthButton />}
           </nav>
         </div>
       </div>
