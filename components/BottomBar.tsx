@@ -17,7 +17,7 @@ export default function BottomBar() {
     setPubkey(window.localStorage.getItem('pubkey'));
   }, []);
 
-  const isActive = (path: string, currentPath: string) => currentPath === path ? 'text-purple-500' : '';
+  const isActive = (path: string, currentPath: string) => currentPath === path ? 'text-primary' : '';
 
   // Render minimal navigation during SSR and hydration
   if (!mounted) {
