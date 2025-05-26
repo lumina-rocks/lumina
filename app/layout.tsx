@@ -63,7 +63,7 @@ export default function RootLayout({
         >
           <Umami />
           <div className="main-content pb-14">
-            <NostrProvider relayUrls={relayUrls} debug={true}>
+            <NostrProvider relayUrls={relayUrls} debug={false}>
               <TopNavigation />
               <Toaster />
               {children}
