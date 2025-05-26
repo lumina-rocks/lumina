@@ -7,7 +7,7 @@ import { DropdownThemeMode } from "./DropdownThemeMode"
 import LoginButton from "./LoginButton"
 import { AvatarDropdown } from "./AvatarDropdown"
 import RegisterButton from "./RegisterButton"
-import GitHubButton from "@/components/headerComponents/GitHubButton"
+import ConnectedRelaysButton from "@/components/headerComponents/ConnectedRelaysButton"
 
 export function TopNavigation() {
   const [pubkey, setPubkey] = useState<string | null>(null)
@@ -26,7 +26,7 @@ export function TopNavigation() {
           <TopNavigationItems items={siteConfig.mainNav} />
           <div className="flex flex-1 items-center justify-end space-x-4">
             <nav className="flex items-center space-x-2">
-              <GitHubButton />
+              <ConnectedRelaysButton />
               <DropdownThemeMode />
             </nav>
           </div>
@@ -41,7 +41,7 @@ export function TopNavigation() {
         <TopNavigationItems items={siteConfig.mainNav} />
         <div className="flex flex-1 items-center justify-end space-x-4">
           <nav className="flex items-center space-x-2">
-            <GitHubButton />
+            <ConnectedRelaysButton />
             <DropdownThemeMode />
             {pubkey === null ? <RegisterButton /> : null}
             {pubkey === null ? <LoginButton /> : null}

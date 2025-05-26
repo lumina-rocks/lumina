@@ -25,6 +25,13 @@ export default function RelaysPage() {
   useEffect(() => {
     document.title = `Relays | LUMINA`;
     
+    // Set a loading timeout - if relays don't connect within 10 seconds, show whatever we have
+    const loadingTimeout = setTimeout(() => {
+      if (loading) {
+        setLoading(false);
+      }
+    }, 10000);
+    
     if (connectedRelays) {
       const status: { [url: string]: 'connected' | 'connecting' | 'disconnected' | 'error' } = {};
       
@@ -40,8 +47,14 @@ export default function RelaysPage() {
       });
       
       setRelayStatus(status);
-      setLoading(false);
+      
+      // Only stop loading when we have at least one connected relay or after a timeout
+      if (Object.values(status).some(s => s === 'connected') || connectedRelays.length === 0) {
+        setLoading(false);
+      }
     }
+    
+    return () => clearTimeout(loadingTimeout);
   }, [connectedRelays, refreshKey]);
 
   // Function to refresh NIP-65 relays for the current user
