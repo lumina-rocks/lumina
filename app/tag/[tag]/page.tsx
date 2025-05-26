@@ -37,12 +37,12 @@ export default function Home() {
         <Tabs defaultValue="QuickView">
           <TabsList className="mb-4 w-full grid grid-cols-2">
             <TabsTrigger value="QuickView"><GridIcon /></TabsTrigger>
-            <TabsTrigger value="ProfileFeed"><SectionIcon /></TabsTrigger>
+            <TabsTrigger value="ExtendedFeed"><SectionIcon /></TabsTrigger>
           </TabsList>
           <TabsContent value="QuickView">
             <TagQuickViewFeed tag={tag} />
           </TabsContent>
-          <TabsContent value="ProfileFeed">
+          <TabsContent value="ExtendedFeed">
             <TagFeed tag={tag} />
           </TabsContent>
         </Tabs>
