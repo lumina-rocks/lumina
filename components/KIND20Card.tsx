@@ -15,6 +15,8 @@ import Image from "next/image"
 import CardOptionsDropdown from "./CardOptionsDropdown"
 import { renderTextWithLinkedTags } from "@/utils/textUtils"
 import { getProxiedImageUrl } from "@/utils/utils"
+import { formatRelativeTime } from "@/utils/dateUtils"
+import { Clock, UploadCloud } from "lucide-react"
 
 // Function to extract all images from a kind 20 event's imeta tags
 const extractImagesFromEvent = (tags: string[][]): string[] => {
@@ -197,11 +199,47 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
               </div>
             </div>
           </CardContent>
-          <CardFooter>
-            <div className="grid grid-cols-1">
-              <small className="text-muted">{createdAt.toLocaleString()}</small>
-              {uploadedVia && <small className="text-muted">Uploaded via {uploadedVia}</small>}
+          <CardFooter className="flex flex-row items-center justify-between">
+            <div className="flex flex-col text-sm text-muted-foreground">
+              <div className="flex items-center">
+                <Clock className="h-4 w-4 mr-1" />
+                <span>{formatRelativeTime(createdAt)}</span>
+              </div>
+              
+              {uploadedVia && (
+                <div className="flex items-center mt-1">
+                  {/* <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    className="h-4 w-4 mr-1" 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={1.5} 
+                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" 
+                    />
+                  </svg> */}
+                  <UploadCloud className="h-4 w-4 mr-1" />
+                  <span>via {uploadedVia}</span>
+                </div>
+              )}
             </div>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="text-xs text-muted-foreground/70 hover:text-muted-foreground cursor-help">
+                    {createdAt.toLocaleString()}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p>Full timestamp</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </CardFooter>
         </Card>
       </div>
