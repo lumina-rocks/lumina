@@ -199,8 +199,8 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
           </CardContent>
           <CardFooter>
             <div className="grid grid-cols-1">
-              <small className="text-muted">{createdAt.toLocaleString()}</small>
-              {uploadedVia && <small className="text-muted">Uploaded via {uploadedVia}</small>}
+              <small className="text-secondary">{createdAt.toLocaleString()}</small>
+              {uploadedVia && <small className="text-secondary">Uploaded via {uploadedVia}</small>}
             </div>
           </CardFooter>
         </Card>

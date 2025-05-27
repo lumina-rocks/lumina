@@ -156,7 +156,7 @@ const NoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tags, event,
           </div>
         </CardContent>
         <CardFooter>
-          <small className="text-muted">{createdAt.toLocaleString()}</small>
+          <small className="text-secondary">{createdAt.toLocaleString()}</small>
         </CardFooter>
       </Card>
     </>
