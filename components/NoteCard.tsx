@@ -31,6 +31,8 @@ import { Event as NostrEvent } from "nostr-tools";
 import ZapButton from './ZapButton';
 import CardOptionsDropdown from './CardOptionsDropdown';
 import { renderTextWithLinkedTags } from '@/utils/textUtils';
+import { Clock } from 'lucide-react';
+import { formatRelativeTime } from '@/utils/dateUtils';
 
 interface NoteCardProps {
   pubkey: string;
@@ -155,8 +157,26 @@ const NoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tags, event,
             </div>
           </div>
         </CardContent>
-        <CardFooter>
-          <small className="text-muted">{createdAt.toLocaleString()}</small>
+        <CardFooter className="flex flex-row items-center justify-between">
+          <div className="flex flex-col text-sm text-muted-foreground">
+            <div className="flex items-center">
+              <Clock className="h-4 w-4 mr-1" />
+              <span>{formatRelativeTime(createdAt)}</span>
+            </div>
+          </div>
+          
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="text-xs text-muted-foreground/70 hover:text-muted-foreground cursor-help">
+                  {createdAt.toLocaleString()}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p>Full timestamp</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </CardFooter>
       </Card>
     </>
