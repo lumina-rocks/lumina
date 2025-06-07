@@ -2,6 +2,14 @@ import { Event as NostrEvent, finalizeEvent} from "nostr-tools";
 import { hexToBytes } from "@noble/hashes/utils"
 import { signEventWithBunker } from "./bunkerUtils";
 
+// Check if the event has nsfw or sexy tags
+export function hasNsfwContent(tags: string[][]): boolean {
+  return tags.some(tag => 
+    (tag[0] === 't' && (tag[1]?.toLowerCase() === 'nsfw' || tag[1]?.toLowerCase() === 'sexy')) ||
+    (tag[0] === 'content-warning')
+  );
+}
+
 export function getImageUrl(tags: string[][]): string {
   const imetaTag = tags.find(tag => tag[0] === 'imeta');
   if (imetaTag) {
