@@ -79,13 +79,13 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubke
               >
                 <Button 
                   variant="secondary" 
-                  className="bg-black bg-opacity-50 hover:bg-opacity-70 text-white px-4 py-2 rounded-md"
+                  className="bg-black bg-opacity-50 hover:bg-opacity-70 text-white px-2 py-1 sm:px-4 sm:py-2 rounded-md text-xs sm:text-sm"
                   onClick={toggleSensitiveContent}
                 >
-                  <Eye className="h-4 w-4 mr-2" /> Show Sensitive Content
+                  <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" /> Show
                 </Button>
-                <p className="mt-2 text-white text-sm bg-black bg-opacity-50 p-2 rounded">
-                  This image may contain sensitive content
+                <p className="mt-1 sm:mt-2 text-white text-xs sm:text-sm bg-black bg-opacity-50 p-1 sm:p-2 rounded max-w-[80%] text-center">
+                  Sensitive Content
                 </p>
               </div>
             )}
