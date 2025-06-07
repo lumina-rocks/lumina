@@ -12,6 +12,7 @@ import { Avatar } from './ui/avatar';
 import { AvatarImage } from '@radix-ui/react-avatar';
 import { Button } from '@/components/ui/button';
 import { Eye } from 'lucide-react';
+import { hasNsfwContent } from '@/utils/utils';
 
 interface TrendingImageNewProps {
   event: {
@@ -29,10 +30,7 @@ const TrendingImageNew: React.FC<TrendingImageNewProps> = ({ event }) => {
   });
 
   // Check if the event has nsfw or sexy tags
-  const hasNsfwTag = event.tags.some(tag => 
-    (tag[0] === 't' && (tag[1]?.toLowerCase() === 'nsfw' || tag[1]?.toLowerCase() === 'sexy')) ||
-    (tag[0] === 'content-warning')
-  );
+  const hasNsfwTag = hasNsfwContent(event.tags);
   
   // State to control image blur
   const [showSensitiveContent, setShowSensitiveContent] = useState(false);
