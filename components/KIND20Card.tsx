@@ -14,7 +14,9 @@ import ZapButton from "./ZapButton"
 import Image from "next/image"
 import CardOptionsDropdown from "./CardOptionsDropdown"
 import { renderTextWithLinkedTags } from "@/utils/textUtils"
-import { getProxiedImageUrl } from "@/utils/utils"
+import { getProxiedImageUrl, hasNsfwContent } from "@/utils/utils"
+import { Button } from "@/components/ui/button"
+import { Eye } from "lucide-react"
 
 // Function to extract all images from a kind 20 event's imeta tags
 const extractImagesFromEvent = (tags: string[][]): string[] => {
@@ -54,7 +56,11 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
   const [currentImage, setCurrentImage] = useState(0);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   const [imagesWithoutProxy, setImagesWithoutProxy] = useState<Record<string, boolean>>({});
+  const [showSensitiveContent, setShowSensitiveContent] = useState(false);
   const [api, setApi] = useState<any>(null);
+  
+  // Check if the event has nsfw content
+  const isNsfwContent = hasNsfwContent(tags);
   
   // Extract all images from imeta tags
   const imetaImages = extractImagesFromEvent(tags);
@@ -81,6 +87,13 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
       }));
     }
   }
+
+  // Toggle sensitive content visibility
+  const toggleSensitiveContent = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowSensitiveContent(true);
+  };
 
   // Update current image index when carousel slides
   useEffect(() => {
@@ -142,47 +155,67 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
           <CardContent className="p-0">
             <div className="w-full">
               {validImages.length > 0 && (
-                <Carousel 
-                  className="w-full" 
-                  setApi={setApi}
-                >
-                  <CarouselContent>
-                    {validImages.map((imageUrl, index) => {
-                      const shouldUseProxy = useImgProxy && !imagesWithoutProxy[imageUrl];
-                      const image = shouldUseProxy ? getProxiedImageUrl(imageUrl, 1200, 0) : imageUrl;
-                      return (
-                        <CarouselItem key={`${imageUrl}-${index}`}>
-                          <div className="w-full flex justify-center">
-                            <div className="relative w-full h-auto min-h-[300px] max-h-[80vh] flex justify-center">
-                              <img
-                                src={image}
-                                alt={text}
-                                className="rounded-lg w-full h-auto object-contain"
-                                onError={() => handleImageError(imageUrl)}
-                                loading="lazy"
-                                style={{
-                                  maxHeight: "80vh",
-                                  margin: "auto"
-                                }}
-                              />
+                <div className="relative">
+                  <Carousel 
+                    className="w-full" 
+                    setApi={setApi}
+                  >
+                    <CarouselContent>
+                      {validImages.map((imageUrl, index) => {
+                        const shouldUseProxy = useImgProxy && !imagesWithoutProxy[imageUrl];
+                        const image = shouldUseProxy ? getProxiedImageUrl(imageUrl, 1200, 0) : imageUrl;
+                        return (
+                          <CarouselItem key={`${imageUrl}-${index}`}>
+                            <div className="w-full flex justify-center">
+                              <div className="relative w-full h-auto min-h-[300px] max-h-[80vh] flex justify-center">
+                                <img
+                                  src={image}
+                                  alt={text}
+                                  className={`rounded-lg w-full h-auto object-contain ${isNsfwContent && !showSensitiveContent ? 'blur-xl' : ''}`}
+                                  onError={() => handleImageError(imageUrl)}
+                                  loading="lazy"
+                                  style={{
+                                    maxHeight: "80vh",
+                                    margin: "auto"
+                                  }}
+                                />
+                              </div>
                             </div>
+                          </CarouselItem>
+                        );
+                      })}
+                    </CarouselContent>
+                    {validImages.length > 1 && !isNsfwContent && (
+                      <>
+                        <CarouselPrevious className="left-2" />
+                        <CarouselNext className="right-2" />
+                        <div className="absolute bottom-4 left-0 right-0 flex justify-center">
+                          <div className="bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm">
+                            {`${currentImage + 1} / ${validImages.length}`}
                           </div>
-                        </CarouselItem>
-                      );
-                    })}
-                  </CarouselContent>
-                  {validImages.length > 1 && (
-                    <>
-                      <CarouselPrevious className="left-2" />
-                      <CarouselNext className="right-2" />
-                      <div className="absolute bottom-4 left-0 right-0 flex justify-center">
-                        <div className="bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm">
-                          {`${currentImage + 1} / ${validImages.length}`}
                         </div>
-                      </div>
-                    </>
+                      </>
+                    )}
+                  </Carousel>
+                  
+                  {isNsfwContent && !showSensitiveContent && (
+                    <div 
+                      className="absolute inset-0 flex flex-col items-center justify-center z-10"
+                      onClick={toggleSensitiveContent}
+                    >
+                      <Button 
+                        variant="secondary" 
+                        className="bg-black bg-opacity-50 hover:bg-opacity-70 text-white px-4 py-2 rounded-md"
+                        onClick={toggleSensitiveContent}
+                      >
+                        <Eye className="h-4 w-4 mr-2" /> Show Sensitive Content
+                      </Button>
+                      <p className="mt-2 text-white text-sm bg-black bg-opacity-50 p-2 rounded">
+                        This image may contain sensitive content
+                      </p>
+                    </div>
                   )}
-                </Carousel>
+                </div>
               )}
             </div>
             <div className="p-4">

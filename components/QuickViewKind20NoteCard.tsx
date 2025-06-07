@@ -9,7 +9,9 @@ import {
 } from "@/components/ui/card"
 import Link from 'next/link';
 import Image from 'next/image';
-import { extractDimensions, getProxiedImageUrl } from '@/utils/utils';
+import { Button } from '@/components/ui/button';
+import { Eye } from 'lucide-react';
+import { extractDimensions, getProxiedImageUrl, hasNsfwContent } from '@/utils/utils';
 
 interface QuickViewKind20NoteCardProps {
   pubkey: string;
@@ -27,6 +29,10 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubke
   });
   const [imageError, setImageError] = useState(false);
   const [tryWithoutProxy, setTryWithoutProxy] = useState(false);
+  const [showSensitiveContent, setShowSensitiveContent] = useState(false);
+
+  // Check if the event has nsfw content
+  const isNsfwContent = hasNsfwContent(tags);
 
   if (!image || !image.startsWith("http")) return null;
   if (imageError && tryWithoutProxy) return null;
@@ -40,6 +46,13 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubke
 
   const { width, height } = extractDimensions(event);
 
+  // Toggle sensitive content visibility
+  const toggleSensitiveContent = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowSensitiveContent(true);
+  };
+
   const card = (
     <Card className="aspect-square overflow-hidden">
       <SmallCardContent className="h-full p-0">
@@ -48,7 +61,7 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubke
             <img 
               src={image || "/placeholder.svg"} 
               alt={text}
-              className='w-full h-full rounded lg:rounded-lg object-cover' 
+              className={`w-full h-full rounded lg:rounded-lg object-cover ${isNsfwContent && !showSensitiveContent ? 'blur-xl' : ''}`}
               loading="lazy"
               onError={() => {
                 if (tryWithoutProxy) {
@@ -59,6 +72,23 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubke
               }}
               style={{ objectPosition: 'center' }}
             />
+            {isNsfwContent && !showSensitiveContent && (
+              <div 
+                className="absolute inset-0 flex flex-col items-center justify-center"
+                onClick={toggleSensitiveContent}
+              >
+                <Button 
+                  variant="secondary" 
+                  className="bg-black bg-opacity-50 hover:bg-opacity-70 text-white px-4 py-2 rounded-md"
+                  onClick={toggleSensitiveContent}
+                >
+                  <Eye className="h-4 w-4 mr-2" /> Show Sensitive Content
+                </Button>
+                <p className="mt-2 text-white text-sm bg-black bg-opacity-50 p-2 rounded">
+                  This image may contain sensitive content
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </SmallCardContent>
@@ -68,7 +98,11 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubke
   return (
     <>
       {linkToNote ? (
-        <Link href={`/note/${encodedNoteId}`} className="block w-full aspect-square">
+        <Link 
+          href={`/note/${encodedNoteId}`} 
+          className="block w-full aspect-square"
+          onClick={isNsfwContent && !showSensitiveContent ? (e) => e.preventDefault() : undefined}
+        >
           {card}
         </Link>
       ) : (
