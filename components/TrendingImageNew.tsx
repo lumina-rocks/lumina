@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useProfile } from "nostr-react";
 import { nip19 } from "nostr-tools";
 import {
@@ -10,6 +10,8 @@ import {
 import Link from 'next/link';
 import { Avatar } from './ui/avatar';
 import { AvatarImage } from '@radix-ui/react-avatar';
+import { Button } from '@/components/ui/button';
+import { Eye, EyeOff } from 'lucide-react';
 
 interface TrendingImageNewProps {
   event: {
@@ -25,6 +27,15 @@ const TrendingImageNew: React.FC<TrendingImageNewProps> = ({ event }) => {
   const { data: userData } = useProfile({
     pubkey: event.pubkey,
   });
+
+  // Check if the event has nsfw or sexy tags
+  const hasNsfwTag = event.tags.some(tag => 
+    (tag[0] === 't' && (tag[1]?.toLowerCase() === 'nsfw' || tag[1]?.toLowerCase() === 'sexy')) ||
+    (tag[0] === 'content-warning')
+  );
+  
+  // State to control image blur
+  const [showSensitiveContent, setShowSensitiveContent] = useState(false);
 
   const npubShortened = (() => {
     let encoded = nip19.npubEncode(event.pubkey);
@@ -42,6 +53,13 @@ const TrendingImageNew: React.FC<TrendingImageNewProps> = ({ event }) => {
   const hrefProfile = `/profile/${nip19.npubEncode(event.pubkey)}`;
   const hrefNote = `/note/${nip19.noteEncode(event.id)}`;
   const profileImageSrc = userData?.picture || "https://robohash.org/" + event.pubkey;
+
+  // Toggle sensitive content visibility
+  const toggleSensitiveContent = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowSensitiveContent(!showSensitiveContent);
+  };
 
   return (
     <Card>
@@ -62,14 +80,31 @@ const TrendingImageNew: React.FC<TrendingImageNewProps> = ({ event }) => {
           <div className='d-flex justify-content-center align-items-center'>
             {imageUrl && (
               <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
-                <Link href={hrefNote}>
+                <Link href={hrefNote} onClick={hasNsfwTag && !showSensitiveContent ? (e) => e.preventDefault() : undefined}>
                   <img 
                     src={imageUrl} 
-                    className='rounded lg:rounded-lg w-full h-full object-cover' 
+                    className={`rounded lg:rounded-lg w-full h-full object-cover ${hasNsfwTag && !showSensitiveContent ? 'blur-xl' : ''}`}
                     style={{ margin: 'auto' }} 
                     alt={text}
                     loading="lazy"
                   />
+                  {hasNsfwTag && !showSensitiveContent && (
+                    <div 
+                      className="absolute inset-0 flex flex-col items-center justify-center"
+                      onClick={toggleSensitiveContent}
+                    >
+                      <Button 
+                        variant="secondary" 
+                        className="bg-black bg-opacity-50 hover:bg-opacity-70 text-white px-4 py-2 rounded-md"
+                        onClick={toggleSensitiveContent}
+                      >
+                        <Eye className="h-4 w-4 mr-2" /> Show Sensitive Content
+                      </Button>
+                      <p className="mt-2 text-white text-sm bg-black bg-opacity-50 p-2 rounded">
+                        This image may contain sensitive content
+                      </p>
+                    </div>
+                  )}
                 </Link>
               </div>
             )}
