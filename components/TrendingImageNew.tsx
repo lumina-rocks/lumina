@@ -76,13 +76,15 @@ const TrendingImageNew: React.FC<TrendingImageNewProps> = ({ event }) => {
             {imageUrl && (
               <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
                 <Link href={hrefNote} onClick={hasNsfwTag && !showSensitiveContent ? (e) => e.preventDefault() : undefined}>
-                  <img 
-                    src={imageUrl} 
-                    className={`rounded lg:rounded-lg w-full h-full object-cover ${hasNsfwTag && !showSensitiveContent ? 'blur-xl' : ''}`}
-                    style={{ margin: 'auto' }} 
-                    alt={text}
-                    loading="lazy"
-                  />
+                  <div className="relative w-full h-full">
+                    <img 
+                      src={imageUrl} 
+                      className={`rounded lg:rounded-lg w-full h-full object-cover ${hasNsfwTag && !showSensitiveContent ? 'blur-xl' : ''}`}
+                      style={{ margin: 'auto' }} 
+                      alt={text}
+                      loading="lazy"
+                    />
+                  </div>
                   {hasNsfwTag && !showSensitiveContent && (
                     <div 
                       className="absolute inset-0 flex flex-col items-center justify-center"

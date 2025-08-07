@@ -28,6 +28,7 @@ import { Avatar, AvatarImage } from '@/components/ui/avatar';
 import ViewRawButton from '@/components/ViewRawButton';
 import ViewNoteButton from './ViewNoteButton';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface CommentCardProps {
   pubkey: string;
@@ -77,17 +78,21 @@ const NoteCard: React.FC<CommentCardProps> = ({ pubkey, text, eventId, tags, eve
           <div className='py-4'>
             {
               <div className='w-full h-full px-10'>
-                {imageSrc && imageSrc.length > 1 ? (
+                    {imageSrc && imageSrc.length > 1 ? (
                   <Carousel>
                     <CarouselContent>
                       {imageSrc.map((src, index) => (
                         <CarouselItem key={index}>
-                          <img
-                            key={index}
-                            src={src}
-                            className='rounded lg:rounded-lg'
-                            style={{ maxWidth: '100%', maxHeight: '100vh', objectFit: 'contain', margin: 'auto' }}
-                          />
+                              <div className="relative w-full" style={{ minHeight: '300px', maxHeight: '100vh' }}>
+                                <Image
+                                  src={src}
+                                  alt={textWithoutImage || 'Image'}
+                                  fill
+                                  sizes="100vw"
+                                  className="rounded lg:rounded-lg object-contain"
+                                  priority={index === 0}
+                                />
+                              </div>
                         </CarouselItem>
                       ))}
                     </CarouselContent>
@@ -95,7 +100,17 @@ const NoteCard: React.FC<CommentCardProps> = ({ pubkey, text, eventId, tags, eve
                     <CarouselNext />
                   </Carousel>
                 ) : (
-                  imageSrc ? <img src={imageSrc[0]} className='rounded lg:rounded-lg' style={{ maxWidth: '100%', maxHeight: '100vh', objectFit: 'contain', margin: 'auto' }} /> : ""
+                      imageSrc ? (
+                        <div className="relative w-full" style={{ minHeight: '300px', maxHeight: '100vh' }}>
+                          <Image
+                            src={imageSrc[0]}
+                            alt={textWithoutImage || 'Image'}
+                            fill
+                            sizes="100vw"
+                            className="rounded lg:rounded-lg object-contain"
+                          />
+                        </div>
+                      ) : ""
                 )}
               </div>
             }

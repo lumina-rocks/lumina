@@ -15,19 +15,15 @@ const NIP05: React.FC<NIP05Props> = ({ nip05, pubkey }) => {
     let domain = nip05.split('@')[1]
 
     useEffect(() => {
-        if(nip05.length > 0) {
+        if (nip05.length > 0) {
             fetch(`https://${domain}/.well-known/nostr.json?name=${name}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.names[name] === pubkey) {
-                    setIsValid(true);
-                } else {
-                    setIsValid(false);
-                }
-                setIsLoading(false);
-            })
+                .then(response => response.json())
+                .then(data => {
+                    setIsValid(data.names[name] === pubkey);
+                    setIsLoading(false);
+                });
         }
-    }, [nip05, pubkey]);
+    }, [nip05, pubkey, domain, name]);
 
     return (
         <>

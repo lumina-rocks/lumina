@@ -1,6 +1,4 @@
 'use client';
-
-import Head from "next/head";
 import { useEffect } from "react";
 import UploadComponent from "@/components/UploadComponent";
 
@@ -19,12 +17,6 @@ export default function UploadPage() {
 
   return (
     <>
-      <Head>
-        <title>LUMINA.rocks</title>
-        <meta name="description" content="Yet another nostr web ui" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
       <div className="py-2 px-2">
         <UploadComponent />
       </div>

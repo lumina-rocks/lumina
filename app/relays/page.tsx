@@ -55,7 +55,7 @@ export default function RelaysPage() {
     }
     
     return () => clearTimeout(loadingTimeout);
-  }, [connectedRelays, refreshKey]);
+  }, [connectedRelays, refreshKey, loading]);
 
   // Function to refresh NIP-65 relays for the current user
   const refreshNip65Relays = async () => {

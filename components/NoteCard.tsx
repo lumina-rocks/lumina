@@ -27,6 +27,7 @@ import ReactionButton from '@/components/ReactionButton';
 import { Avatar, AvatarImage } from '@/components/ui/avatar';
 import ViewNoteButton from './ViewNoteButton';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Event as NostrEvent } from "nostr-tools";
 import ZapButton from './ZapButton';
 import CardOptionsDropdown from './CardOptionsDropdown';
@@ -91,14 +92,16 @@ const NoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tags, event,
                       <CarouselContent>
                         {imageSrc.map((src, index) => (
                           <CarouselItem key={index}>
-                            <img
-                              key={index}
-                              src={src}
-                              className='rounded lg:rounded-lg w-full h-auto object-contain'
-                              style={{ maxHeight: '66vh', margin: 'auto' }}
-                              alt={textWithoutImage || "Post image"}
-                              loading="lazy"
-                            />
+                            <div className="relative w-full" style={{ minHeight: '300px', maxHeight: '66vh' }}>
+                              <Image
+                                src={src}
+                                alt={textWithoutImage || "Post image"}
+                                fill
+                                sizes="100vw"
+                                className="rounded lg:rounded-lg object-contain"
+                                priority={index === 0}
+                              />
+                            </div>
                           </CarouselItem>
                         ))}
                       </CarouselContent>
@@ -106,14 +109,17 @@ const NoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tags, event,
                       <CarouselNext />
                     </Carousel>
                   ) : (
-                    imageSrc ? 
-                    <img 
-                      src={imageSrc[0]} 
-                      className='rounded lg:rounded-lg w-full h-auto object-contain' 
-                      style={{ maxHeight: '66vh', margin: 'auto' }}
-                      alt={textWithoutImage || "Post image"}
-                      loading="lazy"
-                    /> : ""
+                    imageSrc ? (
+                      <div className="relative w-full" style={{ minHeight: '300px', maxHeight: '66vh' }}>
+                        <Image
+                          src={imageSrc[0]}
+                          alt={textWithoutImage || "Post image"}
+                          fill
+                          sizes="100vw"
+                          className="rounded lg:rounded-lg object-contain"
+                        />
+                      </div>
+                    ) : ""
                   )}
                 </div>
                 <div className='w-full h-full px-10'>

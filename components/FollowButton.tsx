@@ -37,11 +37,11 @@ const FollowButton: React.FC<FollowButtonProps> = ({ pubkey, userPubkey }) => {
     followingPubkeys = followingPubkeys.filter((tag) => tag);
 
 
-    useEffect(() => {
-        if (followingPubkeys.includes(pubkey)) {
-            setIsFollowing(true);
-        }
-    }, [followingPubkeys, isFollowing, setIsFollowing]);
+  useEffect(() => {
+    if (followingPubkeys.includes(pubkey)) {
+      setIsFollowing(true);
+    }
+  }, [followingPubkeys, pubkey]);
 
     const handleFollow = async () => {
     //     if (isLoggedIn) {

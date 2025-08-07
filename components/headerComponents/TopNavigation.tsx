@@ -9,6 +9,7 @@ import ConnectedRelaysButton from "@/components/headerComponents/ConnectedRelays
 import AuthButton from "./AuthButton"
 import { Button } from "@/components/ui/button"
 import { UserIcon } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 
 export function TopNavigation() {
   const [pubkey, setPubkey] = useState<string | null>(null)
@@ -47,6 +48,7 @@ export function TopNavigation() {
         <TopNavigationItems items={siteConfig.mainNav} />
         <div className="flex flex-1 items-center justify-end space-x-4">
           <nav className="flex items-center space-x-2">
+            <Badge variant="secondary" className="hidden sm:inline">v{siteConfig.version}</Badge>
             <ConnectedRelaysButton />
             <DropdownThemeMode />
             {pubkey !== null ? <AvatarDropdown /> : <AuthButton />}

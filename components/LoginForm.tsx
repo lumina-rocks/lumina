@@ -118,7 +118,7 @@ export function LoginForm() {
                 qrScannerRef.current.stop().catch(console.error);
             }
         };
-    }, []);
+    }, [completeLogin]);
 
     // Handle QR Scanner dialog
     const startQRScanner = () => {

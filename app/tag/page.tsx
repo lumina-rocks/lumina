@@ -1,6 +1,4 @@
 'use client';
-
-import Head from "next/head";
 import { useNostrEvents } from "nostr-react";
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -68,12 +66,6 @@ export default function TagPage() {
 
   return (
     <>
-      <Head>
-        <title>LUMINA.rocks - Tags</title>
-        <meta name="description" content="Explore tags on LUMINA" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
       <div className="px-2 md:px-6">
         <Tabs defaultValue="trending" className="mt-4">
           <TabsList className="mb-4 w-full grid grid-cols-1">

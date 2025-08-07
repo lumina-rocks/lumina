@@ -31,13 +31,16 @@ const GalleryCard: React.FC<GalleryCardProps> = ({ pubkey, eventId, imageUrl, li
         <div>
           <div className='d-flex justify-content-center align-items-center'>
             <div style={{ position: 'relative' }}>
-              <img 
-                src={imageUrl} 
-                className='rounded lg:rounded-lg w-full h-full object-cover' 
-                style={{ maxHeight: '75vh', margin: 'auto' }} 
-                alt={eventId}
-                loading="lazy"
-              />
+              <div className="relative w-full" style={{ minHeight: '200px', maxHeight: '75vh' }}>
+                <Image
+                  src={imageUrl}
+                  alt={eventId}
+                  fill
+                  sizes="100vw"
+                  className="rounded lg:rounded-lg object-cover"
+                  priority={false}
+                />
+              </div>
             </div>
           </div>
         </div>

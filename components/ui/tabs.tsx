@@ -54,7 +54,7 @@ function TabsContentWrapper(props: {
 
             return pathname + (asString ? "?" + asString : "");
         },
-        [searchParams, props.searchParam],
+        [searchParams, searchParam, pathname, props.defaultValue],
     );
 
     return (

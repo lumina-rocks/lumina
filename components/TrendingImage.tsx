@@ -66,7 +66,15 @@ const TrendingImage: React.FC<TrendingImageProps> = ({ eventId, pubkey }) => {
               {imageSrc && imageSrc.length > 0 && (
                 <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
                   <Link href={hrefNote}>
-                    <img src={imageSrc[0]} className='rounded lg:rounded-lg' style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt={text} />
+                    <div className="relative w-full" style={{ minHeight: '200px' }}>
+                      <Image
+                        src={imageSrc[0]}
+                        alt={text}
+                        fill
+                        sizes="100vw"
+                        className="rounded lg:rounded-lg object-cover"
+                      />
+                    </div>
                   </Link>
                 </div>
                 // <img src={imageSrc[0]} style={{ maxWidth: '100%', maxHeight: '100vh', objectFit: 'cover', margin: 'auto' }} alt={text} />

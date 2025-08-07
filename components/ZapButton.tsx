@@ -63,11 +63,10 @@ export default function ZapButton({ event }: { event: any }) {
     // Effect to check for new zap receipts when showing an invoice
     useEffect(() => {
         if (invoice) {
-            // Store the current count of zap receipts when invoice is generated
             invoiceEventsCountRef.current = events.length;
             setPaymentComplete(false);
         }
-    }, [invoice]);
+    }, [invoice, events.length]);
 
     // Effect to detect new zap receipts after invoice is shown
     useEffect(() => {
