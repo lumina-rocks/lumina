@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { queryProfile } from "nostr-tools/nip05"
@@ -18,20 +20,17 @@ export function Search() {
     let value = inputValue.trim();
     value = value.replaceAll('nostr:', '');
 
-    if (value.startsWith('npub')) { // npub Search
-      // window.location.href = `/profile/${inputValue}`;
+    if (value.startsWith('npub')) {
       router.push(`/profile/${value}`);
-    } else if (value.startsWith('#')) { // Hashtag Search
-      // window.location.href = `/tag/${inputValue.replaceAll('#', '')}`;
+    } else if (value.startsWith('#')) {
       router.push(`/tag/${value.replaceAll('#', '')}`);
-    } else if(value.includes('@')) { // NIP-05 Search
-      // if inputValue starts with @, then add a "_" at the beginning
+    } else if(value.includes('@')) {
       if(value.startsWith('@')) {
         setInputValue('_' + value);
       }
 
       let profile = await queryProfile(value);
-      if(profile?.pubkey !== undefined) { // Only redirect if profile is found
+      if(profile?.pubkey !== undefined) {
         router.push(`/profile/${nip19.npubEncode(profile?.pubkey)}`);
       }
     } else {
@@ -55,9 +54,8 @@ export function Search() {
         onChange={(e) => setInputValue(e.target.value)}
         onKeyDown={handleKeyDown}
       />
-      {/* <Button type="submit" onClick={calculateAndRedirect}>Search</Button> */}
       <Button type="submit" onClick={calculateAndRedirect}>
-        {isLoading ? <ReloadIcon className="mr-2 h-4 w-4 animate-spin" /> : 'Search'} {/* Spinner-Komponente anzeigen, wenn geladen wird */}
+        {isLoading ? <ReloadIcon className="mr-2 h-4 w-4 animate-spin" /> : 'Search'}
       </Button>
     </div>
   )

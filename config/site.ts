@@ -1,11 +1,8 @@
-// Import package information dynamically
-import packageInfo from "../package.json"
-
 export type SiteConfig = typeof siteConfig
 
 export const siteConfig = {
   name: "LUMINA",
-  version: packageInfo.version, // Use the version from package.json
+  version: process.env.NEXT_PUBLIC_APP_VERSION ?? "0.0.0",
   description:
     "A beautiful Nostr client for images.",
   mainNav: [

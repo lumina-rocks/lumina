@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from 'react';
 import { useProfile } from "nostr-react";
 import { nip19 } from "nostr-tools";
@@ -29,10 +31,7 @@ const TrendingImageNew: React.FC<TrendingImageNewProps> = ({ event }) => {
     pubkey: event.pubkey,
   });
 
-  // Check if the event has nsfw or sexy tags
   const hasNsfwTag = hasNsfwContent(event.tags);
-  
-  // State to control image blur
   const [showSensitiveContent, setShowSensitiveContent] = useState(false);
 
   const npubShortened = (() => {
@@ -44,7 +43,6 @@ const TrendingImageNew: React.FC<TrendingImageNewProps> = ({ event }) => {
   const title = userData?.username || userData?.display_name || userData?.name || userData?.npub || npubShortened;
   const text = event.content.replaceAll('\n', ' ');
   
-  // Get image URL from imeta tags
   const imageUrl = event.tags.find(tag => tag[0] === 'imeta' && tag[1]?.startsWith('url '))
     ?.slice(1)[0]?.replace('url ', '');
 
@@ -52,7 +50,6 @@ const TrendingImageNew: React.FC<TrendingImageNewProps> = ({ event }) => {
   const hrefNote = `/note/${nip19.noteEncode(event.id)}`;
   const profileImageSrc = userData?.picture || "https://robohash.org/" + event.pubkey;
 
-  // Toggle sensitive content visibility
   const toggleSensitiveContent = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();

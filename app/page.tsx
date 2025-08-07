@@ -1,17 +1,9 @@
-"use client";
-
 import { Search } from "@/components/Search";
 import { TrendingImagesNew } from "@/components/TrendingImagesNew";
 import { GeyserFundDonation } from "@/components/GeyserFundDonation";
-import { useEffect } from "react";
 
 export default function Home() {
-  useEffect(() => {
-    document.title = `LUMINA`;
-  }, []);
-
-  // Check for environment variable - Next.js exposes public env vars with NEXT_PUBLIC_ prefix
-  const showGeyserFund = process.env.NEXT_PUBLIC_SHOW_GEYSER_FUND === 'true';
+  const showGeyserFund = process.env.NEXT_PUBLIC_SHOW_GEYSER_FUND === "true";
 
   return (
     <>

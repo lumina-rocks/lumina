@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import TrendingImage from '@/components/TrendingImageNew';
 import { Spinner } from '@/components/spinner';
@@ -6,7 +8,6 @@ export function TrendingImagesNew() {
     const [events, setEvents] = useState<any[]>([]);
 
     useEffect(() => {
-        // TODO: Fetch trending images from luminas own relay via http call
         fetch('https://relay.lumina.rocks/api/trending/kind20')
             .then(res => res.json())
             .then(data => setEvents(data.trending))
@@ -20,7 +21,7 @@ export function TrendingImagesNew() {
             <h1 className="text-3xl font-bold">Currently Trending</h1>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
                 {events && events.length > 0 ? (
-                    events.map((event, index) => (
+                    events.map((event) => (
                         <TrendingImage key={event.id} event={event} />
                     ))
                 ) : (
