@@ -1,7 +1,7 @@
 "use client";
 
 import { Search } from "@/components/Search";
-import { TrendingImagesNew } from "@/components/TrendingImagesNew";
+import { WelcomeContent } from "@/components/WelcomeContent";
 import { GeyserFundDonation } from "@/components/GeyserFundDonation";
 import { useEffect } from "react";
 
@@ -23,7 +23,7 @@ export default function Home() {
       <div className="flex flex-col items-center py-4 px-6">
         <Search />
       </div>
-      <TrendingImagesNew />
+      <WelcomeContent />
     </>
   );
 }
