@@ -5,12 +5,9 @@ import { NostrProvider } from "nostr-react";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TopNavigation } from "@/components/headerComponents/TopNavigation";
 import BottomBar from "@/components/BottomBar";
-import { Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/toaster"
 import Umami from "@/components/Umami";
 import { useEffect, useState } from "react";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export default function RootLayout({
   children,
@@ -51,7 +48,7 @@ export default function RootLayout({
         <title>LUMINA</title>
         <meta name="description" content="An effortless, enjoyable, and innovative way to capture, enhance, and share moments with everyone, decentralized and boundless." />
       </head>
-      <body className={inter.className}>
+      <body className="font-sans">
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
