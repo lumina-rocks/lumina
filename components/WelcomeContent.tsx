@@ -27,7 +27,7 @@ export function WelcomeContent() {
         <CardContent className="space-y-4">
           <p className="text-muted-foreground">
             LUMINA is a social media image platform that puts you in complete control of your content and connections. 
-            Share your photos, discover amazing content, and connect with creators from around the world—all without 
+            Share your photos, discover amazing content, and connect with creators from around the world. All without 
             relying on centralized servers or corporations.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
