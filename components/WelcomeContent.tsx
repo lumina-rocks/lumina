@@ -1,8 +1,6 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { ImageIcon, Users, Zap, Shield, Globe } from 'lucide-react';
-import Link from 'next/link';
 
 export function WelcomeContent() {
   return (
@@ -80,25 +78,6 @@ export function WelcomeContent() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Call to Action */}
-      <div className="text-center space-y-4">
-        <p className="text-muted-foreground">
-          Ready to join the decentralized future of social media?
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Button asChild size="lg">
-            <Link href="/upload">
-              Share Your First Image
-            </Link>
-          </Button>
-          <Button variant="outline" asChild size="lg">
-            <Link href="/global">
-              Explore Global Feed
-            </Link>
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }
