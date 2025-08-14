@@ -19,10 +19,16 @@ const CommentsCompontent: React.FC<CommentsCompontentProps> = ({ pubkey, event }
         },
     });
 
+    // filter out all events with more than 1 "e" tag. other tags are ok
+    // this shows only the top level comments
+    let filteredEvents = events.filter((event) => {
+        return event.tags.filter((tag) => tag[0] === 'e').length === 1;
+    });
+
     return (
         <>
             <h1 className='text-xl'>Comments</h1>
-            {events.map((event) => (
+            {filteredEvents.map((event) => (
                 <div key={event.id} className="py-6">
                     <CommentCard key={event.id} pubkey={event.pubkey} text={event.content} eventId={event.id} tags={event.tags} event={event} />
                 </div>
