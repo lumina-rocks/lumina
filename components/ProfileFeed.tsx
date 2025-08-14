@@ -12,12 +12,12 @@ interface ProfileFeedProps {
 
 const ProfileFeed: React.FC<ProfileFeedProps> = ({ pubkey }) => {
   const now = useRef(new Date());
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(100);
 
   const { events, isLoading } = useNostrEvents({
     filter: {
       authors: [pubkey],
-      kinds: [20],
+      kinds: [1, 20],
       limit: limit,
     },
   });
