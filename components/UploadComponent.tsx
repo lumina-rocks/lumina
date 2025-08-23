@@ -116,15 +116,17 @@ const UploadComponent: React.FC = () => {
   const [shouldFetch, setShouldFetch] = useState(false)
   const [serverChoice, setServerChoice] = useState("blossom.band")
   const [enableNip89, setEnableNip89] = useState(false)
+  const [selectedKind, setSelectedKind] = useState("20")
+  const [title, setTitle] = useState("")
 
   const { events, isLoading: isNoteLoading } = useNostrEvents({
     filter: shouldFetch
       ? {
           ids: uploadedNoteId ? [uploadedNoteId] : [],
-          kinds: [20],
+          kinds: [parseInt(selectedKind)],
           limit: 1,
         }
-      : { ids: [], kinds: [20], limit: 1 },
+      : { ids: [], kinds: [parseInt(selectedKind)], limit: 1 },
     enabled: shouldFetch,
   })
 
@@ -199,6 +201,14 @@ const UploadComponent: React.FC = () => {
     setServerChoice(value)
   }
 
+  const handleKindChange = (value: string) => {
+    setSelectedKind(value)
+  }
+
+  const handleTitleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setTitle(event.target.value)
+  }
+
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setIsLoading(true)
@@ -210,6 +220,8 @@ const UploadComponent: React.FC = () => {
     let finalNoteContent = desc
     let finalFileUrl = ""
     console.log("File:", file)
+
+
 
     if (!desc && !file.size && !imageUrl) {
       alert("Please enter a description and/or upload a file or provide an image URL")
@@ -288,10 +300,13 @@ const UploadComponent: React.FC = () => {
             finalFileUrl = responseJson.url
             sha256 = responseJson.sha256
 
-            const noteTags = hashtags.map((tag) => ["t", tag])
+            const noteTags = [
+              ...(title ? [["title", title]] : []),
+              ...hashtags.map((tag) => ["t", tag])
+            ]
 
             let blurhash = ""
-            if (file && file.type.startsWith("image/")) {
+            if (selectedKind === "20" && file && file.type.startsWith("image/")) {
               try {
                 blurhash = await calculateBlurhash(file)
               } catch (error) {
@@ -307,15 +322,31 @@ const UploadComponent: React.FC = () => {
               })
 
               finalNoteContent = desc
-              noteTags.push([
-                "imeta",
-                "url " + finalFileUrl,
-                "m " + file.type,
-                "x " + sha256,
-                "blurhash " + blurhash,
-                `dim ${image.width}x${image.height}`,
-              ])
-              noteTags.push(["x", sha256])
+              
+              // Add imeta tag based on kind
+              if (selectedKind === "20") {
+                // Picture event - use imeta with image-specific properties
+                noteTags.push([
+                  "imeta",
+                  "url " + finalFileUrl,
+                  "m " + file.type,
+                  "x " + sha256,
+                  "blurhash " + blurhash,
+                  `dim ${image.width}x${image.height}`,
+                ])
+                noteTags.push(["x", sha256])
+                noteTags.push(["m", file.type])
+              } else if (selectedKind === "21" || selectedKind === "22") {
+                // Video events - use imeta with video-specific properties
+                noteTags.push([
+                  "imeta",
+                  `dim ${image.width}x${image.height}`,
+                  "url " + finalFileUrl,
+                  "x " + sha256,
+                  "m " + file.type,
+                ])
+                noteTags.push(["x", sha256])
+              }
             }
 
             const createdAt = Math.floor(Date.now() / 1000)
@@ -331,7 +362,7 @@ const UploadComponent: React.FC = () => {
 
             // Create the actual note
             const noteEvent: NostrEvent = {
-              kind: 20,
+              kind: parseInt(selectedKind),
               content: finalNoteContent,
               created_at: createdAt,
               tags: noteTags,
@@ -374,11 +405,22 @@ const UploadComponent: React.FC = () => {
       // Handle image URL upload
       try {
         const createdAt = Math.floor(Date.now() / 1000)
-        const noteTags = hashtags.map((tag) => ["t", tag])
+        const noteTags = [
+          ...(title ? [["title", title]] : []),
+          ...hashtags.map((tag) => ["t", tag])
+        ]
 
         // Add the image URL directly to the note
         finalNoteContent = desc
-        noteTags.push(["imeta", "url " + imageUrl])
+        
+        // Add imeta tag based on kind
+        if (selectedKind === "20") {
+          // Picture event - use imeta with image-specific properties
+          noteTags.push(["imeta", "url " + imageUrl])
+        } else if (selectedKind === "21" || selectedKind === "22") {
+          // Video events - use imeta with video-specific properties
+          noteTags.push(["imeta", "url " + imageUrl])
+        }
 
         // NIP-89 client tagging (optional)
         if (enableNip89) {
@@ -391,7 +433,7 @@ const UploadComponent: React.FC = () => {
 
         // Create the actual note
         const noteEvent: NostrEvent = {
-          kind: 20,
+          kind: parseInt(selectedKind),
           content: finalNoteContent,
           created_at: createdAt,
           tags: noteTags,
@@ -432,10 +474,30 @@ const UploadComponent: React.FC = () => {
       <Card className="w-full max-w-2xl mx-auto shadow-md">
         <CardHeader>
           <CardTitle>Share Content</CardTitle>
-          <CardDescription>Upload an image with your description to the Nostr network</CardDescription>
+          <CardDescription>
+            {selectedKind === "20" 
+              ? "Upload an image with your description to the Nostr network"
+              : selectedKind === "21"
+              ? "Upload a normal video with your description to the Nostr network"
+              : "Upload a short video with your description to the Nostr network"
+            }
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form className="space-y-6" onSubmit={onSubmit}>
+            <div className="space-y-2">
+              <Label htmlFor="title">Title</Label>
+              <Input
+                name="title"
+                placeholder="Enter a title for your post"
+                id="title"
+                className="w-full"
+                value={title}
+                onChange={handleTitleChange}
+
+              />
+            </div>
+            
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
               <Textarea
@@ -449,7 +511,7 @@ const UploadComponent: React.FC = () => {
             </div>
             
             <div className="space-y-2">
-              <Label>Image</Label>
+              <Label>{selectedKind === "20" ? "Image" : "Video"}</Label>
               <Tabs defaultValue="file" searchParam="upload-method">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="file">Upload File</TabsTrigger>
@@ -461,10 +523,18 @@ const UploadComponent: React.FC = () => {
                     <div className="flex flex-col items-center space-y-4 text-center">
                       {previewUrl ? (
                         <div className="w-full rounded-md">
-                          <img 
-                            src={previewUrl} 
-                            alt="Preview"  
-                          />
+                          {selectedKind === "20" ? (
+                            <img 
+                              src={previewUrl} 
+                              alt="Preview"  
+                            />
+                          ) : (
+                            <video 
+                              src={previewUrl} 
+                              controls
+                              className="w-full rounded-md"
+                            />
+                          )}
                         </div>
                       ) : (
                         <ImageIcon className="h-10 w-10 text-muted-foreground" />
@@ -472,10 +542,16 @@ const UploadComponent: React.FC = () => {
                       
                       <div className="space-y-2">
                         <div className="text-sm font-medium">
-                          {previewUrl ? "Replace image" : "Add image"}
+                          {previewUrl 
+                            ? `Replace ${selectedKind === "20" ? "image" : "video"}` 
+                            : `Add ${selectedKind === "20" ? "image" : "video"}`
+                          }
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          Supported formats: JPEG, PNG, WebP
+                          {selectedKind === "20" 
+                            ? "Supported formats: JPEG, PNG, WebP, GIF, APNG, AVIF" 
+                            : "Supported formats: MP4, WebM, MOV, AVI, M4V, MKV, M4A"
+                          }
                         </div>
                       </div>
                       
@@ -484,12 +560,15 @@ const UploadComponent: React.FC = () => {
                         className={`relative cursor-pointer rounded-md px-4 py-2 text-sm font-medium ring-offset-background transition-colors 
                           ${previewUrl ? 'bg-muted hover:bg-muted/80' : 'bg-primary text-primary-foreground hover:bg-primary/90'}`}
                       >
-                        {previewUrl ? "Change file" : "Select file"}
+                        {previewUrl ? "Change file" : `Select ${selectedKind === "20" ? "image" : "video"}`}
                         <Input
                           id="file"
                           name="file"
                           type="file"
-                          accept="image/jpeg,image/png,image/webp"
+                          accept={selectedKind === "20" 
+                            ? "image/jpeg,image/png,image/webp,image/gif,image/apng,image/avif"
+                            : "video/mp4,video/webm,video/quicktime,video/x-msvideo,video/x-m4v,video/x-matroska,audio/mp4"
+                          }
                           onChange={handleFileChange}
                           className="sr-only"
                         />
@@ -500,12 +579,15 @@ const UploadComponent: React.FC = () => {
                 
                 <TabsContent value="url" className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="image-url">Image URL</Label>
+                    <Label htmlFor="image-url">{selectedKind === "20" ? "Image URL" : "Video URL"}</Label>
                     <Input
                       id="image-url"
                       name="image-url"
                       type="url"
-                      placeholder="https://example.com/image.jpg"
+                      placeholder={selectedKind === "20" 
+                        ? "https://example.com/image.jpg" 
+                        : "https://example.com/video.mp4"
+                      }
                       value={imageUrl}
                       onChange={handleUrlChange}
                       className="w-full"
@@ -515,12 +597,21 @@ const UploadComponent: React.FC = () => {
                   {previewUrl && (
                     <div className="border rounded-lg p-4">
                       <div className="text-sm font-medium mb-2">Preview:</div>
-                      <img 
-                        src={previewUrl} 
-                        alt="Preview" 
-                        className="w-full rounded-md"
-                        onError={() => setPreviewUrl("")}
-                      />
+                      {selectedKind === "20" ? (
+                        <img 
+                          src={previewUrl} 
+                          alt="Preview" 
+                          className="w-full rounded-md"
+                          onError={() => setPreviewUrl("")}
+                        />
+                      ) : (
+                        <video 
+                          src={previewUrl} 
+                          controls
+                          className="w-full rounded-md"
+                          onError={() => setPreviewUrl("")}
+                        />
+                      )}
                     </div>
                   )}
                 </TabsContent>
@@ -530,6 +621,23 @@ const UploadComponent: React.FC = () => {
             <Separator className="my-4" />
             
             <div className="space-y-4">
+              <div className="flex flex-row items-center justify-between">
+                <div className="flex flex-col space-y-1">
+                  <Label htmlFor="kind-choice">Note Kind</Label>
+                  <p className="text-xs text-muted-foreground">Choose the type of note to publish</p>
+                </div>
+                <Select onValueChange={handleKindChange} value={selectedKind}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder={selectedKind} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="20">Kind 20 - Picture Event</SelectItem>
+                    <SelectItem value="21">Kind 21 - Normal Video</SelectItem>
+                    <SelectItem value="22">Kind 22 - Short Video</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
               <div className="flex flex-row items-center justify-between">
                 <div className="flex flex-col space-y-1">
                   <Label htmlFor="server-choice">Upload destination</Label>
