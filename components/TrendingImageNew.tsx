@@ -49,7 +49,12 @@ const TrendingImageNew: React.FC<TrendingImageNewProps> = ({ event }) => {
     ?.slice(1)[0]?.replace('url ', '');
 
   const hrefProfile = `/profile/${nip19.npubEncode(event.pubkey)}`;
-  const hrefNote = `/note/${nip19.noteEncode(event.id)}`;
+      // Create nevent with relay hints
+    const nevent = nip19.neventEncode({
+        id: event.id,
+        relays: event.relays || []
+    });
+    const hrefNote = `/note/${nevent}`;
   const profileImageSrc = userData?.picture || "https://robohash.org/" + event.pubkey;
 
   // Toggle sensitive content visibility

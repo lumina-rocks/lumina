@@ -44,7 +44,12 @@ const TrendingImage: React.FC<TrendingImageProps> = ({ eventId, pubkey }) => {
   const imageSrc = text.match(/https?:\/\/[^ ]*\.(png|jpg|gif|jpeg)/g);
   const textWithoutImage = text.replace(/https?:\/\/.*\.(?:png|jpg|gif|jpeg)/g, '');
   const hrefProfile = `/profile/${nip19.npubEncode(pubkey)}`;
-  const hrefNote = `/note/${nip19.noteEncode(eventId)}`;
+      // Create nevent with relay hints
+    const nevent = nip19.neventEncode({
+        id: eventId,
+        relays: [] // Add relay hints if available
+    });
+    const hrefNote = `/note/${nevent}`;
   const profileImageSrc = userData?.picture || "https://robohash.org/" + pubkey;
 
   return (

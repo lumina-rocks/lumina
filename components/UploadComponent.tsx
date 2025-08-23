@@ -713,7 +713,10 @@ const UploadComponent: React.FC = () => {
               </Button>
             )}
             <Button asChild className="w-full">
-              <a href={`/note/${nip19.noteEncode(uploadedNoteId)}`}>View Note</a>
+              <a href={`/note/${nip19.neventEncode({
+                id: uploadedNoteId,
+                relays: []
+              })}`}>View Note</a>
             </Button>
             <Button variant="outline" onClick={() => setIsDrawerOpen(false)} className="w-full">
               Close

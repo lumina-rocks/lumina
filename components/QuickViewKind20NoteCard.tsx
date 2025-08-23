@@ -42,7 +42,11 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubke
   image = useImgProxy ? getProxiedImageUrl(image, 500, 0) : image;
 
   text = text.replaceAll('\n', ' ');
-  const encodedNoteId = nip19.noteEncode(event.id)
+      // Create nevent with relay hints
+    const nevent = nip19.neventEncode({
+        id: event.id,
+        relays: event.relays || []
+    })
 
   const { width, height } = extractDimensions(event);
 
@@ -99,7 +103,7 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubke
     <>
       {linkToNote ? (
         <Link 
-          href={`/note/${encodedNoteId}`} 
+          href={`/note/${nevent}`} 
           className="block w-full aspect-square"
           onClick={isNsfwContent && !showSensitiveContent ? (e) => e.preventDefault() : undefined}
         >

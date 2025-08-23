@@ -23,7 +23,11 @@ const GalleryCard: React.FC<GalleryCardProps> = ({ pubkey, eventId, imageUrl, li
     pubkey,
   });
 
-  const encodedNoteId = nip19.noteEncode(eventId);
+      // Create nevent with relay hints
+    const nevent = nip19.neventEncode({
+        id: eventId,
+        relays: [] // Add relay hints if available
+    });
 
   const card = (
     <Card>
@@ -48,7 +52,7 @@ const GalleryCard: React.FC<GalleryCardProps> = ({ pubkey, eventId, imageUrl, li
   return (
     <>
       {linkToNote ? (
-        <Link href={`/note/${encodedNoteId}`}>
+        <Link href={`/note/${nevent}`}>
           {card}
         </Link>
       ) : (

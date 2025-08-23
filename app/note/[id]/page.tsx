@@ -16,6 +16,11 @@ export default function NotePage() {
 
   if (id.includes("note1")) {
     id = nip19.decode(id.toString()).data.toString()
+  } else if (id.includes("nevent")) {
+    const decoded = nip19.decode(id.toString())
+    if (decoded.type === 'nevent') {
+      id = decoded.data.id
+    }
   }
   
   return (

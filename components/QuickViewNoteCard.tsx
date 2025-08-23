@@ -33,7 +33,11 @@ const QuickViewNoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tag
   const createdAt = new Date(event.created_at * 1000);
   const hrefProfile = `/profile/${nip19.npubEncode(pubkey)}`;
   const profileImageSrc = userData?.picture || "https://robohash.org/" + pubkey;
-  const encodedNoteId = nip19.noteEncode(event.id)
+      // Create nevent with relay hints
+    const nevent = nip19.neventEncode({
+        id: event.id,
+        relays: event.relays || []
+    })
 
   const card = (
     <Card>
@@ -83,7 +87,7 @@ const QuickViewNoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tag
   return (
     <>
       {linkToNote ? (
-        <Link href={`/note/${encodedNoteId}`}>
+        <Link href={`/note/${nevent}`}>
           {card}
         </Link>
       ) : (
