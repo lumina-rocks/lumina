@@ -11,7 +11,7 @@ const GlobalFeed: React.FC = () => {
   const { events, isLoading } = useNostrEvents({
     filter: {
       limit: limit,
-      kinds: [20],
+      kinds: [20, 21],
     },
   });
 

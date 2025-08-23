@@ -6,6 +6,20 @@ import { Button } from "@/components/ui/button";
 import KIND20Card from "./KIND20Card";
 import { getImageUrl } from "@/utils/utils";
 
+// Function to extract video URL from imeta tags
+const getVideoUrl = (tags: string[][]): string | null => {
+  for (const tag of tags) {
+    if (tag[0] === 'imeta') {
+      for (let i = 1; i < tag.length; i++) {
+        if (tag[i].startsWith('url ')) {
+          return tag[i].substring(4);
+        }
+      }
+    }
+  }
+  return null;
+};
+
 interface ProfileFeedProps {
   pubkey: string;
 }
@@ -17,7 +31,7 @@ const ProfileFeed: React.FC<ProfileFeedProps> = ({ pubkey }) => {
   const { events, isLoading } = useNostrEvents({
     filter: {
       authors: [pubkey],
-      kinds: [20],
+      kinds: [20, 21, 22],
       limit: limit,
     },
   });
@@ -37,22 +51,43 @@ const ProfileFeed: React.FC<ProfileFeedProps> = ({ pubkey }) => {
               <Skeleton className="h-4 w-[200px]" />
             </div>
           </div>
-        ) : events.some(event => getImageUrl(event.tags)) ? (
+        ) : events.some(event => getImageUrl(event.tags) || event.kind === 21 || event.kind === 22) ? (
           <>
             {events.map((event) => {
               const imageUrl = getImageUrl(event.tags);
-              return imageUrl ? (
-                <KIND20Card
-                  key={event.id}
-                  pubkey={event.pubkey}
-                  text={event.content}
-                  image={imageUrl}
-                  event={event}
-                  tags={event.tags}
-                  eventId={event.id}
-                  showViewNoteCardButton={true}
-                />
-              ) : null;
+              const isVideo = event.kind === 21 || event.kind === 22;
+              
+              if (isVideo) {
+                // Use NoteCard for video content
+                const videoUrl = getVideoUrl(event.tags);
+                const contentWithVideo = videoUrl ? `${event.content}\n${videoUrl}` : event.content;
+                return (
+                  <NoteCard
+                    key={event.id}
+                    pubkey={event.pubkey}
+                    text={contentWithVideo}
+                    eventId={event.id}
+                    tags={event.tags}
+                    event={event}
+                    showViewNoteCardButton={true}
+                  />
+                );
+              } else if (imageUrl) {
+                // Use KIND20Card for image content
+                return (
+                  <KIND20Card
+                    key={event.id}
+                    pubkey={event.pubkey}
+                    text={event.content}
+                    image={imageUrl}
+                    event={event}
+                    tags={event.tags}
+                    eventId={event.id}
+                    showViewNoteCardButton={true}
+                  />
+                );
+              }
+              return null;
             })}
           </>
         ) : (
