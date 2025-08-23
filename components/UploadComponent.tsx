@@ -4,6 +4,7 @@ import { useNostr, useNostrEvents } from "nostr-react"
 import { nip19, type NostrEvent } from "nostr-tools"
 import type React from "react"
 import { type ChangeEvent, type FormEvent, useState, useEffect, useCallback } from "react"
+import { useSearchParams } from "next/navigation"
 import { Button } from "./ui/button"
 import { Textarea } from "./ui/textarea"
 import { ReloadIcon, UploadIcon, ImageIcon } from "@radix-ui/react-icons"
@@ -24,6 +25,7 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 // Function to strip metadata from image files
 async function stripImageMetadata(file: File): Promise<File> {
@@ -102,7 +104,10 @@ const UploadComponent: React.FC = () => {
   const { publish } = useNostr()
   const { createHash } = require("crypto")
   const loginType = typeof window !== "undefined" ? window.localStorage.getItem("loginType") : null
+  const searchParams = useSearchParams()
   const [previewUrl, setPreviewUrl] = useState("")
+  const [imageUrl, setImageUrl] = useState("")
+  const uploadMethod = (searchParams?.get("upload-method") as "file" | "url") || "file"
 
   const [isLoading, setIsLoading] = useState(false)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
@@ -166,6 +171,12 @@ const UploadComponent: React.FC = () => {
     }
   }
 
+  const handleUrlChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const url = event.target.value
+    setImageUrl(url)
+    setPreviewUrl(url)
+  }
+
   const handleTextChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
     const { value } = event.target
 
@@ -200,8 +211,8 @@ const UploadComponent: React.FC = () => {
     let finalFileUrl = ""
     console.log("File:", file)
 
-    if (!desc && !file.size) {
-      alert("Please enter a description and/or upload a file")
+    if (!desc && !file.size && !imageUrl) {
+      alert("Please enter a description and/or upload a file or provide an image URL")
       setIsLoading(false)
       return
     }
@@ -359,6 +370,60 @@ const UploadComponent: React.FC = () => {
         console.error("Error reading file:", error)
         setIsLoading(false)
       }
+    } else if (imageUrl) {
+      // Handle image URL upload
+      try {
+        const createdAt = Math.floor(Date.now() / 1000)
+        const noteTags = hashtags.map((tag) => ["t", tag])
+
+        // Add the image URL directly to the note
+        finalNoteContent = desc
+        noteTags.push(["imeta", "url " + imageUrl])
+
+        // NIP-89 client tagging (optional)
+        if (enableNip89) {
+          noteTags.push([
+            "client",
+            "lumina",
+            "31990:" + "ff363e4afc398b7dd8ceb0b2e73e96fe9621ababc22ab150ffbb1aa0f34df8b2" + ":" + createdAt,
+          ])
+        }
+
+        // Create the actual note
+        const noteEvent: NostrEvent = {
+          kind: 20,
+          content: finalNoteContent,
+          created_at: createdAt,
+          tags: noteTags,
+          pubkey: "", // Add a placeholder for pubkey
+          id: "", // Add a placeholder for id
+          sig: "", // Add a placeholder for sig
+        }
+
+        let signedEvent: NostrEvent | null = null
+
+        // Sign the actual note
+        signedEvent = (await signEvent(loginType, noteEvent)) as NostrEvent
+
+        // If we got a signed event, publish it to nostr
+        if (signedEvent) {
+          console.log("final Event: ")
+          console.log(signedEvent)
+          publish(signedEvent)
+        }
+
+        setIsLoading(false)
+        if (signedEvent != null) {
+          setUploadedNoteId(signedEvent.id)
+          setIsDrawerOpen(true)
+          setShouldFetch(true)
+          setRetryCount(0)
+        }
+      } catch (error) {
+        alert(error)
+        console.error("Error processing image URL:", error)
+        setIsLoading(false)
+      }
     }
   }
 
@@ -384,46 +449,82 @@ const UploadComponent: React.FC = () => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="file">Image</Label>
-              <div className="border-2 border-dashed rounded-lg p-6 transition-colors hover:border-primary/50 hover:bg-muted/50">
-                <div className="flex flex-col items-center space-y-4 text-center">
-                  {previewUrl ? (
-                    <div className="w-full rounded-md">
-                      <img 
-                        src={previewUrl} 
-                        alt="Preview"  
-                      />
-                    </div>
-                  ) : (
-                    <ImageIcon className="h-10 w-10 text-muted-foreground" />
-                  )}
-                  
-                  <div className="space-y-2">
-                    <div className="text-sm font-medium">
-                      {previewUrl ? "Replace image" : "Add image"}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      Supported formats: JPEG, PNG, WebP
+              <Label>Image</Label>
+              <Tabs defaultValue="file" searchParam="upload-method">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="file">Upload File</TabsTrigger>
+                  <TabsTrigger value="url">Image URL</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="file" className="space-y-4">
+                  <div className="border-2 border-dashed rounded-lg p-6 transition-colors hover:border-primary/50 hover:bg-muted/50">
+                    <div className="flex flex-col items-center space-y-4 text-center">
+                      {previewUrl ? (
+                        <div className="w-full rounded-md">
+                          <img 
+                            src={previewUrl} 
+                            alt="Preview"  
+                          />
+                        </div>
+                      ) : (
+                        <ImageIcon className="h-10 w-10 text-muted-foreground" />
+                      )}
+                      
+                      <div className="space-y-2">
+                        <div className="text-sm font-medium">
+                          {previewUrl ? "Replace image" : "Add image"}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Supported formats: JPEG, PNG, WebP
+                        </div>
+                      </div>
+                      
+                      <label 
+                        htmlFor="file" 
+                        className={`relative cursor-pointer rounded-md px-4 py-2 text-sm font-medium ring-offset-background transition-colors 
+                          ${previewUrl ? 'bg-muted hover:bg-muted/80' : 'bg-primary text-primary-foreground hover:bg-primary/90'}`}
+                      >
+                        {previewUrl ? "Change file" : "Select file"}
+                        <Input
+                          id="file"
+                          name="file"
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          onChange={handleFileChange}
+                          className="sr-only"
+                        />
+                      </label>
                     </div>
                   </div>
-                  
-                  <label 
-                    htmlFor="file" 
-                    className={`relative cursor-pointer rounded-md px-4 py-2 text-sm font-medium ring-offset-background transition-colors 
-                      ${previewUrl ? 'bg-muted hover:bg-muted/80' : 'bg-primary text-primary-foreground hover:bg-primary/90'}`}
-                  >
-                    {previewUrl ? "Change file" : "Select file"}
+                </TabsContent>
+                
+                <TabsContent value="url" className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="image-url">Image URL</Label>
                     <Input
-                      id="file"
-                      name="file"
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={handleFileChange}
-                      className="sr-only"
+                      id="image-url"
+                      name="image-url"
+                      type="url"
+                      placeholder="https://example.com/image.jpg"
+                      value={imageUrl}
+                      onChange={handleUrlChange}
+                      className="w-full"
                     />
-                  </label>
-                </div>
-              </div>
+                  </div>
+                  
+                  {previewUrl && (
+                    <div className="border rounded-lg p-4">
+                      <div className="text-sm font-medium mb-2">Preview:</div>
+                      <img 
+                        src={previewUrl} 
+                        alt="Preview" 
+                        className="w-full rounded-md"
+                        onError={() => setPreviewUrl("")}
+                      />
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
             </div>
 
             <Separator className="my-4" />
@@ -458,7 +559,7 @@ const UploadComponent: React.FC = () => {
               {isLoading ? (
                 <Button className="w-full" disabled>
                   <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
-                  Uploading...
+                  {uploadMethod === "file" ? "Uploading..." : "Publishing..."}
                 </Button>
               ) : (
                 <Button type="submit" className="w-full">
