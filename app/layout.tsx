@@ -54,11 +54,20 @@ export default function RootLayout({
       if (event.reason && typeof event.reason === 'object' && 'stack' in event.reason) {
         const stack = event.reason.stack;
         if (stack && typeof stack === 'string' && 
-            (stack.includes('handleNext') || stack.includes('index.js:544'))) {
+            (stack.includes('handleNext') || stack.includes('index.js:544') || 
+             stack.includes('index.js:1078') || stack.includes('websocket'))) {
           console.warn('Suppressed nostr WebSocket error:', event.reason);
           event.preventDefault();
           return;
         }
+      }
+      
+      // Check for WebSocket connection errors specifically
+      if (event.reason && typeof event.reason === 'string' && 
+          event.reason.includes('websocket error')) {
+        console.warn('Suppressed WebSocket error:', event.reason);
+        event.preventDefault();
+        return;
       }
       
       // For other unhandled rejections, let them through
@@ -74,11 +83,26 @@ export default function RootLayout({
       if (event.error && typeof event.error === 'object' && 'stack' in event.error) {
         const stack = event.error.stack;
         if (stack && typeof stack === 'string' && 
-            (stack.includes('handleNext') || stack.includes('index.js:544'))) {
+            (stack.includes('handleNext') || stack.includes('index.js:544') || 
+             stack.includes('index.js:1078') || stack.includes('websocket'))) {
           console.warn('Suppressed nostr WebSocket error:', event.error);
           event.preventDefault();
           return;
         }
+      }
+      
+      // Check for WebSocket connection errors specifically
+      if (event.message && event.message.includes('websocket error')) {
+        console.warn('Suppressed WebSocket error:', event.message);
+        event.preventDefault();
+        return;
+      }
+      
+      // Check for localhost connection failures
+      if (event.message && event.message.includes('localhost:3334')) {
+        console.warn('Suppressed localhost relay connection error:', event.message);
+        event.preventDefault();
+        return;
       }
       
       // For other uncaught errors, let them through

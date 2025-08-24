@@ -85,32 +85,73 @@ export function parseNip65Event(event: Event): Nip65Relay[] {
  * @returns RelayConfig object with inbox, outbox, and all relays
  */
 export function getRelayConfig(): RelayConfig {
+  // Check if we're on the client side
+  if (typeof window === 'undefined') {
+    // Return default config for server-side rendering
+    return {
+      inbox: ["wss://relay.nostr.band", "wss://relay.damus.io", "wss://nos.lol"],
+      outbox: ["wss://relay.nostr.band", "wss://relay.damus.io", "wss://nos.lol"],
+      all: ["wss://relay.nostr.band", "wss://relay.damus.io", "wss://nos.lol"]
+    };
+  }
+
   try {
     const customRelays = JSON.parse(localStorage.getItem("customRelays") || "[]");
     const nip65Relays = JSON.parse(localStorage.getItem("nip65Relays") || "[]");
     
-    // Default relays
+    // Default relays - updated with more reliable options
     const defaultRelays = [
       "wss://relay.nostr.band",
       "wss://relay.damus.io",
+      "wss://nos.lol",
+      "wss://freelay.sovbit.host"
     ];
     
     // Combine all relays
     const allRelays = Array.from(new Set([...defaultRelays, ...customRelays, ...nip65Relays]));
     
+    // Filter out localhost relays to prevent connection errors
+    const filteredRelays = allRelays.filter(relay => {
+      try {
+        const url = new URL(relay);
+        return !url.hostname.includes('localhost') && !url.hostname.includes('127.0.0.1');
+      } catch {
+        // If URL parsing fails, keep the relay
+        return true;
+      }
+    });
+    
+    // Only log once per session to reduce console spam
+    if (!(window as any).__relayConfigLogged) {
+      console.log("Relay configuration:", {
+        customRelays,
+        nip65Relays,
+        defaultRelays,
+        allRelays,
+        filteredRelays
+      });
+      (window as any).__relayConfigLogged = true;
+    }
+    
     // For now, use all relays for both inbox and outbox
     // In the future, this could be more sophisticated based on NIP-65 permissions
     return {
-      inbox: allRelays,
-      outbox: allRelays,
-      all: allRelays
+      inbox: filteredRelays,
+      outbox: filteredRelays,
+      all: filteredRelays
     };
   } catch (error) {
     console.error('Error getting relay config:', error);
+    // Fallback to basic relays
+    const fallbackRelays = [
+      "wss://relay.nostr.band",
+      "wss://relay.damus.io",
+      "wss://nos.lol",
+    ];
     return {
-      inbox: ["wss://relay.nostr.band", "wss://relay.damus.io"],
-      outbox: ["wss://relay.nostr.band", "wss://relay.damus.io"],
-      all: ["wss://relay.nostr.band", "wss://relay.damus.io"]
+      inbox: fallbackRelays,
+      outbox: fallbackRelays,
+      all: fallbackRelays
     };
   }
 }

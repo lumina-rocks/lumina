@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { getRelayConfig, getReadRelays, getWriteRelays } from './nip65Utils';
+import { useState, useEffect } from 'react';
 
 /**
  * Hook to get the appropriate relays for reading events
@@ -39,8 +40,14 @@ export function useAllRelays(): string[] {
  * @returns The current user's pubkey or null if not logged in
  */
 export function useCurrentUserPubkey(): string | null {
-  return useMemo(() => {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem('pubkey');
+  const [pubkey, setPubkey] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+    const storedPubkey = localStorage.getItem('pubkey');
+    setPubkey(storedPubkey);
   }, []);
+
+  return isClient ? pubkey : null;
 }

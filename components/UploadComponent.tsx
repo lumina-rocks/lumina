@@ -26,8 +26,10 @@ import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { publishToOutbox } from "@/utils/publishUtils";
 import { useCurrentUserPubkey } from "@/utils/relayHooks";
+import { getWriteRelays, getRelayConfig } from "@/utils/nip65Utils";
+import { SimplePool } from "nostr-tools";
+import { createHash } from "crypto";
 
 // File type detection functions
 const getFileTypeFromUrl = (url: string): string | null => {
@@ -346,10 +348,9 @@ async function calculateBlurhash(file: File): Promise<string> {
 }
 
 const UploadComponent: React.FC = () => {
-  const { createHash } = require("crypto")
-  const loginType = typeof window !== "undefined" ? window.localStorage.getItem("loginType") : null
   const searchParams = useSearchParams()
   const currentUserPubkey = useCurrentUserPubkey()
+  const { publish } = useNostr()
   const [previewUrl, setPreviewUrl] = useState("")
   const [imageUrl, setImageUrl] = useState("")
   const [title, setTitle] = useState("")
@@ -366,6 +367,17 @@ const UploadComponent: React.FC = () => {
   const [uploadedNoteId, setUploadedNoteId] = useState("")
   const [retryCount, setRetryCount] = useState(0)
   const [shouldFetch, setShouldFetch] = useState(false)
+  
+  // Add state for client-side authentication info
+  const [loginType, setLoginType] = useState<string | null>(null)
+  const [isClient, setIsClient] = useState(false)
+
+  // Use useEffect to handle client-side localStorage access
+  useEffect(() => {
+    setIsClient(true)
+    const storedLoginType = window.localStorage.getItem("loginType")
+    setLoginType(storedLoginType)
+  }, [])
 
   const { events, isLoading: isNoteLoading } = useNostrEvents({
     filter: shouldFetch
@@ -499,7 +511,25 @@ const UploadComponent: React.FC = () => {
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    
+    // Ensure client is ready
+    if (!isClient) {
+      alert("Please wait for the page to load completely before uploading.")
+      return
+    }
+    
     setIsLoading(true)
+
+    // Check if user is authenticated first
+    const pubkey = window.localStorage.getItem("pubkey")
+    
+    console.log("Authentication check:", { pubkey, loginType })
+    
+    if (!loginType || !pubkey) {
+      alert("You must be logged in to upload files. Please log in and try again.")
+      setIsLoading(false)
+      return
+    }
 
     const formData = new FormData(event.currentTarget)
     const desc = formData.get("description") as string
@@ -512,8 +542,6 @@ const UploadComponent: React.FC = () => {
     console.log("File type:", typeof file)
     console.log("File is null:", file === null)
     console.log("File is undefined:", file === undefined)
-
-
 
     const hasFile = file && file.size && file.size > 0
     if (!desc && !hasFile && !imageUrl) {
@@ -539,14 +567,6 @@ const UploadComponent: React.FC = () => {
       }
     }
 
-    // Check if user is authenticated
-    const pubkey = window.localStorage.getItem("pubkey")
-    if (!loginType || !pubkey) {
-      alert("You must be logged in to upload files. Please log in and try again.")
-      setIsLoading(false)
-      return
-    }
-
     // get every hashtag in desc and cut off the # symbol
     let hashtags: string[] = desc.match(/#[a-zA-Z0-9]+/g) || []
     if (hashtags) {
@@ -569,7 +589,7 @@ const UploadComponent: React.FC = () => {
         file = await stripImageMetadata(file)
 
         const arrayBuffer = await readFileAsArrayBuffer(file)
-        const hashBuffer = createHash("sha256").update(Buffer.from(arrayBuffer)).digest()
+        const hashBuffer = createHash("sha256").update(new Uint8Array(arrayBuffer)).digest()
         sha256 = hashBuffer.toString("hex")
 
         const unixNow = () => Math.floor(Date.now() / 1000)
@@ -617,7 +637,7 @@ const UploadComponent: React.FC = () => {
         }
         
         // authEventSigned as base64 encoded string
-        const authString = Buffer.from(JSON.stringify(authEventSigned)).toString("base64")
+        const authString = btoa(JSON.stringify(authEventSigned))
 
         const blossomServer = "https://" + serverChoice
 
@@ -712,6 +732,13 @@ const UploadComponent: React.FC = () => {
               sig: "", // Add a placeholder for sig
             }
 
+            console.log("Created note event:", {
+              kind: noteEvent.kind,
+              content: noteEvent.content,
+              tags: noteEvent.tags,
+              created_at: noteEvent.created_at
+            })
+
             let signedEvent: NostrEvent | null = null
 
             // Sign the actual note
@@ -733,9 +760,24 @@ const UploadComponent: React.FC = () => {
               console.log("final Event: ")
               console.log(signedEvent)
               
-              // Publish to outbox relays
-              await publishToOutbox(signedEvent, currentUserPubkey || undefined);
+              try {
+                // Publish using NostrProvider
+                console.log("Publishing using NostrProvider...")
+                console.log("Current user pubkey:", currentUserPubkey)
+                publish(signedEvent);
+                console.log("Successfully published using NostrProvider")
+              } catch (publishError) {
+                console.error("Error publishing:", publishError)
+                alert(`Failed to publish to relays: ${publishError instanceof Error ? publishError.message : 'Unknown error'}`)
+                setIsLoading(false)
+                return
+              }
               // alert(JSON.stringify(signedEvent))
+            } else {
+              console.error("No signed event available for publishing")
+              alert("Failed to sign the event. Please check your login and try again.")
+              setIsLoading(false)
+              return
             }
 
             setIsLoading(false)
@@ -804,6 +846,13 @@ const UploadComponent: React.FC = () => {
           sig: "", // Add a placeholder for sig
         }
 
+        console.log("Created note event (image URL):", {
+          kind: noteEvent.kind,
+          content: noteEvent.content,
+          tags: noteEvent.tags,
+          created_at: noteEvent.created_at
+        })
+
         let signedEvent: NostrEvent | null = null
 
         // Sign the actual note
@@ -825,8 +874,23 @@ const UploadComponent: React.FC = () => {
           console.log("final Event: ")
           console.log(signedEvent)
           
-          // Publish to outbox relays
-          await publishToOutbox(signedEvent, currentUserPubkey || undefined);
+          try {
+            // Publish using NostrProvider
+            console.log("Publishing using NostrProvider...")
+            console.log("Current user pubkey:", currentUserPubkey)
+            publish(signedEvent);
+            console.log("Successfully published using NostrProvider")
+          } catch (publishError) {
+            console.error("Error publishing:", publishError)
+            alert(`Failed to publish to relays: ${publishError instanceof Error ? publishError.message : 'Unknown error'}`)
+            setIsLoading(false)
+            return
+          }
+        } else {
+          console.error("No signed event available for publishing")
+          alert("Failed to sign the event. Please check your login and try again.")
+          setIsLoading(false)
+          return
         }
 
         setIsLoading(false)
@@ -863,7 +927,62 @@ const UploadComponent: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="space-y-6" onSubmit={onSubmit}>
+          {/* Debug section - only show in development */}
+          {process.env.NODE_ENV === 'development' && isClient && (
+            <div className="mb-4 p-3 bg-gray-100 rounded text-xs">
+              <div className="font-bold mb-2">Debug Info:</div>
+              <div>Login Type: {loginType || 'Not logged in'}</div>
+              <div>Pubkey: {currentUserPubkey ? `${currentUserPubkey.slice(0, 10)}...` : 'None'}</div>
+              <div>Write Relays: {isClient ? getWriteRelays(currentUserPubkey || undefined).length : 0}</div>
+              <button 
+                onClick={() => {
+                  console.log("Current relay config:", getRelayConfig())
+                  console.log("Write relays:", getWriteRelays(currentUserPubkey || undefined))
+                }}
+                className="text-blue-600 underline"
+              >
+                Log relay config to console
+              </button>
+              <button 
+                onClick={async () => {
+                  const relays = getWriteRelays(currentUserPubkey || undefined)
+                  console.log("Testing relay connections...")
+                  for (const relay of relays) {
+                    try {
+                      const pool = new SimplePool()
+                      const testEvent = {
+                        kind: 1,
+                        content: "Test message",
+                        created_at: Math.floor(Date.now() / 1000),
+                        tags: [],
+                        pubkey: "test",
+                        id: "test",
+                        sig: "test"
+                      }
+                      await pool.publish([relay], testEvent)
+                      console.log(`✅ ${relay} - Connected`)
+                      pool.close([relay])
+                    } catch (error) {
+                      console.log(`❌ ${relay} - Failed:`, error)
+                    }
+                  }
+                }}
+                className="text-blue-600 underline ml-2"
+              >
+                Test relay connections
+              </button>
+            </div>
+          )}
+          
+          {!isClient ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="flex items-center space-x-2">
+                <ReloadIcon className="h-4 w-4 animate-spin" />
+                <span>Loading...</span>
+              </div>
+            </div>
+          ) : (
+            <form className="space-y-6" onSubmit={onSubmit}>
             <div className="space-y-2">
               <Label htmlFor="title">Title</Label>
               <Input
@@ -1141,6 +1260,11 @@ const UploadComponent: React.FC = () => {
                   <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
                   {uploadMethod === "file" ? "Uploading..." : "Publishing..."}
                 </Button>
+              ) : !isClient ? (
+                <Button className="w-full" disabled>
+                  <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
+                  Loading...
+                </Button>
               ) : (
                 <>
                   <Button type="submit" className="w-full">
@@ -1169,6 +1293,7 @@ const UploadComponent: React.FC = () => {
               )}
             </div>
           </form>
+        )}
         </CardContent>
       </Card>
       
@@ -1178,13 +1303,13 @@ const UploadComponent: React.FC = () => {
             <DrawerTitle>Upload Status</DrawerTitle>
             <DrawerDescription>
               {isNoteLoading ? (
-                <div className="flex items-center space-x-2">
+                <span className="flex items-center space-x-2">
                   <Spinner />
                   <span>Checking note status...</span>
-                </div>
+                </span>
               ) : events.length > 0 ? (
-                <div
-                  className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative"
+                <span
+                  className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative block"
                   role="alert"
                 >
                   <strong className="font-bold">Success!</strong>
@@ -1192,9 +1317,9 @@ const UploadComponent: React.FC = () => {
                   <span className="block sm:inline font-mono">
                     {`${events[0].id.slice(0, 5)}...${events[0].id.slice(-3)}`}
                   </span>
-                </div>
+                </span>
               ) : (
-                <p>Note not found. It may take a moment to propagate.</p>
+                <span>Note not found. It may take a moment to propagate.</span>
               )}
             </DrawerDescription>
           </DrawerHeader>

@@ -75,33 +75,66 @@ export function extractDimensions(event: NostrEvent): { width: number; height: n
 }
 
 export async function signEvent(loginType: string | null, event: NostrEvent): Promise<NostrEvent | null> {
+    console.log("signEvent called with loginType:", loginType)
+    console.log("Event to sign:", { kind: event.kind, content: event.content?.substring(0, 100) + "..." })
+    
     // Sign event
   let eventSigned: NostrEvent = { ...event, sig: '' };
   if (loginType === 'extension') {
-    eventSigned = await window.nostr.signEvent(event);
+    try {
+      console.log("Signing with extension...")
+      eventSigned = await window.nostr.signEvent(event);
+      console.log("Extension signing successful:", eventSigned.id)
+    } catch (error) {
+      console.error("Extension signing failed:", error)
+      throw error
+    }
   } else if (loginType === 'amber') {
     // TODO: Sign event with amber
     alert('Signing with Amber is not implemented yet, sorry!');
     return null;
   } else if (loginType === 'bunker') {
     // Sign with bunker (NIP-46)
-    const signedWithBunker = await signEventWithBunker(event);
-    if (signedWithBunker) {
-      return signedWithBunker;
-    } else {
-      alert('Failed to sign with bunker. Please check your connection and try again.');
+    try {
+      console.log("Signing with bunker...")
+      const signedWithBunker = await signEventWithBunker(event);
+      if (signedWithBunker) {
+        console.log("Bunker signing successful:", signedWithBunker.id)
+        return signedWithBunker;
+      } else {
+        console.error("Bunker signing returned null")
+        alert('Failed to sign with bunker. Please check your connection and try again.');
+        return null;
+      }
+    } catch (error) {
+      console.error("Bunker signing failed:", error)
+      alert(`Failed to sign with bunker: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return null;
     }
   } else if (loginType === 'raw_nsec') {
     if (typeof window !== 'undefined') {
-      let nsecStr = null;
-      nsecStr = window.localStorage.getItem('nsec');
-      if (nsecStr != null) {
-        eventSigned = finalizeEvent(event, hexToBytes(nsecStr));
+      try {
+        console.log("Signing with raw nsec...")
+        let nsecStr = null;
+        nsecStr = window.localStorage.getItem('nsec');
+        if (nsecStr != null) {
+          eventSigned = finalizeEvent(event, hexToBytes(nsecStr));
+          console.log("Raw nsec signing successful:", eventSigned.id)
+        } else {
+          console.error("No nsec found in localStorage")
+          throw new Error("No private key found")
+        }
+      } catch (error) {
+        console.error("Raw nsec signing failed:", error)
+        throw error
       }
     }
+  } else {
+    console.error("Unknown login type:", loginType)
+    throw new Error(`Unknown login type: ${loginType}`)
   }
-  console.log(eventSigned);
+  
+  console.log("Final signed event:", eventSigned);
   return eventSigned;
 }
 
