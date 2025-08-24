@@ -26,6 +26,8 @@ import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { publishToOutbox } from "@/utils/publishUtils";
+import { useCurrentUserPubkey } from "@/utils/relayHooks";
 
 // File type detection functions
 const getFileTypeFromUrl = (url: string): string | null => {
@@ -344,10 +346,10 @@ async function calculateBlurhash(file: File): Promise<string> {
 }
 
 const UploadComponent: React.FC = () => {
-  const { publish } = useNostr()
   const { createHash } = require("crypto")
   const loginType = typeof window !== "undefined" ? window.localStorage.getItem("loginType") : null
   const searchParams = useSearchParams()
+  const currentUserPubkey = useCurrentUserPubkey()
   const [previewUrl, setPreviewUrl] = useState("")
   const [imageUrl, setImageUrl] = useState("")
   const [title, setTitle] = useState("")
@@ -730,7 +732,9 @@ const UploadComponent: React.FC = () => {
             if (signedEvent) {
               console.log("final Event: ")
               console.log(signedEvent)
-              publish(signedEvent)
+              
+              // Publish to outbox relays
+              await publishToOutbox(signedEvent, currentUserPubkey || undefined);
               // alert(JSON.stringify(signedEvent))
             }
 
@@ -820,7 +824,9 @@ const UploadComponent: React.FC = () => {
         if (signedEvent) {
           console.log("final Event: ")
           console.log(signedEvent)
-          publish(signedEvent)
+          
+          // Publish to outbox relays
+          await publishToOutbox(signedEvent, currentUserPubkey || undefined);
         }
 
         setIsLoading(false)

@@ -9,6 +9,7 @@ import { Toaster } from "@/components/ui/toaster"
 import Umami from "@/components/Umami";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { useEffect, useState } from "react";
+import { getRelayConfig } from "@/utils/nip65Utils";
 
 export default function RootLayout({
   children,
@@ -21,23 +22,19 @@ export default function RootLayout({
   ]);
 
   useEffect(() => {
-    // Load custom relays from localStorage
+    // Load relay configuration from localStorage
     try {
-      const customRelays = JSON.parse(localStorage.getItem("customRelays") || "[]");
-      if (customRelays.length > 0) {
-        // Remove trailing slashes from any relay URLs
-        const sanitizedRelays = customRelays.map((relay: string) =>
-          relay.endsWith('/') ? relay.slice(0, -1) : relay
-        );
-
-        setRelayUrls(prevRelays => {
-          // Combine default relays with custom relays, removing duplicates
-          const allRelays = [...prevRelays, ...sanitizedRelays];
-          return Array.from(new Set(allRelays)); // Remove duplicates
-        });
-      }
+      const config = getRelayConfig();
+      
+      // Use inbox relays for the NostrProvider (for reading events)
+      setRelayUrls(config.inbox);
     } catch (error) {
-      console.error("Error loading custom relays:", error);
+      console.error("Error loading relay configuration:", error);
+      // Fallback to default relays
+      setRelayUrls([
+        "wss://relay.nostr.band",
+        "wss://relay.damus.io",
+      ]);
     }
 
     // Suppress unhandled promise rejection errors from nostr-tools

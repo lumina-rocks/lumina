@@ -7,6 +7,13 @@ export interface Nip65Relay {
   write: boolean;
 }
 
+// Interface for relay configuration
+export interface RelayConfig {
+  inbox: string[];  // Read relays
+  outbox: string[]; // Write relays
+  all: string[];    // All relays (for backward compatibility)
+}
+
 /**
  * Fetches NIP-65 relay list metadata for a specific user
  * @param pubkey User's public key
@@ -74,6 +81,41 @@ export function parseNip65Event(event: Event): Nip65Relay[] {
 }
 
 /**
+ * Gets the current relay configuration from localStorage
+ * @returns RelayConfig object with inbox, outbox, and all relays
+ */
+export function getRelayConfig(): RelayConfig {
+  try {
+    const customRelays = JSON.parse(localStorage.getItem("customRelays") || "[]");
+    const nip65Relays = JSON.parse(localStorage.getItem("nip65Relays") || "[]");
+    
+    // Default relays
+    const defaultRelays = [
+      "wss://relay.nostr.band",
+      "wss://relay.damus.io",
+    ];
+    
+    // Combine all relays
+    const allRelays = Array.from(new Set([...defaultRelays, ...customRelays, ...nip65Relays]));
+    
+    // For now, use all relays for both inbox and outbox
+    // In the future, this could be more sophisticated based on NIP-65 permissions
+    return {
+      inbox: allRelays,
+      outbox: allRelays,
+      all: allRelays
+    };
+  } catch (error) {
+    console.error('Error getting relay config:', error);
+    return {
+      inbox: ["wss://relay.nostr.band", "wss://relay.damus.io"],
+      outbox: ["wss://relay.nostr.band", "wss://relay.damus.io"],
+      all: ["wss://relay.nostr.band", "wss://relay.damus.io"]
+    };
+  }
+}
+
+/**
  * Merges NIP-65 relays with existing custom relays and stores in localStorage
  * @param nip65Relays NIP-65 relays to merge
  */
@@ -84,6 +126,9 @@ export function mergeAndStoreRelays(nip65Relays: Nip65Relay[]): string[] {
     
     // Extract URLs from NIP-65 relays (we'll add all relays for now, both read and write)
     const nip65RelayUrls = nip65Relays.map(relay => relay.url);
+    
+    // Store NIP-65 relays separately for future use
+    localStorage.setItem("nip65Relays", JSON.stringify(nip65RelayUrls));
     
     // Merge existing and NIP-65 relays, removing duplicates
     const mergedRelays = Array.from(new Set([...existingRelays, ...nip65RelayUrls]));
@@ -96,4 +141,30 @@ export function mergeAndStoreRelays(nip65Relays: Nip65Relay[]): string[] {
     console.error('Error merging relays:', error);
     return [];
   }
+}
+
+/**
+ * Gets the appropriate relays for reading events
+ * @param targetPubkey Optional pubkey to get their read relays (for NIP-65)
+ * @returns Array of relay URLs to use for reading
+ */
+export function getReadRelays(targetPubkey?: string): string[] {
+  const config = getRelayConfig();
+  
+  // If we have a target pubkey, we could fetch their NIP-65 relays
+  // For now, use the current user's inbox
+  return config.inbox;
+}
+
+/**
+ * Gets the appropriate relays for publishing events
+ * @param authorPubkey The pubkey of the event author
+ * @returns Array of relay URLs to use for publishing
+ */
+export function getWriteRelays(authorPubkey?: string): string[] {
+  const config = getRelayConfig();
+  
+  // For now, use the current user's outbox
+  // In the future, this could include the author's write relays from NIP-65
+  return config.outbox;
 }
