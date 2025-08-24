@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import QuickViewKind20NoteCard from "./QuickViewKind20NoteCard";
 import { getImageUrl, getThumbnailUrl } from "@/utils/utils";
 import Link from "next/link";
+import { Play } from "lucide-react";
 
 // Function to extract video URL from imeta tags
 const getVideoUrl = (tags: string[][]): string | null => {
@@ -64,19 +65,34 @@ const ProfileQuickViewFeed: React.FC<ProfileQuickViewFeedProps> = ({ pubkey }) =
               const videoUrl = isVideo ? getVideoUrl(event.tags) : null;
               const thumbnailUrl = isVideo ? getThumbnailUrl(event.tags) : null;
               
-              // Use QuickViewKind20NoteCard for all content with images or videos
-              if (imageUrl || (isVideo && (videoUrl || thumbnailUrl))) {
+              // Use QuickViewKind20NoteCard for images and videos with thumbnails
+              if (imageUrl || (isVideo && thumbnailUrl)) {
                 return (
                   <QuickViewKind20NoteCard
                     key={event.id}
                     pubkey={event.pubkey}
                     text={event.content}
-                    image={imageUrl || thumbnailUrl || videoUrl || ""} // Prefer thumbnail, then video URL
+                    image={imageUrl || thumbnailUrl || ""} // Prefer thumbnail for videos
                     event={event}
                     tags={event.tags}
                     eventId={event.id}
                     linkToNote={true}
                   />
+                );
+              }
+              
+              // For videos without thumbnails, show a placeholder
+              if (isVideo && videoUrl) {
+                return (
+                  <div key={event.id} className="relative aspect-square w-full bg-gray-800 rounded-xl flex items-center justify-center">
+                                      <div className="bg-white bg-opacity-80 rounded-full p-3">
+                    <Play className="w-8 h-8 text-black" />
+                  </div>
+                    <Link href={`/note/${nip19.neventEncode({
+                      id: event.id,
+                      relays: []
+                    })}`} className="absolute inset-0" />
+                  </div>
                 );
               }
               

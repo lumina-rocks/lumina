@@ -1,7 +1,7 @@
 import type React from "react"
 import { useProfile } from "nostr-react"
 import { nip19 } from "nostr-tools"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
@@ -16,7 +16,7 @@ import CardOptionsDropdown from "./CardOptionsDropdown"
 import { renderTextWithLinkedTags } from "@/utils/textUtils"
 import { getProxiedImageUrl, hasNsfwContent } from "@/utils/utils"
 import { Button } from "@/components/ui/button"
-import { Eye } from "lucide-react"
+import { Eye, Play, Pause } from "lucide-react"
 
 // Function to extract all images from a kind 20 event's imeta tags
 const extractImagesFromEvent = (tags: string[][]): string[] => {
@@ -29,6 +29,25 @@ const extractImagesFromEvent = (tags: string[][]): string[] => {
     .filter(Boolean) as string[]
 }
 
+// Function to check if this is a video event
+const isVideoEvent = (event: NostrEvent): boolean => {
+  return event.kind === 21 || event.kind === 22;
+}
+
+// Function to extract video URL from imeta tags
+const getVideoUrl = (tags: string[][]): string | null => {
+  for (const tag of tags) {
+    if (tag[0] === 'imeta') {
+      for (let i = 1; i < tag.length; i++) {
+        if (tag[i].startsWith('url ')) {
+          return tag[i].substring(4);
+        }
+      }
+    }
+  }
+  return null;
+}
+
 const useImgProxy = process.env.NEXT_PUBLIC_ENABLE_IMGPROXY === "true"
 
 interface KIND20CardProps {
@@ -39,6 +58,7 @@ interface KIND20CardProps {
   tags: string[][]
   event: NostrEvent
   showViewNoteCardButton: boolean
+  videoUrl?: string // Optional video URL for video events
 }
 
 const KIND20Card: React.FC<KIND20CardProps> = ({
@@ -49,6 +69,7 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
   tags,
   event,
   showViewNoteCardButton,
+  videoUrl: propVideoUrl,
 }) => {
   const { data: userData } = useProfile({
     pubkey,
@@ -58,15 +79,31 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
   const [imagesWithoutProxy, setImagesWithoutProxy] = useState<Record<string, boolean>>({});
   const [showSensitiveContent, setShowSensitiveContent] = useState(false);
   const [api, setApi] = useState<any>(null);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
   
   // Check if the event has nsfw content
   const isNsfwContent = hasNsfwContent(tags);
   
+  // Check if this is a video event
+  const isVideo = isVideoEvent(event);
+  
+  // Get video URL for video events - prefer prop over extracted
+  const videoUrl = propVideoUrl || (isVideo ? getVideoUrl(tags) : null);
+  
   // Extract all images from imeta tags
   const imetaImages = extractImagesFromEvent(tags);
   
-  // Use provided image as fallback if no imeta images are found
-  const allImages = imetaImages.length > 0 ? imetaImages : (image && image.startsWith("http") ? [image] : []);
+  // For video events, if a thumbnail image is provided, use it directly
+  // For image events, use imeta images or fallback to provided image
+  const allImages = isVideo && image && image.startsWith("http") 
+    ? [image] 
+    : imetaImages.length > 0 
+      ? imetaImages 
+      : (image && image.startsWith("http") ? [image] : []);
+  
+  // For video events, check if we have a thumbnail to show initially
+  const hasThumbnail = isVideo && image && image.startsWith("http");
   
   // Filter out images with errors
   const validImages = allImages.filter(img => !imageErrors[img]);
@@ -93,6 +130,36 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
     e.preventDefault();
     e.stopPropagation();
     setShowSensitiveContent(true);
+  };
+
+  // Handle video play/pause
+  const handleVideoToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!videoRef.current || !videoUrl) return;
+    
+    if (isVideoPlaying) {
+      videoRef.current.pause();
+      setIsVideoPlaying(false);
+    } else {
+      videoRef.current.play().catch(() => {
+        // Auto-play failed, keep paused
+        setIsVideoPlaying(false);
+      });
+      setIsVideoPlaying(true);
+    }
+  };
+
+  // Handle video ended
+  const handleVideoEnded = () => {
+    setIsVideoPlaying(false);
+  };
+
+  // Handle video error
+  const handleVideoError = () => {
+    setIsVideoPlaying(false);
+    // Could show an error message here if needed
   };
 
   // Update current image index when carousel slides
@@ -172,17 +239,68 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
                           <CarouselItem key={`${imageUrl}-${index}`}>
                             <div className="w-full flex justify-center">
                               <div className="relative w-full h-auto min-h-[300px] max-h-[80vh] flex justify-center">
-                                <img
-                                  src={image}
-                                  alt={text}
-                                  className={`rounded-lg w-full h-auto object-contain ${isNsfwContent && !showSensitiveContent ? 'blur-xl' : ''}`}
-                                  onError={() => handleImageError(imageUrl)}
-                                  loading="lazy"
-                                  style={{
-                                    maxHeight: "80vh",
-                                    margin: "auto"
-                                  }}
-                                />
+                                <div className="relative w-full h-full">
+                                  {isVideo && videoUrl ? (
+                                    <>
+                                      {/* Always render video element but hide it when showing thumbnail */}
+                                      <video
+                                        ref={videoRef}
+                                        src={videoUrl}
+                                        className={`rounded-lg w-full h-auto object-contain ${isNsfwContent && !showSensitiveContent ? 'blur-xl' : ''} ${hasThumbnail && !isVideoPlaying ? 'hidden' : ''}`}
+                                        onEnded={handleVideoEnded}
+                                        onError={handleVideoError}
+                                        style={{
+                                          maxHeight: "80vh",
+                                          margin: "auto"
+                                        }}
+                                        muted
+                                        loop
+                                        playsInline
+                                      />
+                                      
+                                      {/* Show thumbnail when available and video is not playing */}
+                                      {hasThumbnail && !isVideoPlaying && (
+                                        <img
+                                          src={image}
+                                          alt={text}
+                                          className={`rounded-lg w-full h-auto object-contain ${isNsfwContent && !showSensitiveContent ? 'blur-xl' : ''} absolute inset-0`}
+                                          onError={() => handleImageError(imageUrl)}
+                                          loading="lazy"
+                                          style={{
+                                            maxHeight: "80vh",
+                                            margin: "auto"
+                                          }}
+                                        />
+                                      )}
+                                      
+                                      {/* Play/Pause button overlay */}
+                                      <div 
+                                        className="absolute inset-0 flex items-center justify-center cursor-pointer"
+                                        onClick={handleVideoToggle}
+                                      >
+                                        <div className="bg-black bg-opacity-70 hover:bg-opacity-80 rounded-full p-4 transition-all duration-200">
+                                          {isVideoPlaying ? (
+                                            <Pause className="w-8 h-8 text-white" />
+                                          ) : (
+                                            <Play className="w-8 h-8 text-white" />
+                                          )}
+                                        </div>
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <img
+                                      src={image}
+                                      alt={text}
+                                      className={`rounded-lg w-full h-auto object-contain ${isNsfwContent && !showSensitiveContent ? 'blur-xl' : ''}`}
+                                      onError={() => handleImageError(imageUrl)}
+                                      loading="lazy"
+                                      style={{
+                                        maxHeight: "80vh",
+                                        margin: "auto"
+                                      }}
+                                    />
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </CarouselItem>

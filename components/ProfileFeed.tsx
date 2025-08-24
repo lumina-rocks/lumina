@@ -4,7 +4,7 @@ import NoteCard from '@/components/NoteCard';
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import KIND20Card from "./KIND20Card";
-import { getImageUrl } from "@/utils/utils";
+import { getImageUrl, getThumbnailUrl } from "@/utils/utils";
 
 // Function to extract video URL from imeta tags
 const getVideoUrl = (tags: string[][]): string | null => {
@@ -58,20 +58,39 @@ const ProfileFeed: React.FC<ProfileFeedProps> = ({ pubkey }) => {
               const isVideo = event.kind === 21 || event.kind === 22;
               
               if (isVideo) {
-                // Use NoteCard for video content
                 const videoUrl = getVideoUrl(event.tags);
-                const contentWithVideo = videoUrl ? `${event.content}\n${videoUrl}` : event.content;
-                return (
-                  <NoteCard
-                    key={event.id}
-                    pubkey={event.pubkey}
-                    text={contentWithVideo}
-                    eventId={event.id}
-                    tags={event.tags}
-                    event={event}
-                    showViewNoteCardButton={true}
-                  />
-                );
+                const thumbnailUrl = getThumbnailUrl(event.tags);
+                
+                // If video has a thumbnail, use KIND20Card to display the thumbnail
+                if (thumbnailUrl) {
+                  return (
+                    <KIND20Card
+                      key={event.id}
+                      pubkey={event.pubkey}
+                      text={event.content}
+                      image={thumbnailUrl}
+                      event={event}
+                      tags={event.tags}
+                      eventId={event.id}
+                      showViewNoteCardButton={true}
+                      videoUrl={videoUrl}
+                    />
+                  );
+                } else if (videoUrl) {
+                  // If no thumbnail but video URL exists, use NoteCard to display the video
+                  const contentWithVideo = `${event.content}\n${videoUrl}`;
+                  return (
+                    <NoteCard
+                      key={event.id}
+                      pubkey={event.pubkey}
+                      text={contentWithVideo}
+                      eventId={event.id}
+                      tags={event.tags}
+                      event={event}
+                      showViewNoteCardButton={true}
+                    />
+                  );
+                }
               } else if (imageUrl) {
                 // Use KIND20Card for image content
                 return (
