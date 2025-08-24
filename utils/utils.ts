@@ -11,11 +11,52 @@ export function hasNsfwContent(tags: string[][]): boolean {
 }
 
 export function getImageUrl(tags: string[][]): string {
-  const imetaTag = tags.find(tag => tag[0] === 'imeta');
-  if (imetaTag) {
+  const imetaTags = tags.filter(tag => tag[0] === 'imeta');
+  
+  // First, check for 'image' fields (thumbnails for videos)
+  for (const imetaTag of imetaTags) {
+    const imageItem = imetaTag.find(item => item.startsWith('image '));
+    if (imageItem) {
+      return imageItem.split(' ')[1];
+    }
+  }
+  
+  // Then, check for 'url' fields that point to images
+  for (const imetaTag of imetaTags) {
     const urlItem = imetaTag.find(item => item.startsWith('url '));
+    const mimeItem = imetaTag.find(item => item.startsWith('m '));
+    
+    if (urlItem) {
+      const url = urlItem.split(' ')[1];
+      // If this imeta tag has an image mime type, use it
+      if (mimeItem && mimeItem.startsWith('m image/')) {
+        return url;
+      }
+      // If the URL looks like an image, use it
+      if (url.match(/\.(jpg|jpeg|png|webp|gif|apng|avif)$/i)) {
+        return url;
+      }
+    }
+  }
+  
+  // Fallback: return the first URL found
+  const firstImetaTag = imetaTags[0];
+  if (firstImetaTag) {
+    const urlItem = firstImetaTag.find(item => item.startsWith('url '));
     if (urlItem) {
       return urlItem.split(' ')[1];
+    }
+  }
+  
+  return '';
+}
+
+export function getThumbnailUrl(tags: string[][]): string {
+  const imetaTag = tags.find(tag => tag[0] === 'imeta');
+  if (imetaTag) {
+    const imageItem = imetaTag.find(item => item.startsWith('image '));
+    if (imageItem) {
+      return imageItem.split(' ')[1];
     }
   }
   return '';

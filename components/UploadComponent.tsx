@@ -350,20 +350,20 @@ const UploadComponent: React.FC = () => {
   const searchParams = useSearchParams()
   const [previewUrl, setPreviewUrl] = useState("")
   const [imageUrl, setImageUrl] = useState("")
-  const uploadMethod = (searchParams?.get("upload-method") as "file" | "url") || "file"
-
+  const [title, setTitle] = useState("")
+  const [selectedKind, setSelectedKind] = useState("20")
+  const [serverChoice, setServerChoice] = useState("blossom.band")
+  const [enableNip89, setEnableNip89] = useState(false)
+  const [referenceType, setReferenceType] = useState<"e" | "a" | "u">("e")
+  const [referenceValue, setReferenceValue] = useState("")
+  const [detectedFileType, setDetectedFileType] = useState<string | null>(null)
+  const [uploadMethod, setUploadMethod] = useState<"file" | "url">("file")
+  const [thumbnailUrl, setThumbnailUrl] = useState("") // New state for video thumbnails
   const [isLoading, setIsLoading] = useState(false)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [uploadedNoteId, setUploadedNoteId] = useState("")
   const [retryCount, setRetryCount] = useState(0)
   const [shouldFetch, setShouldFetch] = useState(false)
-  const [serverChoice, setServerChoice] = useState("blossom.band")
-  const [enableNip89, setEnableNip89] = useState(false)
-  const [selectedKind, setSelectedKind] = useState("20")
-  const [title, setTitle] = useState("")
-  const [detectedFileType, setDetectedFileType] = useState<string | null>(null)
-  const [referenceType, setReferenceType] = useState<"e" | "a" | "u">("e")
-  const [referenceValue, setReferenceValue] = useState("")
 
   const { events, isLoading: isNoteLoading } = useNostrEvents({
     filter: shouldFetch
@@ -489,6 +489,10 @@ const UploadComponent: React.FC = () => {
 
   const handleReferenceValueChange = (event: ChangeEvent<HTMLInputElement>) => {
     setReferenceValue(event.target.value)
+  }
+
+  const handleThumbnailUrlChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setThumbnailUrl(event.target.value)
   }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -666,13 +670,20 @@ const UploadComponent: React.FC = () => {
                 noteTags.push(["m", file.type])
               } else if (selectedKind === "21" || selectedKind === "22") {
                 // Video events - use imeta with video-specific properties
-                noteTags.push([
+                const videoImetaTags = [
                   "imeta",
                   `dim ${image.width}x${image.height}`,
                   "url " + finalFileUrl,
                   "x " + sha256,
                   "m " + file.type,
-                ])
+                ]
+                
+                // Add thumbnail URL as image field if provided
+                if (thumbnailUrl) {
+                  videoImetaTags.push("image " + thumbnailUrl)
+                }
+                
+                noteTags.push(videoImetaTags)
                 noteTags.push(["x", sha256])
               }
             }
@@ -759,7 +770,14 @@ const UploadComponent: React.FC = () => {
           noteTags.push(["imeta", "url " + imageUrl])
         } else if (selectedKind === "21" || selectedKind === "22") {
           // Video events - use imeta with video-specific properties
-          noteTags.push(["imeta", "url " + imageUrl])
+          const videoImetaTags = ["imeta", "url " + imageUrl]
+          
+          // Add thumbnail URL as image field if provided
+          if (thumbnailUrl) {
+            videoImetaTags.push("image " + thumbnailUrl)
+          }
+          
+          noteTags.push(videoImetaTags)
         }
 
         // NIP-89 client tagging (optional)
@@ -974,6 +992,25 @@ const UploadComponent: React.FC = () => {
             </div>
 
             <Separator className="my-4" />
+            
+            {/* Thumbnail URL field for video events */}
+            {(selectedKind === "21" || selectedKind === "22") && (
+              <div className="space-y-2">
+                <Label htmlFor="thumbnail-url">Video Thumbnail Image URL (Optional)</Label>
+                <Input
+                  id="thumbnail-url"
+                  name="thumbnail-url"
+                  type="url"
+                  placeholder="https://example.com/thumbnail.jpg"
+                  value={thumbnailUrl}
+                  onChange={handleThumbnailUrlChange}
+                  className="w-full"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Provide an image URL to use as a thumbnail/preview for your video. This will be displayed in galleries and feeds.
+                </p>
+              </div>
+            )}
             
             <div className="space-y-4">
               <div className="flex flex-row items-center justify-between">

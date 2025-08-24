@@ -11,7 +11,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Eye, Play } from 'lucide-react';
-import { extractDimensions, getProxiedImageUrl, hasNsfwContent } from '@/utils/utils';
+import { extractDimensions, getProxiedImageUrl, hasNsfwContent, getThumbnailUrl } from '@/utils/utils';
 
 // Function to extract video URL from imeta tags
 const getVideoUrl = (tags: string[][]): string | null => {
@@ -51,9 +51,11 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubke
   // Check if this is a video
   const isVideo = event.kind === 21 || event.kind === 22;
   const videoUrl = isVideo ? getVideoUrl(tags) : null;
+  const thumbnailUrl = isVideo ? getThumbnailUrl(tags) : null;
 
   // If no image is provided but we have a video URL, use the video URL as the image
-  const displayImage = image || videoUrl;
+  // For videos, prefer thumbnail URL if available, otherwise use video URL
+  const displayImage = image || (isVideo && thumbnailUrl ? thumbnailUrl : videoUrl);
 
   // For video events, we don't need to check if the image starts with http
   // since video URLs are valid for display purposes
@@ -103,12 +105,31 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubke
             ) : (
               <>
                 {isVideo ? (
-                  // For videos, show a placeholder with play button
-                  <div className="w-full h-full bg-gray-800 rounded-lg flex items-center justify-center">
-                    <div className="bg-white bg-opacity-80 rounded-full p-3">
-                      <Play className="h-6 w-6 text-black" />
+                  // For videos, show thumbnail if available, otherwise show placeholder
+                  thumbnailUrl ? (
+                    // Show thumbnail with play button overlay
+                    <img 
+                      src={processedImage} 
+                      alt={displayText}
+                      className={`w-full h-full rounded-lg object-cover ${isNsfwContent && !showSensitiveContent ? 'blur-xl' : ''}`}
+                      loading="lazy"
+                      onError={() => {
+                        if (tryWithoutProxy) {
+                          setImageError(true);
+                        } else {
+                          setTryWithoutProxy(true);
+                        }
+                      }}
+                      style={{ objectPosition: 'center' }}
+                    />
+                  ) : (
+                    // Show placeholder with play button
+                    <div className="w-full h-full bg-gray-800 rounded-lg flex items-center justify-center">
+                      <div className="bg-white bg-opacity-80 rounded-full p-3">
+                        <Play className="h-6 w-6 text-black" />
+                      </div>
                     </div>
-                  </div>
+                  )
                 ) : (
                   // For images, show the actual image
                   <img 

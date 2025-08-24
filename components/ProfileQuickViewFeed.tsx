@@ -4,7 +4,7 @@ import { nip19 } from "nostr-tools";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import QuickViewKind20NoteCard from "./QuickViewKind20NoteCard";
-import { getImageUrl } from "@/utils/utils";
+import { getImageUrl, getThumbnailUrl } from "@/utils/utils";
 import Link from "next/link";
 
 // Function to extract video URL from imeta tags
@@ -62,15 +62,16 @@ const ProfileQuickViewFeed: React.FC<ProfileQuickViewFeedProps> = ({ pubkey }) =
               const imageUrl = getImageUrl(event.tags);
               const isVideo = event.kind === 21 || event.kind === 22;
               const videoUrl = isVideo ? getVideoUrl(event.tags) : null;
+              const thumbnailUrl = isVideo ? getThumbnailUrl(event.tags) : null;
               
               // Use QuickViewKind20NoteCard for all content with images or videos
-              if (imageUrl || (isVideo && videoUrl)) {
+              if (imageUrl || (isVideo && (videoUrl || thumbnailUrl))) {
                 return (
                   <QuickViewKind20NoteCard
                     key={event.id}
                     pubkey={event.pubkey}
                     text={event.content}
-                    image={imageUrl || videoUrl || ""} // Use video URL as fallback image
+                    image={imageUrl || thumbnailUrl || videoUrl || ""} // Prefer thumbnail, then video URL
                     event={event}
                     tags={event.tags}
                     eventId={event.id}
