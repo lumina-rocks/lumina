@@ -13,7 +13,7 @@ import { Avatar, AvatarImage } from "@/components/ui/avatar";
 const ProfilePictureCard: React.FC<{ 
   pubkey: string; 
   eventId: string; 
-  showPlayButton: boolean; 
+  showPlayButton: boolean;
 }> = ({ pubkey, eventId, showPlayButton }) => {
   const { data: userData } = useProfile({
     pubkey,

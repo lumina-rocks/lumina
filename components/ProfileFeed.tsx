@@ -8,6 +8,7 @@ import { getImageUrl, getThumbnailUrl } from "@/utils/utils";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import Link from "next/link";
 import { nip19 } from "nostr-tools";
+import { PinIcon } from "lucide-react";
 
 // Component to display profile picture for pinned events
 const ProfilePictureCard: React.FC<{ 
@@ -64,11 +65,14 @@ const getVideoUrl = (tags: string[][]): string | null => {
     if (tag[0] === 'imeta') {
       for (let i = 1; i < tag.length; i++) {
         if (tag[i].startsWith('url ')) {
-          return tag[i].substring(4);
+          const videoUrl = tag[i].substring(4);
+          console.log("Found video URL in imeta tag:", videoUrl);
+          return videoUrl;
         }
       }
     }
   }
+  console.log("No video URL found in tags:", tags);
   return null;
 };
 
@@ -87,6 +91,133 @@ const getAudioUrl = (tags: string[][]): string | null => {
   return null;
 };
 
+
+
+// Function to get the first reference tag for opening source
+const getFirstReferenceTag = (tags: string[][]): { type: string; value: string; relays?: string[] } | null => {
+  for (const tag of tags) {
+    if (tag[0] === 'e') {
+      const result = { type: 'e', value: tag[1], relays: tag.slice(2) };
+      console.log("Found 'e' tag:", result);
+      return result;
+    }
+    if (tag[0] === 'a') {
+      const result = { type: 'a', value: tag[1], relays: tag.slice(2) };
+      console.log("Found 'a' tag:", result);
+      return result;
+    }
+    if (tag[0] === 'u') {
+      const result = { type: 'u', value: tag[1] };
+      console.log("Found 'u' tag:", result);
+      return result;
+    }
+  }
+  console.log("No reference tag found in tags:", tags);
+  return null;
+};
+
+// Function to determine if an event should show a pin and what it should do
+const getPinInfo = (event: any, pubkey: string, pinnedEventIds: string[]): { showPin: boolean; referenceTag: { type: string; value: string; relays?: string[] } | null } => {
+  const isOwnEvent = event.pubkey === pubkey;
+  const isMediaEvent = event.kind === 20 || event.kind === 21 || event.kind === 22;
+  const isPinned = pinnedEventIds.includes(event.id);
+  const hasReferenceTag = getFirstReferenceTag(event.tags);
+  const isGalleryEvent = event.content.includes('#gallery') || event.tags.some((tag: string[]) => tag[0] === 't' && tag[1] === 'gallery');
+  
+
+  
+  // Case 1: If it's my kind 20, 21, or 22 and has a reference tag, show pin to that reference
+  if (isOwnEvent && isMediaEvent && hasReferenceTag) {
+    return { showPin: true, referenceTag: hasReferenceTag };
+  }
+  
+  // Case 2: If it's pinned (came onto board because it or an event that references it contained "gallery")
+  if (isPinned) {
+    return { showPin: true, referenceTag: { type: 'e', value: event.id } };
+  }
+  
+  // Case 3: If it's my own event with gallery tag
+  if (isOwnEvent && isGalleryEvent) {
+    return { showPin: true, referenceTag: { type: 'gallery', value: 'gallery' } };
+  }
+  
+  // Case 4: If it's any kind 21 event with a reference tag, show pin (for debugging)
+  if (event.kind === 21 && hasReferenceTag) {
+    return { showPin: true, referenceTag: hasReferenceTag };
+  }
+  
+  return { showPin: false, referenceTag: null };
+};
+
+// Function to handle pin click
+const handlePinClick = (referenceTag: { type: string; value: string; relays?: string[] }) => {
+  console.log("Pin clicked with referenceTag:", referenceTag);
+  
+  if (referenceTag.type === 'u') {
+    // Open URL in new tab
+    console.log("Opening URL:", referenceTag.value);
+    window.open(referenceTag.value, '_blank');
+  } else if (referenceTag.type === 'e') {
+    // For event references, use nevent encoding to go to note page
+    console.log("Opening event:", referenceTag.value);
+    const nevent = nip19.neventEncode({
+      id: referenceTag.value,
+      relays: referenceTag.relays || []
+    });
+    console.log("Navigating to:", `/note/${nevent}`);
+    window.location.href = `/note/${nevent}`;
+  } else if (referenceTag.type === 'a') {
+    // For address references, check the kind and route appropriately
+    console.log("Opening address:", referenceTag.value);
+    const parts = referenceTag.value.split(':');
+    if (parts.length >= 3) {
+      const kind = parseInt(parts[2]);
+      const pubkey = parts[1];
+      
+      if (kind === 0) {
+        // Kind 0 (profile) - go to profile page using npub
+        const npub = nip19.npubEncode(pubkey);
+        console.log("Navigating to profile:", `/profile/${npub}`);
+        window.location.href = `/profile/${npub}`;
+      } else {
+        // All other kinds - go to njump (since we don't have the event ID for nevent)
+        console.log("Opening in njump:", `https://njump.me/${referenceTag.value}`);
+        window.open(`https://njump.me/${referenceTag.value}`, '_blank');
+      }
+    } else {
+      // Fallback to njump for malformed addresses
+      console.log("Fallback to njump:", `https://njump.me/${referenceTag.value}`);
+      window.open(`https://njump.me/${referenceTag.value}`, '_blank');
+    }
+  } else {
+    console.log("Unknown reference tag type:", referenceTag.type);
+  }
+};
+
+// Component for the purple pin icon
+const PinButton: React.FC<{ 
+  referenceTag: { type: string; value: string; relays?: string[] };
+  onPinClick?: (referenceTag: { type: string; value: string; relays?: string[] }) => void;
+}> = ({ referenceTag, onPinClick }) => {
+  return (
+    <button
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (onPinClick) {
+          onPinClick(referenceTag);
+        } else {
+          handlePinClick(referenceTag);
+        }
+      }}
+      className="absolute top-3 right-3 z-10 bg-purple-600 hover:bg-purple-700 text-white rounded-full p-1.5 shadow-lg transition-colors duration-200"
+      title="Open source"
+    >
+      <PinIcon className="w-3 h-3" />
+    </button>
+  );
+};
+
 interface ProfileFeedProps {
   pubkey: string;
 }
@@ -99,10 +230,12 @@ const ProfileFeed: React.FC<ProfileFeedProps> = ({ pubkey }) => {
   const { events: userEvents, isLoading: userEventsLoading } = useNostrEvents({
     filter: {
       authors: [pubkey],
-      kinds: [20, 21, 22],
+      kinds: [1, 20, 21, 22, 1111],
       limit: limit,
     },
   });
+
+
 
   // Get events that the user has "pinned" by responding with #gallery
   const { events: galleryReplies } = useNostrEvents({
@@ -110,15 +243,6 @@ const ProfileFeed: React.FC<ProfileFeedProps> = ({ pubkey }) => {
       authors: [pubkey],
       "#t": ["gallery"],
       kinds: [1], // replies are typically kind 1
-      limit: 100,
-    },
-  });
-
-  // Get events that contain "#gallery" in content or have "gallery" t-tag
-  const { events: galleryTaggedEvents } = useNostrEvents({
-    filter: {
-      authors: [pubkey],
-      kinds: [1, 20, 21, 22, 1111],
       limit: 100,
     },
   });
@@ -136,26 +260,28 @@ const ProfileFeed: React.FC<ProfileFeedProps> = ({ pubkey }) => {
     },
   });
 
-  // Filter gallery tagged events
-  const galleryEvents = galleryTaggedEvents.filter(event => {
+  // Filter user's own events that contain "#gallery" in content or have "gallery" t-tag
+  const userGalleryEvents = userEvents.filter(event => {
     // Check for "#gallery" in content
     if (event.content.includes('#gallery')) {
       return true;
     }
     
     // Check for "gallery" t-tag
-    const hasGalleryTag = event.tags.some(tag => 
+    const hasGalleryTag = event.tags.some((tag: string[]) => 
       tag[0] === 't' && tag[1] === 'gallery'
     );
     
     return hasGalleryTag;
   });
 
-  // Combine all events: user's media posts + pinned events + gallery tagged events
-  const allEvents = [...userEvents, ...pinnedEvents, ...galleryEvents];
+  // Combine all events: user's media posts + pinned events (the actual media events) + user's gallery events
+  const allEvents = [...userEvents, ...pinnedEvents, ...userGalleryEvents];
   const uniqueEvents = allEvents.filter((event, index, self) => 
     index === self.findIndex(e => e.id === event.id)
   );
+
+
 
   const isLoading = userEventsLoading || pinnedEventsLoading;
 
@@ -172,6 +298,16 @@ const ProfileFeed: React.FC<ProfileFeedProps> = ({ pubkey }) => {
     // Check for video URLs in imeta tags
     const videoUrl = getVideoUrl(event.tags);
     if (videoUrl) return true;
+    
+    // Debug logging for the specific event
+    if (event.id === "aefcd52baa6f63684d7304c94228dbff886378ef6ba1d26febd5110b041e6996") {
+      console.log("hasVideoContent check:", {
+        eventId: event.id,
+        videoMatch,
+        videoUrl,
+        result: videoMatch && videoMatch.length > 0 || !!videoUrl
+      });
+    }
     
     return false;
   };
@@ -206,12 +342,19 @@ const ProfileFeed: React.FC<ProfileFeedProps> = ({ pubkey }) => {
     return hasVideoContent(event) || hasAudioContent(event) || hasImageContent(event);
   };
 
+
+
   // Filter events to only include those with media content or are pinned
   const mediaEvents = uniqueEvents.filter(event => {
     const isPinned = pinnedEventIds.includes(event.id);
     const hasMedia = hasMediaContent(event);
+    
+
+    
     return isPinned || hasMedia;
   });
+
+
 
   return (
     <>
@@ -229,98 +372,141 @@ const ProfileFeed: React.FC<ProfileFeedProps> = ({ pubkey }) => {
             {mediaEvents.map((event) => {
               const imageUrl = getImageUrl(event.tags);
               const isVideo = event.kind === 21 || event.kind === 22;
-              const isPinned = pinnedEventIds.includes(event.id);
               const hasVideo = hasVideoContent(event);
               const hasAudio = hasAudioContent(event);
               const hasImage = hasImageContent(event);
+              const { showPin, referenceTag } = getPinInfo(event, pubkey, pinnedEventIds);
+              
+
               
               // Priority: Video > Audio > Image > Pinned (no media)
               if (isVideo || hasVideo) {
                 const videoUrl = getVideoUrl(event.tags);
                 const thumbnailUrl = getThumbnailUrl(event.tags);
                 
+
+                
                 // If video has a thumbnail, use KIND20Card to display the thumbnail
                 if (thumbnailUrl) {
                   return (
-                    <KIND20Card
-                      key={event.id}
-                      pubkey={event.pubkey}
-                      text={event.content}
-                      image={thumbnailUrl}
-                      event={event}
-                      tags={event.tags}
-                      eventId={event.id}
-                      showViewNoteCardButton={true}
-                      videoUrl={videoUrl || undefined}
-                    />
+                    <div key={event.id} className="relative">
+                      {showPin && referenceTag && (
+                        <PinButton referenceTag={referenceTag} />
+                      )}
+                      <KIND20Card
+                        pubkey={event.pubkey}
+                        text={event.content}
+                        image={thumbnailUrl}
+                        event={event}
+                        tags={event.tags}
+                        eventId={event.id}
+                        showViewNoteCardButton={true}
+                        videoUrl={videoUrl || undefined}
+                      />
+                    </div>
                   );
                 } else if (videoUrl) {
                   // If no thumbnail but video URL exists, use NoteCard to display the video
                   const contentWithVideo = `${event.content}\n${videoUrl}`;
                   return (
-                    <NoteCard
-                      key={event.id}
-                      pubkey={event.pubkey}
-                      text={contentWithVideo}
-                      eventId={event.id}
-                      tags={event.tags}
-                      event={event}
-                      showViewNoteCardButton={true}
-                    />
+                    <div key={event.id} className="relative">
+                      {showPin && referenceTag && (
+                        <PinButton referenceTag={referenceTag} />
+                      )}
+                      <NoteCard
+                        pubkey={event.pubkey}
+                        text={contentWithVideo}
+                        eventId={event.id}
+                        tags={event.tags}
+                        event={event}
+                        showViewNoteCardButton={true}
+                        onPinClick={handlePinClick}
+                      />
+                    </div>
                   );
                 } else {
                   // If no video URL found, try to extract from content
                   const videoMatch = event.content.match(/https?:\/\/[^ ]*\.(mp4|webm|mov|avi|mkv)/g);
                   if (videoMatch && videoMatch.length > 0) {
                     return (
-                      <NoteCard
-                        key={event.id}
-                        pubkey={event.pubkey}
-                        text={event.content}
-                        eventId={event.id}
-                        tags={event.tags}
-                        event={event}
-                        showViewNoteCardButton={true}
-                      />
+                      <div key={event.id} className="relative">
+                        {showPin && referenceTag && (
+                          <PinButton 
+                            referenceTag={referenceTag} 
+                            onPinClick={handlePinClick}
+                          />
+                        )}
+                        <NoteCard
+                          pubkey={event.pubkey}
+                          text={event.content}
+                          eventId={event.id}
+                          tags={event.tags}
+                          event={event}
+                          showViewNoteCardButton={true}
+                          onPinClick={handlePinClick}
+                        />
+                      </div>
                     );
                   }
                 }
               } else if (hasAudio) {
                 // For audio content, use NoteCard
                 return (
-                  <NoteCard
-                    key={event.id}
-                    pubkey={event.pubkey}
-                    text={event.content}
-                    eventId={event.id}
-                    tags={event.tags}
-                    event={event}
-                    showViewNoteCardButton={true}
-                  />
+                  <div key={event.id} className="relative">
+                    {showPin && referenceTag && (
+                      <PinButton 
+                        referenceTag={referenceTag} 
+                        onPinClick={handlePinClick}
+                      />
+                    )}
+                    <NoteCard
+                      pubkey={event.pubkey}
+                      text={event.content}
+                      eventId={event.id}
+                      tags={event.tags}
+                      event={event}
+                      showViewNoteCardButton={true}
+                      onPinClick={handlePinClick}
+                    />
+                  </div>
                 );
               } else if (hasImage && imageUrl) {
                 // Use KIND20Card for image content
                 return (
-                  <KIND20Card
-                    key={event.id}
-                    pubkey={event.pubkey}
-                    text={event.content}
-                    image={imageUrl}
-                    event={event}
-                    tags={event.tags}
-                    eventId={event.id}
-                    showViewNoteCardButton={true}
-                  />
+                  <div key={event.id} className="relative">
+                    {showPin && referenceTag && (
+                      <PinButton 
+                        referenceTag={referenceTag} 
+                        onPinClick={handlePinClick}
+                      />
+                    )}
+                    <KIND20Card
+                      pubkey={event.pubkey}
+                      text={event.content}
+                      image={imageUrl}
+                      event={event}
+                      tags={event.tags}
+                      eventId={event.id}
+                      showViewNoteCardButton={true}
+                    />
+                  </div>
                 );
-              } else if (isPinned) {
+              } else if (pinnedEventIds.includes(event.id)) {
                 // For pinned events without images/videos, show profile picture
                 return (
-                  <ProfilePictureCard
-                    key={event.id}
-                    pubkey={event.pubkey}
-                    eventId={event.id}
-                    content={event.content}
-                  />
+                  <div key={event.id} className="relative">
+                    {showPin && referenceTag && (
+                      <PinButton 
+                        referenceTag={referenceTag} 
+                        onPinClick={handlePinClick}
+                      />
+                    )}
+                    <ProfilePictureCard
+                      pubkey={event.pubkey}
+                      eventId={event.id}
+                      content={event.content}
+                    />
+                  </div>
                 );
               }
               return null;
