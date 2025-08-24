@@ -32,6 +32,20 @@ import ZapButton from './ZapButton';
 import CardOptionsDropdown from './CardOptionsDropdown';
 import { renderTextWithLinkedTags } from '@/utils/textUtils';
 
+// Function to extract video URL from imeta tags
+const getVideoUrl = (tags: string[][]): string | null => {
+  for (const tag of tags) {
+    if (tag[0] === 'imeta') {
+      for (let i = 1; i < tag.length; i++) {
+        if (tag[i].startsWith('url ')) {
+          return tag[i].substring(4);
+        }
+      }
+    }
+  }
+  return null;
+};
+
 interface NoteCardProps {
   pubkey: string;
   text: string;
@@ -49,8 +63,15 @@ const NoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tags, event,
   const title = userData?.username || userData?.display_name || userData?.name || userData?.npub || nip19.npubEncode(pubkey);
   // text = text.replaceAll('\n', '<br />');
   text = text.replaceAll('\n', ' ');
+  
+  // Extract video URL from imeta tags for video events (kind 21 or 22)
+  const imetaVideoUrl = (event.kind === 21 || event.kind === 22) ? getVideoUrl(tags) : null;
+  
+  // Combine text-based video detection with imeta-based detection
+  const textVideoSrc = text.match(/https?:\/\/[^ ]*\.(mp4|webm|mov)/g);
+  const videoSrc = imetaVideoUrl ? [imetaVideoUrl] : textVideoSrc;
+  
   const imageSrc = text.match(/https?:\/\/[^ ]*\.(png|jpg|gif|jpeg)/g);
-  const videoSrc = text.match(/https?:\/\/[^ ]*\.(mp4|webm|mov)/g);
   const textWithoutImage = text.replace(/https?:\/\/.*\.(?:png|jpg|gif|mp4|webm|mov|jpeg)/g, '');
   const createdAt = new Date(event.created_at * 1000);
   const hrefProfile = `/profile/${nip19.npubEncode(pubkey)}`;

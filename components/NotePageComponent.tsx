@@ -67,7 +67,7 @@ const NotePageComponent: React.FC<NotePageComponentProps> = ({ id }) => {
             showViewNoteCardButton={false}
           />
         )}
-        {event.kind === 21 && (
+        {(event.kind === 21 || event.kind === 22) && (
           <NoteCard
             key={event.id}
             pubkey={event.pubkey}
