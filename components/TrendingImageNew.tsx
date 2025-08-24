@@ -52,7 +52,7 @@ const TrendingImageNew: React.FC<TrendingImageNewProps> = ({ event }) => {
       // Create nevent with relay hints
     const nevent = nip19.neventEncode({
         id: event.id,
-        relays: event.relays || []
+        relays: []
     });
     const hrefNote = `/note/${nevent}`;
   const profileImageSrc = userData?.picture || "https://robohash.org/" + event.pubkey;

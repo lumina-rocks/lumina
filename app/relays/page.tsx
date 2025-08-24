@@ -79,7 +79,8 @@ export default function RelaysPage() {
         "wss://relay.nostr.band",
         "wss://relay.damus.io",
         "wss://nos.lol",
-        "wss://relay.nostr.ch"
+        "wss://relay.nostr.ch",
+        "wss://profiles.nostr1.com"
       ];
       
       // Fetch NIP-65 relays

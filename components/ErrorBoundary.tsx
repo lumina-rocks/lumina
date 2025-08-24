@@ -17,7 +17,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     // Check if this is a nostr-related error that we want to suppress
-    if (this.isNostrError(error)) {
+    if (ErrorBoundary.isNostrError(error)) {
       console.warn('Suppressed nostr error in ErrorBoundary:', error);
       return { hasError: false }; // Don't show error UI
     }
@@ -27,7 +27,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     // Check if this is a nostr-related error that we want to suppress
-    if (this.isNostrError(error)) {
+    if (ErrorBoundary.isNostrError(error)) {
       console.warn('Suppressed nostr error in ErrorBoundary:', error);
       return; // Don't log or handle the error
     }
@@ -35,7 +35,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
     console.error('Error caught by ErrorBoundary:', error, errorInfo);
   }
 
-  private static isNostrError(error: Error): boolean {
+  static isNostrError(error: Error): boolean {
     const message = error.message || '';
     const stack = error.stack || '';
     

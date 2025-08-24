@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { useNostrEvents } from "nostr-react";
+import { useNostrEvents, useProfile } from "nostr-react";
 import { nip19 } from "nostr-tools";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,45 @@ import QuickViewKind20NoteCard from "./QuickViewKind20NoteCard";
 import { getImageUrl, getThumbnailUrl } from "@/utils/utils";
 import Link from "next/link";
 import { Play } from "lucide-react";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
+
+// Component to display profile picture with optional play button
+const ProfilePictureCard: React.FC<{ 
+  pubkey: string; 
+  eventId: string; 
+  showPlayButton: boolean; 
+}> = ({ pubkey, eventId, showPlayButton }) => {
+  const { data: userData } = useProfile({
+    pubkey,
+  });
+  
+  const profileImageSrc = userData?.picture || `https://robohash.org/${pubkey}`;
+  
+  return (
+    <div className="relative aspect-square w-full bg-gray-800 rounded-xl flex items-center justify-center overflow-hidden">
+      <Avatar className="w-full h-full rounded-xl">
+        <AvatarImage 
+          src={profileImageSrc} 
+          className="w-full h-full object-cover"
+        />
+      </Avatar>
+      {showPlayButton && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="bg-white bg-opacity-80 rounded-full p-3">
+            <Play className="w-8 h-8 text-black" />
+          </div>
+        </div>
+      )}
+      <Link 
+        href={`/note/${nip19.neventEncode({
+          id: eventId,
+          relays: []
+        })}`} 
+        className="absolute inset-0" 
+      />
+    </div>
+  );
+};
 
 // Function to extract video URL from imeta tags
 const getVideoUrl = (tags: string[][]): string | null => {
@@ -81,32 +120,26 @@ const ProfileQuickViewFeed: React.FC<ProfileQuickViewFeedProps> = ({ pubkey }) =
                 );
               }
               
-              // For videos without thumbnails, show a placeholder
+              // For videos without thumbnails, show profile picture with play button
               if (isVideo && videoUrl) {
                 return (
-                  <div key={event.id} className="relative aspect-square w-full bg-gray-800 rounded-xl flex items-center justify-center">
-                                      <div className="bg-white bg-opacity-80 rounded-full p-3">
-                    <Play className="w-8 h-8 text-black" />
-                  </div>
-                    <Link href={`/note/${nip19.neventEncode({
-                      id: event.id,
-                      relays: []
-                    })}`} className="absolute inset-0" />
-                  </div>
+                  <ProfilePictureCard 
+                    key={event.id} 
+                    pubkey={event.pubkey} 
+                    eventId={event.id}
+                    showPlayButton={true}
+                  />
                 );
               }
               
-              // Fallback for text-only content
+              // Fallback for text-only content - show profile picture
               return (
-                <div key={event.id} className="relative aspect-square w-full bg-gray-100 rounded-xl flex items-center justify-center p-4">
-                  <div className="text-center text-gray-500">
-                    <p className="text-sm line-clamp-3">{event.content}</p>
-                  </div>
-                  <Link href={`/note/${nip19.neventEncode({
-                    id: event.id,
-                    relays: []
-                  })}`} className="absolute inset-0" />
-                </div>
+                <ProfilePictureCard 
+                  key={event.id} 
+                  pubkey={event.pubkey} 
+                  eventId={event.id}
+                  showPlayButton={false}
+                />
               );
             })}
           </>

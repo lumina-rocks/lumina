@@ -47,7 +47,7 @@ export default function ViewCopyButton({ event }: ViewCopyButtonProps) {
             // Create nevent with relay hints
             const nevent = nip19.neventEncode({
                 id: event.id,
-                relays: event.relays || []
+                relays: []
             });
             await navigator.clipboard.writeText(nevent);
             toast({
@@ -82,7 +82,7 @@ export default function ViewCopyButton({ event }: ViewCopyButtonProps) {
                     <div className="flex items-center mb-4">
                         <Input ref={inputRefID} value={nip19.neventEncode({
                             id: event.id,
-                            relays: event.relays || []
+                            relays: []
                         })} disabled className="mr-2" />
                         <Button variant="outline" onClick={handleCopyNoteId}>Copy Event ID</Button>
                     </div>

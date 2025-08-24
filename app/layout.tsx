@@ -19,6 +19,7 @@ export default function RootLayout({
   const [relayUrls, setRelayUrls] = useState<string[]>([
     "wss://relay.nostr.band",
     "wss://relay.damus.io",
+    "wss://profiles.nostr1.com"
   ]);
 
   useEffect(() => {

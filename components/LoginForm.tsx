@@ -60,7 +60,8 @@ export function LoginForm() {
         "wss://relay.nostr.band",
         "wss://relay.damus.io",
         "wss://nos.lol",
-        "wss://relay.nostr.ch"
+        "wss://relay.nostr.ch",
+        "wss://profiles.nostr1.com"
     ];
 
     // Helper function to load NIP-65 relays for a user
