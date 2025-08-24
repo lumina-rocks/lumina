@@ -118,6 +118,10 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
   
   const title =
     userData?.username || userData?.display_name || userData?.name || userData?.npub || nip19.npubEncode(pubkey)
+  
+  // Extract title from event tags
+  const eventTitle = tags.find(tag => tag[0] === 'title')?.[1] || ''
+  
   text = text.replaceAll("\n", " ")
   const createdAt = new Date(event.created_at * 1000)
   const hrefProfile = `/profile/${nip19.npubEncode(pubkey)}`
@@ -219,6 +223,11 @@ const KIND20Card: React.FC<KIND20CardProps> = ({
               )}
             </div>
             <div className="p-4">
+              {eventTitle && (
+                <div className="mb-3">
+                  <h3 className="font-bold text-lg">{eventTitle}</h3>
+                </div>
+              )}
               <div className="break-word overflow-hidden">{renderTextWithLinkedTags(text, tags)}</div>
               <hr className="my-4" />
               <div className="space-x-4 flex justify-between items-start">

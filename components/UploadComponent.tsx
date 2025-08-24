@@ -215,16 +215,29 @@ const UploadComponent: React.FC = () => {
 
     const formData = new FormData(event.currentTarget)
     const desc = formData.get("description") as string
+    const title = formData.get("title") as string
     let file = formData.get("file") as File
     let sha256 = ""
     let finalNoteContent = desc
     let finalFileUrl = ""
     console.log("File:", file)
+    console.log("File type:", typeof file)
+    console.log("File is null:", file === null)
+    console.log("File is undefined:", file === undefined)
 
 
 
-    if (!desc && !file.size && !imageUrl) {
+    const hasFile = file && file.size && file.size > 0
+    if (!desc && !hasFile && !imageUrl) {
       alert("Please enter a description and/or upload a file or provide an image URL")
+      setIsLoading(false)
+      return
+    }
+
+    // Check if user is authenticated
+    const pubkey = window.localStorage.getItem("pubkey")
+    if (!loginType || !pubkey) {
+      alert("You must be logged in to upload files. Please log in and try again.")
       setIsLoading(false)
       return
     }
@@ -280,9 +293,24 @@ const UploadComponent: React.FC = () => {
         }
 
         console.log(authEvent)
+        console.log("Login type:", loginType)
+        console.log("Pubkey from localStorage:", pubkey)
 
         // Sign auth event
-        const authEventSigned = (await signEvent(loginType, authEvent)) as NostrEvent
+        let authEventSigned: NostrEvent
+        try {
+          const signedEvent = await signEvent(loginType, authEvent)
+          if (!signedEvent) {
+            throw new Error("Failed to sign event - no signed event returned")
+          }
+          authEventSigned = signedEvent
+        } catch (error) {
+          console.error("Error signing event:", error)
+          alert(`Authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}. Please check your login and try again.`)
+          setIsLoading(false)
+          return
+        }
+        
         // authEventSigned as base64 encoded string
         const authString = Buffer.from(JSON.stringify(authEventSigned)).toString("base64")
 
@@ -374,7 +402,18 @@ const UploadComponent: React.FC = () => {
             let signedEvent: NostrEvent | null = null
 
             // Sign the actual note
-            signedEvent = (await signEvent(loginType, noteEvent)) as NostrEvent
+            try {
+              const signedNoteEvent = await signEvent(loginType, noteEvent)
+              if (!signedNoteEvent) {
+                throw new Error("Failed to sign note event - no signed event returned")
+              }
+              signedEvent = signedNoteEvent
+            } catch (error) {
+              console.error("Error signing note event:", error)
+              // Don't show alert for this error since the auth event already succeeded
+              // Just log it and continue if possible
+              console.warn("Note signing failed, but continuing...")
+            }
 
             // If we got a signed event, publish it to nostr
             if (signedEvent) {
@@ -445,7 +484,18 @@ const UploadComponent: React.FC = () => {
         let signedEvent: NostrEvent | null = null
 
         // Sign the actual note
-        signedEvent = (await signEvent(loginType, noteEvent)) as NostrEvent
+        try {
+          const signedNoteEvent = await signEvent(loginType, noteEvent)
+          if (!signedNoteEvent) {
+            throw new Error("Failed to sign note event - no signed event returned")
+          }
+          signedEvent = signedNoteEvent
+        } catch (error) {
+          console.error("Error signing note event:", error)
+          // Don't show alert for this error since the auth event already succeeded
+          // Just log it and continue if possible
+          console.warn("Note signing failed, but continuing...")
+        }
 
         // If we got a signed event, publish it to nostr
         if (signedEvent) {
@@ -663,17 +713,33 @@ const UploadComponent: React.FC = () => {
               </div>
             </div>
             
-            <div className="pt-4">
+            <div className="pt-4 space-y-2">
               {isLoading ? (
                 <Button className="w-full" disabled>
                   <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
                   {uploadMethod === "file" ? "Uploading..." : "Publishing..."}
                 </Button>
               ) : (
-                <Button type="submit" className="w-full">
-                  <UploadIcon className="mr-2 h-4 w-4" />
-                  Share to Nostr
-                </Button>
+                <>
+                  <Button type="submit" className="w-full">
+                    <UploadIcon className="mr-2 h-4 w-4" />
+                    Share to Nostr
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => {
+                      // Reset form and close modal
+                      setTitle("")
+                      setImageUrl("")
+                      setPreviewUrl("")
+                      setIsLoading(false)
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </>
               )}
             </div>
           </form>
