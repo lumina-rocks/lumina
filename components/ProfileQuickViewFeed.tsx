@@ -5,7 +5,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import QuickViewKind20NoteCard from "./QuickViewKind20NoteCard";
 import { getImageUrl } from "@/utils/utils";
-import { PlayIcon } from "@radix-ui/react-icons";
 import Link from "next/link";
 
 // Function to extract video URL from imeta tags
@@ -64,41 +63,22 @@ const ProfileQuickViewFeed: React.FC<ProfileQuickViewFeedProps> = ({ pubkey }) =
               const isVideo = event.kind === 21 || event.kind === 22;
               const videoUrl = isVideo ? getVideoUrl(event.tags) : null;
               
-              if (imageUrl) {
+              // Use QuickViewKind20NoteCard for all content with images or videos
+              if (imageUrl || (isVideo && videoUrl)) {
                 return (
                   <QuickViewKind20NoteCard
                     key={event.id}
                     pubkey={event.pubkey}
                     text={event.content}
-                    image={imageUrl}
+                    image={imageUrl || videoUrl || ""} // Use video URL as fallback image
                     event={event}
                     tags={event.tags}
                     eventId={event.id}
                     linkToNote={true}
                   />
                 );
-              } else if (isVideo && videoUrl) {
-                // Create a video thumbnail with play button overlay
-                return (
-                  <div key={event.id} className="relative aspect-square w-full group cursor-pointer">
-                    <video
-                      src={videoUrl}
-                      className="w-full h-full object-cover rounded-xl"
-                      muted
-                      preload="metadata"
-                    />
-                    <div className="absolute inset-0 bg-black bg-opacity-20 rounded-xl flex items-center justify-center">
-                      <div className="bg-white bg-opacity-80 rounded-full p-3">
-                        <PlayIcon className="h-6 w-6 text-black" />
-                      </div>
-                    </div>
-                    <Link href={`/note/${nip19.neventEncode({
-                      id: event.id,
-                      relays: []
-                    })}`} className="absolute inset-0" />
-                  </div>
-                );
               }
+              
               // Fallback for text-only content
               return (
                 <div key={event.id} className="relative aspect-square w-full bg-gray-100 rounded-xl flex items-center justify-center p-4">

@@ -5,6 +5,20 @@ import CommentsCompontent from "@/components/CommentsCompontent";
 import KIND20Card from "./KIND20Card";
 import { getImageUrl } from "@/utils/utils";
 
+// Function to extract video URL from imeta tags
+const getVideoUrl = (tags: string[][]): string | null => {
+  for (const tag of tags) {
+    if (tag[0] === 'imeta') {
+      for (let i = 1; i < tag.length; i++) {
+        if (tag[i].startsWith('url ')) {
+          return tag[i].substring(4);
+        }
+      }
+    }
+  }
+  return null;
+};
+
 interface NotePageComponentProps {
   id: string;
 }
@@ -47,6 +61,20 @@ const NotePageComponent: React.FC<NotePageComponentProps> = ({ id }) => {
             pubkey={event.pubkey}
             text={event.content}
             image={getImageUrl(event.tags)}
+            eventId={event.id}
+            tags={event.tags}
+            event={event}
+            showViewNoteCardButton={false}
+          />
+        )}
+        {event.kind === 21 && (
+          <NoteCard
+            key={event.id}
+            pubkey={event.pubkey}
+            text={(() => {
+              const videoUrl = getVideoUrl(event.tags);
+              return videoUrl ? `${event.content}\n${videoUrl}` : event.content;
+            })()}
             eventId={event.id}
             tags={event.tags}
             event={event}

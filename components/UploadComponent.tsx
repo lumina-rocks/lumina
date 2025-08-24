@@ -27,6 +27,249 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
+// File type detection functions
+const getFileTypeFromUrl = (url: string): string | null => {
+  try {
+    const urlObj = new URL(url)
+    const pathname = urlObj.pathname.toLowerCase()
+    const extension = pathname.split('.').pop()
+    
+    if (!extension) return null
+    
+    // Image extensions
+    const imageExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'apng', 'avif']
+    if (imageExtensions.includes(extension)) {
+      return 'image'
+    }
+    
+    // Video extensions
+    const videoExtensions = ['mp4', 'webm', 'mov', 'avi', 'm4v', 'mkv', 'm4a']
+    if (videoExtensions.includes(extension)) {
+      return 'video'
+    }
+    
+    return null
+  } catch {
+    return null
+  }
+}
+
+const getFileTypeFromFile = (file: File): string => {
+  if (file.type.startsWith('image/')) {
+    return 'image'
+  } else if (file.type.startsWith('video/') || file.type.startsWith('audio/')) {
+    return 'video'
+  }
+  return 'unknown'
+}
+
+const getKindFromFileType = (fileType: string): string => {
+  switch (fileType) {
+    case 'image':
+      return '20'
+    case 'video':
+      return '21' // Default to normal video, user can change to 22 if needed
+    default:
+      return '20' // Default fallback
+  }
+}
+
+const isValidKindForFileType = (kind: string, fileType: string): boolean => {
+  if (fileType === 'image') {
+    return kind === '20'
+  } else if (fileType === 'video') {
+    return kind === '21' || kind === '22'
+  }
+  return false
+}
+
+// Reference validation functions
+const isValidHexId = (value: string): boolean => {
+  return /^[a-fA-F0-9]{64}$/.test(value)
+}
+
+const isValidNoteId = (value: string): boolean => {
+  return value.startsWith('note') && value.length > 5
+}
+
+const isValidNEvent = (value: string): boolean => {
+  return value.startsWith('nevent') && value.length > 7
+}
+
+const isValidNAddr = (value: string): boolean => {
+  return value.startsWith('naddr') && value.length > 6
+}
+
+const isValidUrl = (value: string): boolean => {
+  try {
+    new URL(value)
+    return true
+  } catch {
+    return false
+  }
+}
+
+const validateReference = (type: "e" | "a" | "u", value: string): { isValid: boolean; error?: string } => {
+  if (!value.trim()) {
+    return { isValid: true } // Empty is valid (optional field)
+  }
+
+  // Remove "nostr:" prefix for validation
+  let valueToValidate = value.trim()
+  if (valueToValidate.startsWith('nostr:')) {
+    valueToValidate = valueToValidate.substring(6)
+  }
+
+  switch (type) {
+    case "e":
+      // Accept hex IDs, note..., nevent..., or URLs containing them
+      if (isValidHexId(valueToValidate) || isValidNoteId(valueToValidate) || isValidNEvent(valueToValidate) || 
+          valueToValidate.includes('note') || valueToValidate.includes('nevent') || /^[a-fA-F0-9]{64}$/.test(valueToValidate)) {
+        return { isValid: true }
+      }
+      return { 
+        isValid: false, 
+        error: "Invalid event reference. Must be a 64-character hex ID, note..., nevent..., or URL containing them" 
+      }
+    
+    case "a":
+      // Accept naddr... or URLs containing them
+      if (isValidNAddr(valueToValidate) || valueToValidate.includes('naddr')) {
+        return { isValid: true }
+      }
+      return { 
+        isValid: false, 
+        error: "Invalid address reference. Must be an naddr... or URL containing it" 
+      }
+    
+    case "u":
+      if (isValidUrl(value)) {
+        return { isValid: true }
+      }
+      return { 
+        isValid: false, 
+        error: "Invalid URL. Must be a valid URL starting with http:// or https://" 
+      }
+    
+    default:
+      return { isValid: false, error: "Unknown reference type" }
+  }
+}
+
+// Normalization functions
+const normalizeEventReference = (value: string): string => {
+  // Remove "nostr:" prefix if present
+  let trimmed = value.trim()
+  if (trimmed.startsWith('nostr:')) {
+    trimmed = trimmed.substring(6)
+  }
+  
+  // If it's already a hex ID, return as is
+  if (isValidHexId(trimmed)) {
+    return trimmed.toLowerCase()
+  }
+  
+  // If it's a note..., extract the hex ID
+  if (isValidNoteId(trimmed)) {
+    try {
+      const decoded = nip19.decode(trimmed)
+      if (decoded.type === 'note' && typeof decoded.data === 'object' && decoded.data !== null && 'id' in decoded.data) {
+        return (decoded.data as { id: string }).id
+      }
+    } catch {
+      // If decoding fails, return as is
+      return trimmed
+    }
+  }
+  
+  // If it's a nevent..., extract the hex ID
+  if (isValidNEvent(trimmed)) {
+    try {
+      const decoded = nip19.decode(trimmed)
+      if (decoded.type === 'nevent' && typeof decoded.data === 'object' && decoded.data !== null && 'id' in decoded.data) {
+        return (decoded.data as { id: string }).id
+      }
+    } catch {
+      // If decoding fails, return as is
+      return trimmed
+    }
+  }
+  
+  // If it's a URL that might contain a note ID, try to extract it
+  if (trimmed.includes('note') || trimmed.includes('nevent')) {
+    const noteMatch = trimmed.match(/(note[a-zA-Z0-9]+)/)
+    const neventMatch = trimmed.match(/(nevent[a-zA-Z0-9]+)/)
+    
+    if (noteMatch) {
+      return normalizeEventReference(noteMatch[1])
+    }
+    if (neventMatch) {
+      return normalizeEventReference(neventMatch[1])
+    }
+  }
+  
+  // If it's a hex ID but with different casing, normalize to lowercase
+  if (/^[a-fA-F0-9]{64}$/.test(trimmed)) {
+    return trimmed.toLowerCase()
+  }
+  
+  return trimmed
+}
+
+const normalizeAddressReference = (value: string): string => {
+  // Remove "nostr:" prefix if present
+  let trimmed = value.trim()
+  if (trimmed.startsWith('nostr:')) {
+    trimmed = trimmed.substring(6)
+  }
+  
+  // If it's already an naddr..., return as is
+  if (isValidNAddr(trimmed)) {
+    return trimmed
+  }
+  
+  // If it's a URL that might contain an naddr, try to extract it
+  if (trimmed.includes('naddr')) {
+    const naddrMatch = trimmed.match(/(naddr[a-zA-Z0-9]+)/)
+    if (naddrMatch) {
+      return naddrMatch[1]
+    }
+  }
+  
+  return trimmed
+}
+
+const normalizeUrl = (value: string): string => {
+  const trimmed = value.trim()
+  
+  try {
+    const url = new URL(trimmed)
+    // Normalize to lowercase protocol and hostname
+    url.protocol = url.protocol.toLowerCase()
+    url.hostname = url.hostname.toLowerCase()
+    // Remove trailing slash from pathname if it's just a slash
+    if (url.pathname === '/') {
+      url.pathname = ''
+    }
+    return url.toString()
+  } catch {
+    return trimmed
+  }
+}
+
+const normalizeReference = (type: "e" | "a" | "u", value: string): string => {
+  switch (type) {
+    case "e":
+      return normalizeEventReference(value)
+    case "a":
+      return normalizeAddressReference(value)
+    case "u":
+      return normalizeUrl(value)
+    default:
+      return value
+  }
+}
+
 // Function to strip metadata from image files
 async function stripImageMetadata(file: File): Promise<File> {
   return new Promise((resolve, reject) => {
@@ -118,6 +361,9 @@ const UploadComponent: React.FC = () => {
   const [enableNip89, setEnableNip89] = useState(false)
   const [selectedKind, setSelectedKind] = useState("20")
   const [title, setTitle] = useState("")
+  const [detectedFileType, setDetectedFileType] = useState<string | null>(null)
+  const [referenceType, setReferenceType] = useState<"e" | "a" | "u">("e")
+  const [referenceValue, setReferenceValue] = useState("")
 
   const { events, isLoading: isNoteLoading } = useNostrEvents({
     filter: shouldFetch
@@ -168,6 +414,15 @@ const UploadComponent: React.FC = () => {
         setPreviewUrl(url)
       }
 
+      // Detect file type and auto-select kind
+      const fileType = getFileTypeFromFile(file)
+      setDetectedFileType(fileType)
+      
+      if (fileType !== 'unknown') {
+        const suggestedKind = getKindFromFileType(fileType)
+        setSelectedKind(suggestedKind)
+      }
+
       // Optional: Bereinigung alter URLs
       return () => URL.revokeObjectURL(url)
     }
@@ -177,6 +432,19 @@ const UploadComponent: React.FC = () => {
     const url = event.target.value
     setImageUrl(url)
     setPreviewUrl(url)
+    
+    // Detect file type from URL and auto-select kind
+    if (url) {
+      const fileType = getFileTypeFromUrl(url)
+      setDetectedFileType(fileType)
+      
+      if (fileType) {
+        const suggestedKind = getKindFromFileType(fileType)
+        setSelectedKind(suggestedKind)
+      }
+    } else {
+      setDetectedFileType(null)
+    }
   }
 
   const handleTextChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
@@ -185,10 +453,10 @@ const UploadComponent: React.FC = () => {
     // Replace links only if they contain https://lumina.rocks
     let updatedValue = value;
     
-    // Replace https://lumina.rocks/profile/npub1... with "nostr:npub1..."
+    // Replace https://lumina.rocks/profile/npub... with "nostr:npub..."
     updatedValue = updatedValue.replace(/https:\/\/lumina\.rocks\/profile\/(npub[1-9a-zA-Z]{0,64})/g, "nostr:$1");
     
-    // Replace https://lumina.rocks/note/note1... with "nostr:note1..."
+    // Replace https://lumina.rocks/note/note... with "nostr:note..."
     updatedValue = updatedValue.replace(/https:\/\/lumina\.rocks\/note\/(note[1-9a-zA-Z]{0,64})/g, "nostr:$1");
     
     // Update the textarea with the modified value
@@ -202,11 +470,25 @@ const UploadComponent: React.FC = () => {
   }
 
   const handleKindChange = (value: string) => {
+    // Validate that the selected kind is compatible with the detected file type
+    if (detectedFileType && !isValidKindForFileType(value, detectedFileType)) {
+      alert(`Invalid kind selection: Kind ${value} is not compatible with ${detectedFileType} files.`)
+      return
+    }
     setSelectedKind(value)
   }
 
   const handleTitleChange = (event: ChangeEvent<HTMLInputElement>) => {
     setTitle(event.target.value)
+  }
+
+  const handleReferenceTypeChange = (value: string) => {
+    setReferenceType(value as "e" | "a" | "u")
+    setReferenceValue("") // Clear the value when type changes
+  }
+
+  const handleReferenceValueChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setReferenceValue(event.target.value)
   }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -232,6 +514,23 @@ const UploadComponent: React.FC = () => {
       alert("Please enter a description and/or upload a file or provide an image URL")
       setIsLoading(false)
       return
+    }
+
+    // Validate kind and file type compatibility
+    if (detectedFileType && !isValidKindForFileType(selectedKind, detectedFileType)) {
+      alert(`Invalid combination: Kind ${selectedKind} cannot be used with ${detectedFileType} files.`)
+      setIsLoading(false)
+      return
+    }
+
+    // Validate reference if provided
+    if (referenceValue.trim()) {
+      const validation = validateReference(referenceType, referenceValue)
+      if (!validation.isValid) {
+        alert(validation.error)
+        setIsLoading(false)
+        return
+      }
     }
 
     // Check if user is authenticated
@@ -330,7 +629,8 @@ const UploadComponent: React.FC = () => {
 
             const noteTags = [
               ...(title ? [["title", title]] : []),
-              ...hashtags.map((tag) => ["t", tag])
+              ...hashtags.map((tag) => ["t", tag]),
+              ...(referenceValue.trim() ? [[referenceType, normalizeReference(referenceType, referenceValue)]] : [])
             ]
 
             let blurhash = ""
@@ -446,7 +746,8 @@ const UploadComponent: React.FC = () => {
         const createdAt = Math.floor(Date.now() / 1000)
         const noteTags = [
           ...(title ? [["title", title]] : []),
-          ...hashtags.map((tag) => ["t", tag])
+          ...hashtags.map((tag) => ["t", tag]),
+          ...(referenceValue.trim() ? [[referenceType, normalizeReference(referenceType, referenceValue)]] : [])
         ]
 
         // Add the image URL directly to the note
@@ -525,11 +826,15 @@ const UploadComponent: React.FC = () => {
         <CardHeader>
           <CardTitle>Share Content</CardTitle>
           <CardDescription>
-            {selectedKind === "20" 
-              ? "Upload an image with your description to the Nostr network"
-              : selectedKind === "21"
-              ? "Upload a normal video with your description to the Nostr network"
-              : "Upload a short video with your description to the Nostr network"
+            {detectedFileType 
+              ? `${detectedFileType === 'image' 
+                  ? 'Upload an image' 
+                  : 'Upload a video'} with your description to the Nostr network (Kind ${selectedKind})`
+              : selectedKind === "20" 
+                ? "Upload an image with your description to the Nostr network"
+                : selectedKind === "21"
+                ? "Upload a normal video with your description to the Nostr network"
+                : "Upload a short video with your description to the Nostr network"
             }
           </CardDescription>
         </CardHeader>
@@ -565,7 +870,7 @@ const UploadComponent: React.FC = () => {
               <Tabs defaultValue="file" searchParam="upload-method">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="file">Upload File</TabsTrigger>
-                  <TabsTrigger value="url">Image URL</TabsTrigger>
+                  <TabsTrigger value="url">Media URL</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="file" className="space-y-4">
@@ -674,16 +979,32 @@ const UploadComponent: React.FC = () => {
               <div className="flex flex-row items-center justify-between">
                 <div className="flex flex-col space-y-1">
                   <Label htmlFor="kind-choice">Note Kind</Label>
-                  <p className="text-xs text-muted-foreground">Choose the type of note to publish</p>
+                  <p className="text-xs text-muted-foreground">
+                    {detectedFileType 
+                      ? `Detected: ${detectedFileType} file - ${detectedFileType === 'image' ? 'Use Kind 20 for images' : 'Use Kind 21/22 for videos'}`
+                      : "Choose the type of note to publish"
+                    }
+                    {detectedFileType && (
+                      <span className="ml-1 text-xs text-green-600 font-medium">
+                        (Auto-selected)
+                      </span>
+                    )}
+                  </p>
                 </div>
                 <Select onValueChange={handleKindChange} value={selectedKind}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder={selectedKind} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="20">Kind 20 - Picture Event</SelectItem>
-                    <SelectItem value="21">Kind 21 - Normal Video</SelectItem>
-                    <SelectItem value="22">Kind 22 - Short Video</SelectItem>
+                    <SelectItem value="20" disabled={detectedFileType === 'video'}>
+                      Kind 20 - Picture Event
+                    </SelectItem>
+                    <SelectItem value="21" disabled={detectedFileType === 'image'}>
+                      Kind 21 - Normal Video
+                    </SelectItem>
+                    <SelectItem value="22" disabled={detectedFileType === 'image'}>
+                      Kind 22 - Short Video
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -711,6 +1032,64 @@ const UploadComponent: React.FC = () => {
                 </div>
                 <Switch id="nip89-toggle" checked={enableNip89} onCheckedChange={setEnableNip89} />
               </div>
+              
+              <div className="space-y-3">
+                <div className="flex flex-row items-center justify-between">
+                  <div className="flex flex-col space-y-1">
+                    <Label htmlFor="reference-type">Reference Type</Label>
+                    <p className="text-xs text-muted-foreground">Add a reference to another event, address, or URL</p>
+                  </div>
+                  <Select onValueChange={handleReferenceTypeChange} value={referenceType}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder={referenceType} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="e">Event (e)</SelectItem>
+                      <SelectItem value="a">Address (a)</SelectItem>
+                      <SelectItem value="u">URL (u)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="reference-value">
+                    Reference Value
+                    {referenceType === "e" && " (nostr:note..., note..., nevent..., hex ID, or URL)"}
+                    {referenceType === "a" && " (nostr:naddr..., naddr..., or URL)"}
+                    {referenceType === "u" && " (URL)"}
+                  </Label>
+                  <Input
+                    id="reference-value"
+                    name="reference-value"
+                    type="text"
+                    placeholder={
+                      referenceType === "e" 
+                        ? "nostr:note... or note... or nevent... or hex ID or URL"
+                        : referenceType === "a"
+                        ? "nostr:naddr... or naddr... or URL containing naddr"
+                        : "https://example.com"
+                    }
+                    value={referenceValue}
+                    onChange={handleReferenceValueChange}
+                    className="w-full"
+                  />
+                  {referenceValue.trim() && (
+                    <div className="space-y-1">
+                      <p className={`text-xs ${validateReference(referenceType, referenceValue).isValid ? 'text-green-600' : 'text-red-600'}`}>
+                        {validateReference(referenceType, referenceValue).isValid 
+                          ? "✓ Valid reference" 
+                          : validateReference(referenceType, referenceValue).error
+                        }
+                      </p>
+                      {validateReference(referenceType, referenceValue).isValid && (
+                        <p className="text-xs text-blue-600">
+                          Will be stored as: {normalizeReference(referenceType, referenceValue)}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
             
             <div className="pt-4 space-y-2">
@@ -734,6 +1113,10 @@ const UploadComponent: React.FC = () => {
                       setTitle("")
                       setImageUrl("")
                       setPreviewUrl("")
+                      setDetectedFileType(null)
+                      setSelectedKind("20")
+                      setReferenceType("e")
+                      setReferenceValue("")
                       setIsLoading(false)
                     }}
                   >

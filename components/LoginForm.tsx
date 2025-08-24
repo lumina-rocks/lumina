@@ -296,7 +296,7 @@ export function LoginForm() {
                 let input = npubInput.current.value;
                 let npub = null;
                 let pubkey = null;
-                if(input.startsWith("npub1")) {
+                if(input.startsWith("npub")) {
                     npub = input;
                     pubkey = nip19.decode(input).data.toString();
                 } else {
@@ -411,7 +411,7 @@ export function LoginForm() {
                                 <div className="grid gap-2">
                                     <Label htmlFor="npub">npub</Label>
                                     <Input 
-                                        placeholder="npub1..." 
+                                        placeholder="npub..." 
                                         id="npub" 
                                         ref={npubInput} 
                                         type="text" 

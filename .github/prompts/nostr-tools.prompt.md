@@ -131,11 +131,11 @@ for (let block of nip27.parse(evt.content)) {
       break
     case 'reference': {
       if ('id' in block.pointer) {
-        console.log("it's a nevent1 uri", block.pointer)
+        console.log("it's a nevent uri", block.pointer)
       } else if ('identifier' in block.pointer) {
-        console.log("it's a naddr1 uri", block.pointer)
+        console.log("it's a naddr uri", block.pointer)
       } else {
-        console.log("it's an npub1 or nprofile1 uri", block.pointer)
+        console.log("it's an npub or nprofile uri", block.pointer)
       }
       break
     }

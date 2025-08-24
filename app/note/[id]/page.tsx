@@ -14,7 +14,7 @@ export default function NotePage() {
   const params = useParams()
   let id = params.id
 
-  if (id.includes("note1")) {
+  if (id.includes("note")) {
     id = nip19.decode(id.toString()).data.toString()
   } else if (id.includes("nevent")) {
     const decoded = nip19.decode(id.toString())
