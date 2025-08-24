@@ -19,17 +19,33 @@ const VideoReel: React.FC<VideoReelProps> = ({ event, isActive }) => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
-  // Extract video URL from imeta tags
+  // Extract video URL from imeta tags or r tags
   const getVideoUrl = (tags: string[][]) => {
+    // First check imeta tags for video URLs
     for (const tag of tags) {
       if (tag[0] === 'imeta') {
         for (let i = 1; i < tag.length; i++) {
           if (tag[i].startsWith('url ')) {
-            return tag[i].substring(4);
+            const url = tag[i].substring(4);
+            // Check if it's a video file
+            if (url.match(/\.(mp4|webm|mov|avi|mkv|m4v)$/i)) {
+              return url;
+            }
           }
         }
       }
     }
+    
+    // Then check r tags for video URLs
+    for (const tag of tags) {
+      if (tag[0] === 'r') {
+        const url = tag[1];
+        if (url.match(/\.(mp4|webm|mov|avi|mkv|m4v)$/i)) {
+          return url;
+        }
+      }
+    }
+    
     return null;
   };
 
@@ -133,6 +149,9 @@ const VideoReel: React.FC<VideoReelProps> = ({ event, isActive }) => {
             <div className="flex items-center space-x-4 text-xs opacity-80">
               <span>#{event.pubkey.slice(0, 6)}</span>
               <span>#{event.kind}</span>
+              {event.tags.some((tag: string[]) => tag[0] === 't' && tag[1] === 'reels') && (
+                <span className="bg-blue-500 px-2 py-1 rounded text-white">#reels</span>
+              )}
             </div>
           </div>
 
@@ -183,16 +202,51 @@ const ReelFeed: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
 
-  const { events } = useNostrEvents({
+  // Get all events that could be reels (kind 22, or have #reels tag, or are replied to with #reels)
+  const { events: kind22Events } = useNostrEvents({
     filter: {
       kinds: [22],
-      limit: 50,
+      limit: 100,
     },
   });
 
-  // Filter out NSFW content and replies
-  let filteredEvents = events.filter((event) => !event.tags.some((tag) => { return tag[0] == 't' && tag[1] == 'nsfw'}));
-  filteredEvents = filteredEvents.filter((event) => !event.tags.some((tag) => { return tag[0] == 'e' }));
+  const { events: reelsTaggedEvents } = useNostrEvents({
+    filter: {
+      "#t": ["reels"],
+      limit: 100,
+    },
+  });
+
+  // Get events that are replied to with #reels
+  const { events: reelsReplies } = useNostrEvents({
+    filter: {
+      "#t": ["reels"],
+      kinds: [1], // replies are typically kind 1
+      limit: 100,
+    },
+  });
+
+  // Extract the event IDs that are being replied to with #reels
+  const repliedToEventIds = reelsReplies
+    .map(event => event.tags.find(tag => tag[0] === 'e')?.[1])
+    .filter(id => id) as string[];
+
+  // Get the actual events that are being replied to
+  const { events: repliedToEvents } = useNostrEvents({
+    filter: {
+      ids: repliedToEventIds,
+      limit: 100,
+    },
+  });
+
+  // Combine all events and remove duplicates
+  const allEvents = [...kind22Events, ...reelsTaggedEvents, ...repliedToEvents];
+  const uniqueEvents = allEvents.filter((event, index, self) => 
+    index === self.findIndex(e => e.id === event.id)
+  );
+
+  // Filter out NSFW content
+  let filteredEvents = uniqueEvents.filter((event) => !event.tags.some((tag) => { return tag[0] == 't' && tag[1] == 'nsfw'}));
 
   useEffect(() => {
     setIsVisible(true);
@@ -222,8 +276,8 @@ const ReelFeed: React.FC = () => {
     return (
       <div className="h-screen bg-black flex items-center justify-center text-white">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">No Short Videos Found</h2>
-          <p className="text-gray-400">Check back later for new content!</p>
+          <h2 className="text-2xl font-bold mb-4">No Reels Found</h2>
+          <p className="text-gray-400">Try posting a kind 22 event or tag content with #reels!</p>
         </div>
       </div>
     );
