@@ -24,7 +24,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel"
 import ReactionButton from '@/components/ReactionButton';
-import { Avatar, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import ViewNoteButton from './ViewNoteButton';
 import Link from 'next/link';
 import { Event as NostrEvent } from "nostr-tools";
@@ -89,6 +89,7 @@ const NoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tags, event,
                     <div style={{ display: 'flex', alignItems: 'center' }}>
                       <Avatar>
                         <AvatarImage src={profileImageSrc} />
+                        <AvatarFallback>{title.charAt(0).toUpperCase()}</AvatarFallback>
                       </Avatar>
                       <span className='break-all' style={{ marginLeft: '10px' }}>{title}</span>
                     </div>
