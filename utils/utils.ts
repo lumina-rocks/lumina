@@ -2,6 +2,11 @@ import { Event as NostrEvent, finalizeEvent} from "nostr-tools";
 import { hexToBytes } from "@noble/hashes/utils"
 import { signEventWithBunker } from "./bunkerUtils";
 
+// Simple blacklist for pubkeys (can be expanded later)
+export const blacklistPubkeys = new Set<string>([
+  // Add any blacklisted pubkeys here if needed
+]);
+
 // Check if the event has nsfw or sexy tags
 export function hasNsfwContent(tags: string[][]): boolean {
   return tags.some(tag => 

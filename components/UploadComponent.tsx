@@ -111,6 +111,8 @@ const UploadComponent: React.FC = () => {
   const [shouldFetch, setShouldFetch] = useState(false)
   const [serverChoice, setServerChoice] = useState("blossom.band")
   const [enableNip89, setEnableNip89] = useState(false)
+  const [uploadMethod, setUploadMethod] = useState<"file" | "url">("file")
+  const [imageUrl, setImageUrl] = useState("")
 
   const { events, isLoading: isNoteLoading } = useNostrEvents({
     filter: shouldFetch
@@ -166,6 +168,44 @@ const UploadComponent: React.FC = () => {
     }
   }
 
+  const handleUrlChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const url = event.target.value
+    setImageUrl(url)
+    
+    // Set preview if URL looks like an image
+    if (url && (url.match(/\.(jpeg|jpg|gif|png|webp)$/i) || url.includes("imgur.com") || url.includes("image"))) {
+      setPreviewUrl(url)
+    } else {
+      setPreviewUrl("")
+    }
+  }
+
+  const fetchFileFromUrl = async (url: string): Promise<File | null> => {
+    try {
+      const response = await fetch(url)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.statusText}`)
+      }
+      
+      const blob = await response.blob()
+      
+      // Check if it's an image
+      if (!blob.type.startsWith('image/')) {
+        throw new Error('URL does not point to a valid image')
+      }
+      
+      // Create a file from the blob
+      const filename = url.split('/').pop() || 'image'
+      const file = new File([blob], filename, { type: blob.type })
+      
+      return file
+    } catch (error) {
+      console.error('Error fetching file from URL:', error)
+      alert(`Error fetching image from URL: ${error}`)
+      return null
+    }
+  }
+
   const handleTextChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
     const { value } = event.target
 
@@ -194,14 +234,32 @@ const UploadComponent: React.FC = () => {
 
     const formData = new FormData(event.currentTarget)
     const desc = formData.get("description") as string
-    let file = formData.get("file") as File
+    let file: File | null = null
+    
+    // Handle file upload vs URL upload
+    if (uploadMethod === "file") {
+      file = formData.get("file") as File
+      if (file && !file.size) {
+        file = null
+      }
+    } else if (uploadMethod === "url") {
+      const url = imageUrl.trim()
+      if (url) {
+        file = await fetchFileFromUrl(url)
+        if (!file) {
+          setIsLoading(false)
+          return
+        }
+      }
+    }
+    
     let sha256 = ""
     let finalNoteContent = desc
     let finalFileUrl = ""
     console.log("File:", file)
 
-    if (!desc && !file.size) {
-      alert("Please enter a description and/or upload a file")
+    if (!desc && !file) {
+      alert("Please enter a description and/or upload a file or provide an image URL")
       setIsLoading(false)
       return
     }
@@ -288,7 +346,7 @@ const UploadComponent: React.FC = () => {
               }
             }
 
-            if (finalFileUrl) {
+            if (finalFileUrl && file) {
               const image = new Image()
               image.src = URL.createObjectURL(file)
               await new Promise((resolve) => {
@@ -384,47 +442,106 @@ const UploadComponent: React.FC = () => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="file">Image</Label>
-              <div className="border-2 border-dashed rounded-lg p-6 transition-colors hover:border-primary/50 hover:bg-muted/50">
-                <div className="flex flex-col items-center space-y-4 text-center">
-                  {previewUrl ? (
-                    <div className="w-full rounded-md">
-                      <img 
-                        src={previewUrl} 
-                        alt="Preview"  
-                      />
-                    </div>
-                  ) : (
-                    <ImageIcon className="h-10 w-10 text-muted-foreground" />
-                  )}
-                  
-                  <div className="space-y-2">
-                    <div className="text-sm font-medium">
-                      {previewUrl ? "Replace image" : "Add image"}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      Supported formats: JPEG, PNG, WebP
-                    </div>
-                  </div>
-                  
-                  <label 
-                    htmlFor="file" 
-                    className={`relative cursor-pointer rounded-md px-4 py-2 text-sm font-medium ring-offset-background transition-colors 
-                      ${previewUrl ? 'bg-muted hover:bg-muted/80' : 'bg-primary text-primary-foreground hover:bg-primary/90'}`}
-                  >
-                    {previewUrl ? "Change file" : "Select file"}
-                    <Input
-                      id="file"
-                      name="file"
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={handleFileChange}
-                      className="sr-only"
-                    />
-                  </label>
-                </div>
+              <Label>Image Upload Method</Label>
+              <div className="flex space-x-4">
+                <button
+                  type="button"
+                  onClick={() => setUploadMethod("file")}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    uploadMethod === "file" 
+                      ? "bg-primary text-primary-foreground" 
+                      : "bg-muted hover:bg-muted/80"
+                  }`}
+                >
+                  Upload File
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUploadMethod("url")}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    uploadMethod === "url" 
+                      ? "bg-primary text-primary-foreground" 
+                      : "bg-muted hover:bg-muted/80"
+                  }`}
+                >
+                  From URL
+                </button>
               </div>
             </div>
+
+            {uploadMethod === "file" ? (
+              <div className="space-y-2">
+                <Label htmlFor="file">Image</Label>
+                <div className="border-2 border-dashed rounded-lg p-6 transition-colors hover:border-primary/50 hover:bg-muted/50">
+                  <div className="flex flex-col items-center space-y-4 text-center">
+                    {previewUrl ? (
+                      <div className="w-full rounded-md">
+                        <img 
+                          src={previewUrl} 
+                          alt="Preview"  
+                        />
+                      </div>
+                    ) : (
+                      <ImageIcon className="h-10 w-10 text-muted-foreground" />
+                    )}
+                    
+                    <div className="space-y-2">
+                      <div className="text-sm font-medium">
+                        {previewUrl ? "Replace image" : "Add image"}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Supported formats: JPEG, PNG, WebP
+                      </div>
+                    </div>
+                    
+                    <label 
+                      htmlFor="file" 
+                      className={`relative cursor-pointer rounded-md px-4 py-2 text-sm font-medium ring-offset-background transition-colors 
+                        ${previewUrl ? 'bg-muted hover:bg-muted/80' : 'bg-primary text-primary-foreground hover:bg-primary/90'}`}
+                    >
+                      {previewUrl ? "Change file" : "Select file"}
+                      <Input
+                        id="file"
+                        name="file"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={handleFileChange}
+                        className="sr-only"
+                      />
+                    </label>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="imageUrl">Image URL</Label>
+                <div className="space-y-4">
+                  <Input
+                    id="imageUrl"
+                    name="imageUrl"
+                    type="url"
+                    placeholder="https://example.com/image.jpg"
+                    value={imageUrl}
+                    onChange={handleUrlChange}
+                    className="w-full"
+                  />
+                  <div className="text-xs text-muted-foreground">
+                    Enter a direct link to an image (JPEG, PNG, WebP, GIF)
+                  </div>
+                  {previewUrl && (
+                    <div className="border rounded-lg p-4">
+                      <div className="text-sm font-medium mb-2">Preview:</div>
+                      <img 
+                        src={previewUrl} 
+                        alt="URL Preview" 
+                        className="max-w-full h-auto rounded-md"
+                        onError={() => setPreviewUrl("")}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <Separator className="my-4" />
             
