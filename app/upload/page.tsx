@@ -1,7 +1,7 @@
 'use client';
 
 import Head from "next/head";
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import UploadComponent from "@/components/UploadComponent";
 
 export default function UploadPage() {
@@ -26,7 +26,9 @@ export default function UploadPage() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <div className="py-2 px-2">
-        <UploadComponent />
+        <Suspense fallback={<div>Loading...</div>}>
+          <UploadComponent />
+        </Suspense>
       </div>
     </>
   );
