@@ -87,6 +87,41 @@ const ReelFeed: React.FC = () => {
       limit: 50,
     },
   });
+
+  // Fetch tagged events with reel-related hashtags
+  const reelTags = ['reels', 'reel', 'vlogs', 'vlog'];
+  const { events: taggedEvents } = useNostrEvents({
+    filter: {
+      kinds: [1],
+      "#t": reelTags,
+      limit: 100,
+    },
+  });
+
+  // Fetch replies that contain reel tags
+  const { events: replyEvents } = useNostrEvents({
+    filter: {
+      kinds: [1],
+      "#t": reelTags,
+      limit: 100,
+    },
+  });
+
+  // Extract event IDs that are being replied to
+  const repliedToEventIds = replyEvents
+    .filter(event => event.tags.some(tag => tag[0] === 'e'))
+    .map(event => event.tags.find(tag => tag[0] === 'e')?.[1])
+    .filter(Boolean) as string[];
+
+  // Fetch the original events that are being replied to
+  const { events: originalRepliedEvents } = useNostrEvents({
+    filter: {
+      kinds: [1],
+      ids: repliedToEventIds,
+      limit: 100,
+    },
+    enabled: repliedToEventIds.length > 0,
+  });
   
   // Helper function to extract video URL from imeta tags
   const getVideoUrl = (tags: string[][]): string | null => {
@@ -116,6 +151,17 @@ const ReelFeed: React.FC = () => {
     return null;
   };
 
+  // Helper function to check if content contains reel hashtags
+  const hasReelHashtags = (content: string): boolean => {
+    const lowerContent = content.toLowerCase();
+    return reelTags.some(tag => lowerContent.includes(`#${tag}`));
+  };
+
+  // Helper function to check if tags contain reel hashtags
+  const hasReelTagTags = (tags: string[][]): boolean => {
+    return tags.some(tag => tag[0] === 't' && reelTags.includes(tag[1].toLowerCase()));
+  };
+
     // Parse video events
   useEffect(() => {
     const allEvents = [...(followVideos || []), ...(globalVideos || [])];
@@ -133,22 +179,78 @@ const ReelFeed: React.FC = () => {
       const title = event.tags.find(tag => tag[0] === 'title')?.[1] || 'Untitled Video';
 
       parsedEvents.push({
-             id: event.id,
-             pubkey: event.pubkey,
-             created_at: event.created_at,
-             title,
-             description: event.content,
-             videoUrl,
-             imageUrl,
+            id: event.id,
+            pubkey: event.pubkey,
+            created_at: event.created_at,
+            title,
+            description: event.content,
+            videoUrl,
+            imageUrl,
         });
       
       seenIds.add(event.id); // Mark this event as seen
     });
 
-    // Sort by creation time (newest first)
-    parsedEvents.sort((a, b) => b.created_at - a.created_at);
-    setVideoEvents(parsedEvents);
-  }, [followVideos, globalVideos]);
+    // Add tagged events (kind 1 with reel hashtags) - only if they have actual video content
+    const taggedVideoEvents: VideoEvent[] = [];
+    taggedEvents.forEach(event => {
+      if (blacklistPubkeys.has(event.pubkey)) return;
+      if (seenIds.has(event.id)) return;
+
+      // Check if event has reel hashtags in content or tags
+      if (!hasReelHashtags(event.content) && !hasReelTagTags(event.tags)) return;
+
+      // Only include events that have actual video URLs
+      const videoUrl = getVideoUrl(event.tags);
+      if (!videoUrl) return; // Skip text-only posts
+
+      const imageUrl = getImageUrl(event.tags) || '';
+      const title = event.tags.find(tag => tag[0] === 'title')?.[1] || 'Reel Post';
+
+      taggedVideoEvents.push({
+        id: event.id,
+        pubkey: event.pubkey,
+        created_at: event.created_at,
+        title,
+        description: event.content,
+        videoUrl,
+        imageUrl,
+      });
+
+      seenIds.add(event.id);
+    });
+
+    // Add original events that are being replied to with reel tags - only if they have actual video content
+    const repliedVideoEvents: VideoEvent[] = [];
+    originalRepliedEvents.forEach(event => {
+      if (blacklistPubkeys.has(event.pubkey)) return;
+      if (seenIds.has(event.id)) return;
+
+      // Only include events that have actual video URLs
+      const videoUrl = getVideoUrl(event.tags);
+      if (!videoUrl) return; // Skip text-only posts
+
+      const imageUrl = getImageUrl(event.tags) || '';
+      const title = event.tags.find(tag => tag[0] === 'title')?.[1] || 'Replied Reel';
+
+      repliedVideoEvents.push({
+        id: event.id,
+        pubkey: event.pubkey,
+        created_at: event.created_at,
+        title,
+        description: event.content,
+        videoUrl,
+        imageUrl,
+      });
+
+      seenIds.add(event.id);
+    });
+
+    // Combine all events and sort by creation time (newest first)
+    const allVideoEvents = [...parsedEvents, ...taggedVideoEvents, ...repliedVideoEvents];
+    allVideoEvents.sort((a, b) => b.created_at - a.created_at);
+    setVideoEvents(allVideoEvents);
+  }, [followVideos, globalVideos, taggedEvents, originalRepliedEvents]);
 
   // Touch handlers for swiping
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -643,20 +745,20 @@ const VideoEventDisplay: React.FC<VideoEventDisplayProps> = ({
             </button>
             
             {/* Audio Controls */}
-              <button 
-                className="flex flex-col items-center"
-               onClick={() => setIsAudioMuted((prev: boolean) => !prev)}
-                title={isAudioMuted ? "Unmute" : "Mute"}
-              >
-                {isAudioMuted ? (
-                  <VolumeX className="h-8 w-8 text-white" />
-                ) : (
-                <Volume2 className="h-8 w-8 text-white" />
-                )}
-                <span className="text-white text-xs mt-1">
-                  {isAudioMuted ? "Muted" : `${Math.round(volume * 100)}%`}
-                </span>
-                  </button>
+            <button 
+              className="flex flex-col items-center"
+             onClick={() => setIsAudioMuted((prev: boolean) => !prev)}
+              title={isAudioMuted ? "Unmute" : "Mute"}
+            >
+              {isAudioMuted ? (
+                <VolumeX className="h-8 w-8 text-white" />
+              ) : (
+              <Volume2 className="h-8 w-8 text-white" />
+              )}
+              <span className="text-white text-xs mt-1">
+                {isAudioMuted ? "Muted" : `${Math.round(volume * 100)}%`}
+              </span>
+                </button>
                 </div>
             </div>
           </div>
