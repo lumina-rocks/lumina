@@ -1,653 +1,603 @@
-import { useRef, useState, useEffect } from "react";
-import { useNostrEvents } from "nostr-react";
-import { nip19 } from "nostr-tools";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { HeartIcon, ChatBubbleIcon, Share1Icon, PlayIcon, PauseIcon } from "@radix-ui/react-icons";
+import { useEffect, useRef, useState, useMemo } from "react";
+import { useNostrEvents, useNostr, dateToUnix } from "nostr-react";
+import { ChevronUp, ChevronDown, Heart, MessageCircle, Share2, User } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { nip19, Event as NostrEvent } from "nostr-tools";
+import { useProfile } from "nostr-react";
 import Link from "next/link";
+import { blacklistPubkeys, signEvent } from "@/utils/utils";
+import { toast } from "@/components/ui/use-toast";
 
-interface VideoReelProps {
-  event: any;
-  isActive: boolean;
+// Define interface for NIP-71 video event
+interface VideoEvent {
+  id: string;
+  pubkey: string;
+  created_at: number;
+  title: string;
+  description: string;
+  videoUrl: string;
+  imageUrl: string;
+  duration?: number;
+  dimensions?: { width: number; height: number };
+  mimeType?: string;
 }
 
-const VideoReel: React.FC<VideoReelProps> = ({ event, isActive }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-
-  // Extract video URL from imeta tags, r tags, or content
-  const getVideoUrl = (tags: string[][], content: string) => {
-    // First check imeta tags for video URLs
-    for (const tag of tags) {
-      if (tag[0] === 'imeta') {
-        for (let i = 1; i < tag.length; i++) {
-          const tagItem = tag[i];
-          if (tagItem.startsWith('url ')) {
-            const url = tagItem.substring(4);
-            // Check if it's a video file
-            if (url.match(/\.(mp4|webm|mov|avi|mkv|m4v)$/i)) {
-              return url;
-            }
-          }
-          // Also check if the tag item itself is a video URL
-          if (tagItem.match(/^https?:\/\/.*\.(mp4|webm|mov|avi|mkv|m4v)$/i)) {
-            return tagItem;
-          }
-        }
-      }
-    }
-    
-    // Then check r tags for video URLs
-    for (const tag of tags) {
-      if (tag[0] === 'r') {
-        const url = tag[1];
-        if (url.match(/\.(mp4|webm|mov|avi|mkv|m4v)$/i)) {
-          return url;
-        }
-      }
-    }
-    
-    // Check content field for video URLs
-    if (content) {
-      const videoUrlMatch = content.match(/https?:\/\/[^\s]+\.(mp4|webm|mov|avi|mkv|m4v)/i);
-      if (videoUrlMatch) {
-        return videoUrlMatch[0];
-      }
-    }
-    
-    return null;
-  };
-
-  const videoUrl = getVideoUrl(event.tags, event.content);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    if (isActive) {
-      video.play().catch(() => {
-        // Auto-play failed, keep muted
-        setIsMuted(true);
-      });
-      setIsPlaying(true);
-    } else {
-      video.pause();
-      setIsPlaying(false);
-    }
-  }, [isActive]);
-
-  const handleVideoClick = () => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    if (isPlaying) {
-      video.pause();
-      setIsPlaying(false);
-    } else {
-      video.play();
-      setIsPlaying(true);
-    }
-  };
-
-  const handleTimeUpdate = () => {
-    const video = videoRef.current;
-    if (video) {
-      setCurrentTime(video.currentTime);
-      setDuration(video.duration);
-    }
-  };
-
-  const handleLoadedMetadata = () => {
-    const video = videoRef.current;
-    if (video) {
-      setDuration(video.duration);
-    }
-  };
-
-  const toggleMute = () => {
-    const video = videoRef.current;
-    if (video) {
-      video.muted = !video.muted;
-      setIsMuted(video.muted);
-    }
-  };
-
-  if (!videoUrl) {
-    return (
-      <div className="relative w-full h-full bg-black flex items-center justify-center">
-        <div className="text-white text-center">
-          <p>No video content available</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative w-full h-full bg-black flex items-center justify-center overflow-hidden">
-      {/* Video Player */}
-      <video
-        ref={videoRef}
-        src={videoUrl}
-        className="w-full h-full object-cover"
-        loop
-        muted={isMuted}
-        onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={handleLoadedMetadata}
-        onClick={handleVideoClick}
-        playsInline
-      />
-      
-      {/* Overlay Controls */}
-      <div className="absolute inset-0 flex flex-col justify-between p-4 text-white">
-        {/* Top Section */}
-        <div className="flex justify-between items-start">
-          <div className="flex items-center space-x-2">
-            <Avatar className="w-10 h-10">
-              <AvatarImage src={`https://robohash.org/${event.pubkey}`} />
-              <AvatarFallback>{event.pubkey.slice(0, 8)}</AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="font-semibold text-sm">@{event.pubkey.slice(0, 8)}</p>
-              <p className="text-xs opacity-80">Follow</p>
-            </div>
-          </div>
-          <Button variant="ghost" size="sm" className="text-white">
-            <Share1Icon className="h-5 w-5" />
-          </Button>
-        </div>
-
-        {/* Bottom Section */}
-        <div className="flex justify-between items-end">
-          {/* Left Side - Content */}
-          <div className="flex-1 max-w-xs">
-            <p className="text-sm mb-2 line-clamp-3">{event.content}</p>
-            <div className="flex items-center space-x-4 text-xs opacity-80">
-              <span>#{event.pubkey.slice(0, 6)}</span>
-              <span>#{event.kind}</span>
-              {event.tags.some((tag: string[]) => tag[0] === 't' && REEL_TAGS.some(reelTag => tag[1].toLowerCase() === reelTag.toLowerCase())) && (
-                <span className="bg-blue-500 px-2 py-1 rounded text-white">
-                  #{event.tags.find((tag: string[]) => tag[0] === 't' && REEL_TAGS.some(reelTag => tag[1].toLowerCase() === reelTag.toLowerCase()))?.[1]}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Right Side - Actions */}
-          <div className="flex flex-col items-center space-y-4">
-            <Button variant="ghost" size="sm" className="text-white">
-              <HeartIcon className="h-6 w-6" />
-            </Button>
-            <Button variant="ghost" size="sm" className="text-white">
-              <ChatBubbleIcon className="h-6 w-6" />
-            </Button>
-            <Button variant="ghost" size="sm" className="text-white" onClick={toggleMute}>
-              {isMuted ? (
-                <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.794L4.5 14H2a1 1 0 01-1-1V7a1 1 0 011-1h2.5l3.883-3.794a1 1 0 011.617.794zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              ) : (
-                <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.794L4.5 14H2a1 1 0 01-1-1V7a1 1 0 011-1h2.5l3.883-3.794a1 1 0 011.617.794zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              )}
-            </Button>
-          </div>
-        </div>
-
-        {/* Progress Bar */}
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-black bg-opacity-50">
-          <div 
-            className="h-full bg-white" 
-            style={{ width: `${(currentTime / duration) * 100}%` }}
-          />
-        </div>
-      </div>
-
-      {/* Play/Pause Overlay */}
-      {!isPlaying && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="bg-black bg-opacity-50 rounded-full p-4">
-            <PlayIcon className="h-8 w-8 text-white" />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Define reel tags at module level so they can be accessed by VideoReel component
-const REEL_TAGS = ["reels", "vlog", "vlogs", "reel", "shorts", "short", "tiktok", "olas"];
-
 const ReelFeed: React.FC = () => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
-  const [touchStartY, setTouchStartY] = useState(0);
-  const [touchEndY, setTouchEndY] = useState(0);
-  const [showWiderNetwork, setShowWiderNetwork] = useState(false);
-
-  // Get current user's pubkey
-  let userPubkey = '';
-  if (typeof window !== 'undefined') {
-    userPubkey = window.localStorage.getItem('pubkey') ?? '';
-  }
-
-  // Get user's follow list
-  const { events: followEvents } = useNostrEvents({
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+  const [isLiked, setIsLiked] = useState<Record<string, boolean>>({});
+  const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [videoEvents, setVideoEvents] = useState<VideoEvent[]>([]);
+  const [loadMoreCounter, setLoadMoreCounter] = useState(1); // Counter to trigger loading more events
+  const { publish } = useNostr();
+  
+  // Define reel tags for filtering
+  const REEL_TAGS = ["reels", "reel", "vlog", "vlogs", "shorts", "short", "tiktok", "olas"];
+  
+  // Fetch all events (any kind) to check for videos with reel tags
+  const { events: allEvents } = useNostrEvents({
     filter: {
-      kinds: [3], // NIP-02 follow list
-      authors: [userPubkey],
-      limit: 1,
+      limit: 100 * loadMoreCounter, // Fetch more events to find videos with tags
     },
-    enabled: !!userPubkey,
+  });
+  
+  // Fetch NIP-71 kind 22 (short video) events
+  const { events: kind22Events } = useNostrEvents({
+    filter: {
+      kinds: [22], // NIP-71 short videos
+      limit: 50 * loadMoreCounter,
+    },
+  });
+  
+  // Fetch events that reply to or quote video events with reel tags
+  const { events: replyEvents } = useNostrEvents({
+    filter: {
+      kinds: [1, 6, 7, 16, 1111, 9802], // Text notes, reposts, reactions
+      limit: 100 * loadMoreCounter,
+    },
   });
 
-  // Extract followed pubkeys
-  const followedPubkeys = followEvents[0]?.tags
-    .filter(tag => tag[0] === 'p')
-    .map(tag => tag[1]) || [];
-
-  // Get all kind 22 events (video content) from follows first
-  const { events: kind22FromFollows } = useNostrEvents({
-    filter: {
-      kinds: [22],
-      authors: followedPubkeys,
-      limit: 50,
-    },
-    enabled: followedPubkeys.length > 0,
-  });
-
-  // Get all kind 22 events from everyone else (only when showWiderNetwork is true)
-  const { events: kind22FromOthers } = useNostrEvents({
-    filter: {
-      kinds: [22],
-      limit: 50,
-    },
-    enabled: showWiderNetwork,
-  });
-
-  // Get all events tagged with reel-related tags from follows first
-  const reelTags = REEL_TAGS;
-  const { events: reelsTaggedFromFollows } = useNostrEvents({
-    filter: {
-      "#t": reelTags,
-      authors: followedPubkeys,
-      limit: 50,
-    },
-    enabled: followedPubkeys.length > 0,
-  });
-
-  // Get all events tagged with reel-related tags from everyone else (only when showWiderNetwork is true)
-  const { events: reelsTaggedFromOthers } = useNostrEvents({
-    filter: {
-      "#t": reelTags,
-      limit: 50,
-    },
-    enabled: showWiderNetwork,
-  });
-
-  // Get events that are replied to with reel-related tags from follows first
-  const { events: reelsRepliesFromFollows } = useNostrEvents({
-    filter: {
-      "#t": reelTags,
-      kinds: [1], // replies are typically kind 1
-      authors: followedPubkeys,
-      limit: 50,
-    },
-    enabled: followedPubkeys.length > 0,
-  });
-
-  // Get events that are replied to with reel-related tags from everyone else (only when showWiderNetwork is true)
-  const { events: reelsRepliesFromOthers } = useNostrEvents({
-    filter: {
-      "#t": reelTags,
-      kinds: [1], // replies are typically kind 1
-      limit: 50,
-    },
-    enabled: showWiderNetwork,
-  });
-
-  // Extract all referenced event IDs (from e and q tags)
-  const getReferencedEventIds = (events: any[]) => {
-    const eventIds = new Set<string>();
-    events.forEach(event => {
-      event.tags.forEach((tag: string[]) => {
-        if ((tag[0] === 'e' || tag[0] === 'q') && tag[1]) {
-          eventIds.add(tag[1]);
+  // Helper function to check if an event contains a video
+  const hasVideo = (event: NostrEvent): boolean => {
+    // Check imeta tags for video mime types
+    const imetaTags = event.tags.filter((tag: string[]) => tag[0] === "imeta");
+    for (const imeta of imetaTags) {
+      const mInfo = imeta.find((item: string) => item.startsWith("m "));
+      if (mInfo && mInfo.startsWith("m video/")) {
+        return true;
+      }
+    }
+    
+    // Check content for video URLs
+    const videoExtensions = ['mp4', 'webm', 'mov', 'avi', 'm4v', 'mkv', 'm4a'];
+    const urlRegex = /https?:\/\/[^\s]+/g;
+    const urls = event.content.match(urlRegex);
+    
+    if (urls) {
+      for (const url of urls) {
+        try {
+          const urlObj = new URL(url);
+          const pathname = urlObj.pathname.toLowerCase();
+          const extension = pathname.split('.').pop();
+          if (extension && videoExtensions.includes(extension)) {
+            return true;
+          }
+        } catch (error) {
+          // Invalid URL, continue checking other URLs
+          continue;
         }
-      });
+      }
+    }
+    
+    return false;
+  };
+
+  // Helper function to check if an event has reel tags
+  const hasReelTags = (event: NostrEvent): boolean => {
+    // Check content for hashtags
+    const contentLower = event.content.toLowerCase();
+    if (REEL_TAGS.some(tag => contentLower.includes(`#${tag}`))) {
+      return true;
+    }
+    
+    // Check "t" tags
+    const tTags = event.tags.filter((tag: string[]) => tag[0] === "t");
+    return tTags.some((tag: string[]) => REEL_TAGS.includes(tag[1]?.toLowerCase()));
+  };
+
+  // Helper function to extract referenced event IDs from replies/quotes
+  const getReferencedEventIds = (event: NostrEvent): string[] => {
+    const referencedIds: string[] = [];
+    
+    // Check "e" tags (replies)
+    const eTags = event.tags.filter((tag: string[]) => tag[0] === "e");
+    referencedIds.push(...eTags.map((tag: string[]) => tag[1]));
+    
+    // Check "q" tags (quotes)
+    const qTags = event.tags.filter((tag: string[]) => tag[0] === "q");
+    referencedIds.push(...qTags.map((tag: string[]) => tag[1]));
+    
+    // Check "a" tags (mentions)
+    const aTags = event.tags.filter((tag: string[]) => tag[0] === "a");
+    referencedIds.push(...aTags.map((tag: string[]) => tag[1]));
+    
+    return referencedIds;
+  };
+
+  // Combine and filter all events
+  const events = useMemo(() => {
+    const allRawEvents = [...(allEvents || []), ...(kind22Events || []), ...(replyEvents || [])];
+    
+    // Filter out blacklisted pubkeys
+    const filteredEvents = allRawEvents.filter((event: NostrEvent) => {
+      const isBlacklisted = blacklistPubkeys.has(event.pubkey);
+      return !isBlacklisted;
     });
-    return Array.from(eventIds);
-  };
 
-  const referencedEventIdsFromFollows = getReferencedEventIds([
-    ...kind22FromFollows,
-    ...reelsTaggedFromFollows,
-    ...reelsRepliesFromFollows
-  ]);
-
-  const referencedEventIdsFromOthers = getReferencedEventIds([
-    ...kind22FromOthers,
-    ...reelsTaggedFromOthers,
-    ...reelsRepliesFromOthers
-  ]);
-
-  // Get the actual events that are referenced
-  const { events: referencedEventsFromFollows } = useNostrEvents({
-    filter: {
-      ids: referencedEventIdsFromFollows,
-      limit: 100,
-    },
-    enabled: referencedEventIdsFromFollows.length > 0,
-  });
-
-  const { events: referencedEventsFromOthers } = useNostrEvents({
-    filter: {
-      ids: referencedEventIdsFromOthers,
-      limit: 100,
-    },
-    enabled: showWiderNetwork && referencedEventIdsFromOthers.length > 0,
-  });
-
-  // Combine events in priority order: follows first, then others
-  const followsEvents = [
-    ...kind22FromFollows,
-    ...reelsTaggedFromFollows,
-    ...referencedEventsFromFollows
-  ];
-
-  const othersEvents = [
-    ...kind22FromOthers,
-    ...reelsTaggedFromOthers,
-    ...referencedEventsFromOthers
-  ];
-
-  // Remove duplicates within each group
-  const uniqueFollowsEvents = followsEvents.filter((event, index, self) => 
-    index === self.findIndex(e => e.id === event.id)
-  );
-
-  const uniqueOthersEvents = othersEvents.filter((event, index, self) => 
-    index === self.findIndex(e => e.id === event.id)
-  );
-
-  // Remove events from follows from the others list to avoid duplicates
-  const followsEventIds = new Set(uniqueFollowsEvents.map(e => e.id));
-  const filteredOthersEvents = uniqueOthersEvents.filter(event => !followsEventIds.has(event.id));
-
-  // Combine in priority order: follows first, then others
-  const allEvents = [...uniqueFollowsEvents, ...filteredOthersEvents];
-
-  // Debug logging
-  console.log('ReelFeed Debug:', {
-    uniqueFollowsEvents: uniqueFollowsEvents.length,
-    filteredOthersEvents: filteredOthersEvents.length,
-    allEvents: allEvents.length,
-    showWiderNetwork,
-    userPubkey: userPubkey ? 'logged in' : 'not logged in',
-    followedPubkeys: followedPubkeys.length
-  });
-
-  // Helper function to check if event has reel tags (case-insensitive)
-  const hasReelTag = (event: any) => {
-    return event.tags.some((tag: string[]) => 
-      tag[0] === 't' && REEL_TAGS.some(reelTag => 
-        tag[1].toLowerCase() === reelTag.toLowerCase()
-      )
-    );
-  };
-
-  // Filter out NSFW content and events without video URLs
-  let filteredEvents = allEvents.filter((event) => {
-    // Filter out NSFW content
-    if (event.tags.some((tag) => tag[0] == 't' && tag[1] == 'nsfw')) {
-      console.log('Filtered out NSFW event:', event.id);
-      return false;
-    }
+    // Create a set of event IDs that should be included
+    const includedEventIds = new Set<string>();
     
-    // Filter out events without video URLs
-    const getVideoUrl = (tags: string[][], content: string, allReferencedEvents?: any[]) => {
-      // First check imeta tags for video URLs
-      for (const tag of tags) {
-        if (tag[0] === 'imeta') {
-          for (let i = 1; i < tag.length; i++) {
-            const tagItem = tag[i];
-            if (tagItem.startsWith('url ')) {
-              const url = tagItem.substring(4);
-              // Check if it's a video file
-              if (url.match(/\.(mp4|webm|mov|avi|mkv|m4v)$/i)) {
-                return url;
-              }
-            }
-            // Also check if the tag item itself is a video URL
-            if (tagItem.match(/^https?:\/\/.*\.(mp4|webm|mov|avi|mkv|m4v)$/i)) {
-              return tagItem;
-            }
-          }
-        }
+    // 1. Include all kind 22 events
+    kind22Events?.forEach((event: NostrEvent) => {
+      if (!blacklistPubkeys.has(event.pubkey)) {
+        includedEventIds.add(event.id);
       }
-      
-      // Then check r tags for video URLs
-      for (const tag of tags) {
-        if (tag[0] === 'r') {
-          const url = tag[1];
-          if (url.match(/\.(mp4|webm|mov|avi|mkv|m4v)$/i)) {
-            return url;
-          }
-        }
-      }
-      
-      // Check content field for video URLs
-      if (content) {
-        const videoUrlMatch = content.match(/https?:\/\/[^\s]+\.(mp4|webm|mov|avi|mkv|m4v)/i);
-        if (videoUrlMatch) {
-          return videoUrlMatch[0];
-        }
-      }
-      
-      // Check referenced events for video URLs
-      if (allReferencedEvents) {
-        for (const tag of tags) {
-          if ((tag[0] === 'e' || tag[0] === 'q') && tag[1]) {
-            const referencedEvent = allReferencedEvents.find(ref => ref.id === tag[1]);
-            if (referencedEvent) {
-              // Check referenced event's tags and content for video URLs
-              for (const refTag of referencedEvent.tags) {
-                if (refTag[0] === 'imeta') {
-                  for (let i = 1; i < refTag.length; i++) {
-                    const tagItem = refTag[i];
-                    if (tagItem.startsWith('url ')) {
-                      const url = tagItem.substring(4);
-                      if (url.match(/\.(mp4|webm|mov|avi|mkv|m4v)$/i)) {
-                        return url;
-                      }
-                    }
-                    if (tagItem.match(/^https?:\/\/.*\.(mp4|webm|mov|avi|mkv|m4v)$/i)) {
-                      return tagItem;
-                    }
-                  }
-                }
-                if (refTag[0] === 'r') {
-                  const url = refTag[1];
-                  if (url.match(/\.(mp4|webm|mov|avi|mkv|m4v)$/i)) {
-                    return url;
-                  }
-                }
-              }
-              // Check referenced event's content
-              if (referencedEvent.content) {
-                const videoUrlMatch = referencedEvent.content.match(/https?:\/\/[^\s]+\.(mp4|webm|mov|avi|mkv|m4v)/i);
-                if (videoUrlMatch) {
-                  return videoUrlMatch[0];
-                }
-              }
-            }
-          }
-        }
-      }
-      
-      return null;
-    };
+    });
     
-    const allReferencedEvents = [...referencedEventsFromFollows, ...referencedEventsFromOthers];
-    const videoUrl = getVideoUrl(event.tags, event.content, allReferencedEvents);
-    if (videoUrl === null) {
-      console.log('Filtered out event without video URL:', event.id, 'Tags:', event.tags);
-    } else {
-      console.log('Found video URL for event:', event.id, 'URL:', videoUrl);
-    }
-    return videoUrl !== null;
-  });
-
-  // Debug filtering results
-  console.log('Filtering Results:', {
-    beforeFiltering: allEvents.length,
-    afterFiltering: filteredEvents.length,
-    filteredOut: allEvents.length - filteredEvents.length
-  });
-
-  useEffect(() => {
-    setIsVisible(true);
-  }, []);
-
-  // Handle keyboard navigation and check if we need to load wider network
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowDown' && currentIndex < filteredEvents.length - 1) {
-        e.preventDefault();
-        const newIndex = currentIndex + 1;
-        setCurrentIndex(newIndex);
-        
-        // Check if we're close to the bottom (within 3 items) and haven't loaded wider network yet
-        if (newIndex >= filteredEvents.length - 3 && !showWiderNetwork) {
-          setShowWiderNetwork(true);
-        }
-      } else if (e.key === 'ArrowUp' && currentIndex > 0) {
-        e.preventDefault();
-        setCurrentIndex(prev => prev - 1);
+    // 2. Include events with videos and reel tags
+    allEvents?.forEach((event: NostrEvent) => {
+      if (!blacklistPubkeys.has(event.pubkey) && hasVideo(event) && hasReelTags(event)) {
+        includedEventIds.add(event.id);
       }
-    };
+    });
+    
+    // 3. Include original video events that are referenced by replies with reel tags
+    replyEvents?.forEach((replyEvent: NostrEvent) => {
+      if (!blacklistPubkeys.has(replyEvent.pubkey) && hasReelTags(replyEvent)) {
+        const referencedIds = getReferencedEventIds(replyEvent);
+        referencedIds.forEach(id => {
+          // Find the original event and check if it has a video
+          const originalEvent = allRawEvents.find(e => e.id === id);
+          if (originalEvent && hasVideo(originalEvent)) {
+            includedEventIds.add(id);
+          }
+        });
+      }
+    });
+    
+    // Return only the events that should be included
+    return filteredEvents.filter((event: NostrEvent) => includedEventIds.has(event.id));
+  }, [allEvents, kind22Events, replyEvents, loadMoreCounter]);
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentIndex, filteredEvents.length, showWiderNetwork]);
+  // Load more events if we don't have enough after filtering
+  useEffect(() => {
+    const totalEvents = (allEvents?.length || 0) + (kind22Events?.length || 0) + (replyEvents?.length || 0);
+    if (events.length < 20 && totalEvents > 0 && 
+        totalEvents >= 250 * (loadMoreCounter - 1)) {
+      setLoadMoreCounter(prev => prev + 1);
+    }
+  }, [events, allEvents, kind22Events, replyEvents, loadMoreCounter]);
 
-  // Handle touch gestures
+  // Track reactions to update UI accordingly
+  const { events: reactions } = useNostrEvents({
+    filter: {
+      kinds: [7], // Reaction events
+      '#e': videoEvents.map(v => v.id),
+    },
+  });
+
+  // Update liked status based on fetched reactions
+  useEffect(() => {
+    if (!reactions) return;
+    
+    // Check local storage for current user pubkey
+    const storedPubkey = typeof window !== 'undefined' ? localStorage.getItem('pubkey') : null;
+    if (!storedPubkey) return;
+    
+    // Update liked status for each video
+    const likedStatus: Record<string, boolean> = {};
+    
+    reactions.forEach(reaction => {
+      // Only count reactions from the current user
+      if (reaction.pubkey === storedPubkey) {
+        // Find the target event id
+        const eventTag = reaction.tags.find(tag => tag[0] === 'e');
+        if (eventTag && eventTag[1]) {
+          likedStatus[eventTag[1]] = true;
+        }
+      }
+    });
+    
+    setIsLiked(likedStatus);
+  }, [reactions]);
+
+  // Parse video events from all kinds
+  useEffect(() => {
+    if (!events || events.length === 0) return;
+
+    const parsedEvents: VideoEvent[] = events
+      .map(event => {
+        try {
+          // Find title tag
+          const titleTag = event.tags.find((tag: string[]) => tag[0] === "title");
+          const title = titleTag ? titleTag[1] : "Untitled Video";
+          
+          // Find duration tag
+          const durationTag = event.tags.find((tag: string[]) => tag[0] === "duration");
+          const duration = durationTag ? parseInt(durationTag[1]) : undefined;
+
+          // Extract video data from imeta tags
+          const imetaTags = event.tags.filter((tag: string[]) => tag[0] === "imeta");
+          if (imetaTags.length === 0) return null;
+          
+          // Find the first valid imeta tag with a video URL
+          let videoUrl = "";
+          let imageUrl = "";
+          let dimensions = undefined;
+          let mimeType = undefined;
+          
+          for (const imeta of imetaTags) {
+            // Parse dimension info
+            const dimInfo = imeta.find((item: string) => item.startsWith("dim "));
+            if (dimInfo) {
+              const [width, height] = dimInfo.replace("dim ", "").split("x").map(Number);
+              dimensions = { width, height };
+            }
+            
+            // Parse mime type
+            const mInfo = imeta.find((item: string) => item.startsWith("m "));
+            if (mInfo) {
+              mimeType = mInfo.replace("m ", "");
+            }
+            
+            // Check if it's a video mime type
+            if (mimeType && mimeType.startsWith("video/")) {
+              // Get video URL
+              const urlInfo = imeta.find((item: string) => item.startsWith("url "));
+              if (urlInfo) {
+                videoUrl = urlInfo.replace("url ", "");
+              }
+              
+              // Get image preview URL
+              const imageInfo = imeta.find((item: string) => item.startsWith("image "));
+              if (imageInfo) {
+                imageUrl = imageInfo.replace("image ", "");
+              }
+              
+              if (videoUrl) break; // Found a valid video URL
+            }
+          }
+          
+          // If no video URL found in imeta tags, try to extract from content
+          if (!videoUrl) {
+            const videoExtensions = ['mp4', 'webm', 'mov', 'avi', 'm4v', 'mkv', 'm4a'];
+            const urlRegex = /https?:\/\/[^\s]+/g;
+            const urls = event.content.match(urlRegex);
+            
+            if (urls) {
+              for (const url of urls) {
+                try {
+                  const urlObj = new URL(url);
+                  const pathname = urlObj.pathname.toLowerCase();
+                  const extension = pathname.split('.').pop();
+                  if (extension && videoExtensions.includes(extension)) {
+                    videoUrl = url;
+                    break;
+                  }
+                } catch (error) {
+                  // Invalid URL, continue checking other URLs
+                  continue;
+                }
+              }
+            }
+          }
+          
+          if (!videoUrl) return null; // Skip if no valid video URL found
+          
+          return {
+            id: event.id,
+            pubkey: event.pubkey,
+            created_at: event.created_at,
+            title,
+            description: event.content,
+            videoUrl,
+            imageUrl,
+            duration,
+            dimensions,
+            mimeType
+          };
+        } catch (error) {
+          console.error("Error parsing video event:", error);
+          return null;
+        }
+      })
+      .filter(Boolean) as VideoEvent[]; // Filter out null values
+      
+    setVideoEvents(parsedEvents);
+  }, [events]);
+
+  // Touch handlers for swiping
   const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStartY(e.targetTouches[0].clientY);
+    setTouchStart(e.targetTouches[0].clientY);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEndY(e.targetTouches[0].clientY);
+    setTouchEnd(e.targetTouches[0].clientY);
   };
 
   const handleTouchEnd = () => {
-    if (!touchStartY || !touchEndY) return;
+    if (!touchStart || !touchEnd) return;
     
-    const distance = touchStartY - touchEndY;
+    const distance = touchStart - touchEnd;
     const isUpSwipe = distance > 50;
     const isDownSwipe = distance < -50;
-
-    if (isUpSwipe && currentIndex < filteredEvents.length - 1) {
-      const newIndex = currentIndex + 1;
-      setCurrentIndex(newIndex);
-      
-      // Check if we're close to the bottom (within 3 items) and haven't loaded wider network yet
-      if (newIndex >= filteredEvents.length - 3 && !showWiderNetwork) {
-        setShowWiderNetwork(true);
-      }
-    } else if (isDownSwipe && currentIndex > 0) {
-      setCurrentIndex(prev => prev - 1);
+    
+    if (isUpSwipe && currentVideoIndex < videoEvents.length - 1) {
+      setCurrentVideoIndex(prev => prev + 1);
+    } else if (isDownSwipe && currentVideoIndex > 0) {
+      setCurrentVideoIndex(prev => prev - 1);
     }
-
-    setTouchStartY(0);
-    setTouchEndY(0);
+    
+    setTouchStart(null);
+    setTouchEnd(null);
   };
 
-  if (!isVisible) {
-    return <div className="h-full w-full bg-black" />;
-  }
+  // Play current video and pause others
+  useEffect(() => {
+    if (videoEvents.length === 0) return;
+    
+    Object.entries(videoRefs.current).forEach(([id, videoElement]) => {
+      if (videoElement) {
+        if (id === videoEvents[currentVideoIndex]?.id) {
+          videoElement.play().catch(err => console.error("Error playing video:", err));
+        } else {
+          videoElement.pause();
+        }
+      }
+    });
+  }, [currentVideoIndex, videoEvents]);
 
-  if (filteredEvents.length === 0) {
+  // Toggle like and send a Nostr reaction event
+  const toggleLike = async (id: string) => {
+    // Check if user is logged in
+    const loginType = typeof window !== 'undefined' ? localStorage.getItem('loginType') : null;
+    
+    if (!loginType) {
+      toast({
+        title: "Login required",
+        description: "Please login to like videos",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Create a reaction event
+    const eventToSend: Partial<NostrEvent> = {
+      kind: 7,
+      content: isLiked[id] ? '' : '+', // Empty content to unlike, + to like
+      tags: [
+        ['e', id], // Reference to the video event
+        ['k', '22'] // Specify that we're reacting to a kind 22 event
+      ],
+      created_at: dateToUnix(),
+    };
+
+    try {
+      // Sign and publish the event
+      const signedEvent = await signEvent(loginType, eventToSend as NostrEvent);
+      
+      if (signedEvent) {
+        publish(signedEvent);
+        
+        // Update UI immediately
+        setIsLiked(prev => ({
+          ...prev,
+          [id]: !prev[id]
+        }));
+        
+        toast({
+          title: isLiked[id] ? "Unliked" : "Liked",
+          description: `Successfully ${isLiked[id] ? 'removed like from' : 'liked'} the video`,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to sign reaction event",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error sending reaction:", error);
+      toast({
+        title: "Error",
+        description: "Failed to send reaction",
+        variant: "destructive"
+      });
+    }
+  };
+
+  if (videoEvents.length === 0) {
     return (
-      <div className="h-full w-full bg-black flex items-center justify-center text-white">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">No Reels Found</h2>
-          <p className="text-gray-400">Try posting a kind 22 event or tag content with #reels!</p>
-          <div className="mt-4 text-sm text-gray-500">
-            <p>Debug Info:</p>
-            <p>Follows: {uniqueFollowsEvents.length}</p>
-            <p>Others: {filteredOthersEvents.length}</p>
-            <p>Total Events: {allEvents.length}</p>
-            <p>User Pubkey: {userPubkey ? 'Logged in' : 'Not logged in'}</p>
-            <p>Followed Pubkeys: {followedPubkeys.length}</p>
-          </div>
-        </div>
+      <div className="fixed inset-0 bg-black flex items-center justify-center text-white">
+        <p>Loading videos...</p>
       </div>
     );
   }
 
   return (
     <div 
-      className="h-full w-full bg-black relative overflow-hidden"
+      className="fixed inset-0 bg-black overflow-hidden"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      style={{ overscrollBehavior: 'none' }}
     >
-      {filteredEvents.map((event, index) => (
-        <div 
-          key={event.id} 
-          className={`absolute inset-0 transition-opacity duration-300 ${
-            index === currentIndex ? 'opacity-100' : 'opacity-0'
-          }`}
-        >
-          <VideoReel 
-            event={event} 
-            isActive={index === currentIndex} 
-          />
-        </div>
+      {/* Navigation indicators */}
+      <div className="absolute top-1/2 left-6 z-30 transform -translate-y-1/2">
+        {currentVideoIndex > 0 && (
+          <button 
+            className="p-2 rounded-full bg-black/20 text-white"
+            onClick={() => setCurrentVideoIndex(prev => Math.max(0, prev - 1))}
+          >
+            <ChevronUp className="h-8 w-8" />
+          </button>
+        )}
+      </div>
+      <div className="absolute top-1/2 left-6 z-30 transform translate-y-1/2">
+        {currentVideoIndex < videoEvents.length - 1 && (
+          <button 
+            className="p-2 rounded-full bg-black/20 text-white"
+            onClick={() => setCurrentVideoIndex(prev => Math.min(videoEvents.length - 1, prev + 1))}
+          >
+            <ChevronDown className="h-8 w-8" />
+          </button>
+        )}
+      </div>
+
+      {/* Videos */}
+      {videoEvents.map((video, index) => (
+        <VideoEventDisplay 
+          key={video.id}
+          video={video}
+          index={index}
+          currentIndex={currentVideoIndex}
+          videoRef={el => videoRefs.current[video.id] = el}
+          isLiked={!!isLiked[video.id]}
+          toggleLike={() => toggleLike(video.id)}
+          reactionCount={countReactionsForEvent(reactions, video.id)}
+        />
       ))}
       
-      {/* Navigation Dots */}
-      <div className="absolute right-4 top-1/2 transform -translate-y-1/2 flex flex-col space-y-2 z-10">
-        {filteredEvents.map((_, index) => (
-          <button
-            key={index}
-            className={`w-2 h-2 rounded-full transition-all ${
-              index === currentIndex ? 'bg-white' : 'bg-white bg-opacity-50'
-            }`}
-            onClick={() => {
-              setCurrentIndex(index);
-              
-              // Check if we're close to the bottom (within 3 items) and haven't loaded wider network yet
-              if (index >= filteredEvents.length - 3 && !showWiderNetwork) {
-                setShowWiderNetwork(true);
-              }
-            }}
+      {/* Progress indicators */}
+      <div className="absolute top-4 left-0 right-0 flex justify-center gap-1 px-4 z-30">
+        {videoEvents.map((_, index) => (
+          <div 
+            key={index} 
+            className={cn(
+              "h-1 rounded-full transition-all",
+              index === currentVideoIndex 
+                ? "bg-white w-6" 
+                : "bg-white/40 w-4"
+            )}
           />
         ))}
       </div>
+    </div>
+  );
+}
 
-      {/* Counter */}
-      <div className="absolute top-4 left-4 text-white text-sm z-10">
-        {currentIndex + 1} / {filteredEvents.length}
-        {filteredEvents.length <= 1 && (
-          <div className="text-xs text-gray-400 mt-1">
-            Only one reel available
-            {!showWiderNetwork && (
-              <button 
-                className="ml-2 bg-blue-500 px-2 py-1 rounded text-xs"
-                onClick={() => setShowWiderNetwork(true)}
-              >
-                Load More
-              </button>
-            )}
+// Helper function to count reactions for a specific event
+function countReactionsForEvent(reactions: NostrEvent[], eventId: string): number {
+  if (!reactions) return 0;
+  
+  return reactions.filter(reaction => {
+    const eventTag = reaction.tags.find(tag => tag[0] === 'e');
+    return eventTag && eventTag[1] === eventId && reaction.content !== '';
+  }).length;
+}
+
+interface VideoEventDisplayProps {
+  video: VideoEvent;
+  index: number;
+  currentIndex: number;
+  videoRef: (el: HTMLVideoElement | null) => void;
+  isLiked: boolean;
+  toggleLike: () => void;
+  reactionCount: number;
+}
+
+const VideoEventDisplay: React.FC<VideoEventDisplayProps> = ({ 
+  video, 
+  index, 
+  currentIndex, 
+  videoRef,
+  isLiked,
+  toggleLike,
+  reactionCount
+}) => {
+  const { data: userData } = useProfile({
+    pubkey: video.pubkey,
+  });
+
+  const username = userData?.name || userData?.display_name || 
+    `${nip19.npubEncode(video.pubkey).slice(0, 8)}...`;
+  
+  const profileImageSrc = userData?.picture || `https://robohash.org/${video.pubkey}`;
+  const npub = nip19.npubEncode(video.pubkey);
+  const profileUrl = `/profile/${npub}`;
+
+  // Use real reaction counts
+  const likesCount = reactionCount;
+  const commentsCount = 0; // Could be implemented by fetching kind 1 events that reference this video
+  const sharesCount = 0; // Could be implemented by tracking reposts
+
+  return (
+    <div 
+      className={cn(
+        "absolute inset-0 transition-transform duration-300",
+        index === currentIndex ? "translate-y-0" : 
+        index < currentIndex ? "-translate-y-full" : "translate-y-full"
+      )}
+    >
+      <video
+        ref={videoRef}
+        src={video.videoUrl}
+        poster={video.imageUrl}
+        className="w-full h-full object-cover"
+        loop
+        muted
+        playsInline
+        autoPlay={index === currentIndex}
+      />
+      
+      {/* Video info overlay */}
+      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/70 to-transparent">
+        <div className="flex items-end justify-between">
+          <div className="text-white max-w-[80%]">
+            <div className="flex items-center gap-2 mb-2">
+              <Link href={profileUrl}>
+                <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center overflow-hidden">
+                  {profileImageSrc ? (
+                    <img src={profileImageSrc} alt={username} className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="h-6 w-6 text-white" />
+                  )}
+                </div>
+              </Link>
+              <div>
+                <Link href={profileUrl}>
+                  <p className="font-bold">{username}</p>
+                </Link>
+                {video.title && <p className="text-sm font-semibold">{video.title}</p>}
+              </div>
+            </div>
+            <p className="text-sm">{video.description}</p>
           </div>
-        )}
+
+          {/* Interaction buttons */}
+          <div className="flex flex-col items-center gap-4">
+            <button 
+              className="flex flex-col items-center"
+              onClick={toggleLike}
+            >
+              <Heart 
+                className={cn(
+                  "h-8 w-8", 
+                  isLiked ? "fill-red-500 text-red-500" : "text-white"
+                )}
+              />
+              <span className="text-white text-xs mt-1">{likesCount}</span>
+            </button>
+            <button className="flex flex-col items-center">
+              <MessageCircle className="h-8 w-8 text-white" />
+              <span className="text-white text-xs mt-1">{commentsCount}</span>
+            </button>
+            <button className="flex flex-col items-center">
+              <Share2 className="h-8 w-8 text-white" />
+              <span className="text-white text-xs mt-1">{sharesCount}</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
