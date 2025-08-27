@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useNostrEvents, useNostr, dateToUnix } from "nostr-react";
-import { ChevronUp, ChevronDown, Heart, MessageCircle, Share2, User, X, Copy, Check, Activity } from "lucide-react";
+import { ChevronUp, ChevronDown, Heart, MessageCircle, Share2, User, X, Copy, Check, Activity, Volume2, VolumeX, Volume1 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { nip19, Event as NostrEvent } from "nostr-tools";
 import { useProfile } from "nostr-react";
@@ -42,6 +42,12 @@ const ReelFeed: React.FC = () => {
   const [copiedText, setCopiedText] = useState<string | null>(null);
   const [commentExpires, setCommentExpires] = useState(true);
   const [showFeed, setShowFeed] = useState(false);
+  
+  // Audio state management
+  const [isAudioMuted, setIsAudioMuted] = useState(true);
+  const [volume, setVolume] = useState(0.5);
+  const [showVolumeControls, setShowVolumeControls] = useState(false);
+  
   const { publish } = useNostr();
   
   // Define reel tags for filtering
@@ -394,6 +400,23 @@ const ReelFeed: React.FC = () => {
           }
         }
         break;
+      case 'm':
+      case 'M':
+        e.preventDefault();
+        toggleAudioMute();
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        if (e.ctrlKey || e.metaKey) {
+          increaseVolume();
+        }
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        if (e.ctrlKey || e.metaKey) {
+          decreaseVolume();
+        }
+        break;
     }
   };
 
@@ -408,9 +431,12 @@ const ReelFeed: React.FC = () => {
         } else {
           videoElement.pause();
         }
+        // Set audio properties
+        videoElement.muted = isAudioMuted;
+        videoElement.volume = volume;
       }
     });
-  }, [currentVideoIndex, videoEvents]);
+  }, [currentVideoIndex, videoEvents, isAudioMuted, volume]);
 
   // Toggle like and send a Nostr reaction event
   const toggleLike = async (id: string) => {
@@ -469,6 +495,39 @@ const ReelFeed: React.FC = () => {
   // Toggle feed display
   const toggleFeed = () => {
     setShowFeed(prev => !prev);
+  };
+
+  // Audio control functions
+  const toggleAudioMute = () => {
+    setIsAudioMuted(prev => !prev);
+    // Update all video elements
+    Object.values(videoRefs.current).forEach(video => {
+      if (video) {
+        video.muted = !isAudioMuted;
+        video.volume = isAudioMuted ? volume : 0;
+      }
+    });
+  };
+
+  const adjustVolume = (newVolume: number) => {
+    setVolume(newVolume);
+    // Update all video elements
+    Object.values(videoRefs.current).forEach(video => {
+      if (video) {
+        video.volume = newVolume;
+        video.muted = isAudioMuted;
+      }
+    });
+  };
+
+  const increaseVolume = () => {
+    const newVolume = Math.min(1, volume + 0.1);
+    adjustVolume(newVolume);
+  };
+
+  const decreaseVolume = () => {
+    const newVolume = Math.max(0, volume - 0.1);
+    adjustVolume(newVolume);
   };
 
   // Open comment modal
@@ -632,6 +691,11 @@ const ReelFeed: React.FC = () => {
           onShare={() => openShareModal(video)}
           showFeed={showFeed}
           toggleFeed={toggleFeed}
+          isAudioMuted={isAudioMuted}
+          volume={volume}
+          toggleAudioMute={toggleAudioMute}
+          increaseVolume={increaseVolume}
+          decreaseVolume={decreaseVolume}
         />
       ))}
       
@@ -652,10 +716,17 @@ const ReelFeed: React.FC = () => {
 
       {/* Keyboard navigation help (desktop only) */}
       <div className="hidden md:block absolute bottom-20 right-4 text-white/60 text-xs bg-black/20 px-3 py-2 rounded-lg backdrop-blur-sm">
-        <div className="flex items-center gap-2">
-          <span>↑↓ Navigate</span>
-          <span>•</span>
-          <span>Space Play/Pause</span>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <span>↑↓ Navigate</span>
+            <span>•</span>
+            <span>Space Play/Pause</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span>M Toggle Audio</span>
+            <span>•</span>
+            <span>Ctrl+←→ Volume</span>
+          </div>
         </div>
       </div>
 
@@ -869,6 +940,11 @@ interface VideoEventDisplayProps {
   onShare: () => void;
   showFeed: boolean;
   toggleFeed: () => void;
+  isAudioMuted: boolean;
+  volume: number;
+  toggleAudioMute: () => void;
+  increaseVolume: () => void;
+  decreaseVolume: () => void;
 }
 
 const VideoEventDisplay: React.FC<VideoEventDisplayProps> = ({ 
@@ -884,7 +960,12 @@ const VideoEventDisplay: React.FC<VideoEventDisplayProps> = ({
   onComment,
   onShare,
   showFeed,
-  toggleFeed
+  toggleFeed,
+  isAudioMuted,
+  volume,
+  toggleAudioMute,
+  increaseVolume,
+  decreaseVolume
 }) => {
   const { data: userData } = useProfile({
     pubkey: video.pubkey,
@@ -916,7 +997,7 @@ const VideoEventDisplay: React.FC<VideoEventDisplayProps> = ({
         poster={video.imageUrl}
         className="w-full h-full object-contain bg-black"
         loop
-        muted
+        muted={isAudioMuted}
         playsInline
         autoPlay={index === currentIndex}
       />
@@ -980,6 +1061,45 @@ const VideoEventDisplay: React.FC<VideoEventDisplayProps> = ({
               <Share2 className="h-8 w-8 text-white" />
               <span className="text-white text-xs mt-1">{sharesCount}</span>
             </button>
+            
+            {/* Audio Controls */}
+            <div className="flex flex-col items-center gap-2">
+              <button 
+                className="flex flex-col items-center"
+                onClick={toggleAudioMute}
+                title={isAudioMuted ? "Unmute" : "Mute"}
+              >
+                {isAudioMuted ? (
+                  <VolumeX className="h-8 w-8 text-white" />
+                ) : volume > 0.5 ? (
+                  <Volume2 className="h-8 w-8 text-white" />
+                ) : (
+                  <Volume1 className="h-8 w-8 text-white" />
+                )}
+                <span className="text-white text-xs mt-1">
+                  {isAudioMuted ? "Muted" : `${Math.round(volume * 100)}%`}
+                </span>
+              </button>
+              
+              {!isAudioMuted && (
+                <div className="flex flex-col items-center gap-1">
+                  <button 
+                    className="text-white text-xs bg-black/20 rounded px-2 py-1 hover:bg-black/40"
+                    onClick={increaseVolume}
+                    title="Increase Volume"
+                  >
+                    +
+                  </button>
+                  <button 
+                    className="text-white text-xs bg-black/20 rounded px-2 py-1 hover:bg-black/40"
+                    onClick={decreaseVolume}
+                    title="Decrease Volume"
+                  >
+                    -
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
