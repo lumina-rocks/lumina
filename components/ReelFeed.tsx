@@ -25,6 +25,7 @@ interface VideoEvent {
   duration?: number;
   dimensions?: { width: number; height: number };
   mimeType?: string;
+  priority: number; // 1 = follows/tagged by follows, 2 = inbox, 3 = rest
 }
 
 const ReelFeed: React.FC = () => {
@@ -48,17 +49,131 @@ const ReelFeed: React.FC = () => {
   const [volume, setVolume] = useState(0.5);
   const [showVolumeControls, setShowVolumeControls] = useState(false);
   
-  const { publish } = useNostr();
+  const { publish, connectedRelays } = useNostr();
+  
+  // Get current user pubkey with proper hydration handling
+  const [currentUserPubkey, setCurrentUserPubkey] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+    const pubkey = localStorage.getItem('pubkey');
+    setCurrentUserPubkey(pubkey);
+  }, []);
+
+  // Convert npub to hex if needed
+  const currentUserHexPubkey = useMemo(() => {
+    if (!currentUserPubkey) return null;
+    
+    // If it's already a hex pubkey (64 characters), return as is
+    if (currentUserPubkey.length === 64 && /^[0-9a-fA-F]+$/.test(currentUserPubkey)) {
+      return currentUserPubkey;
+    }
+    
+    // If it's an npub, try to decode it
+    if (currentUserPubkey.startsWith('npub')) {
+      try {
+        const decoded = nip19.decode(currentUserPubkey);
+        return decoded.data as string;
+      } catch (error) {
+        console.error('Failed to decode npub:', error);
+        return currentUserPubkey; // Return original if decoding fails
+      }
+    }
+    
+    return currentUserPubkey;
+  }, [currentUserPubkey]);
   
   // Define reel tags for filtering
   const REEL_TAGS = ["reels", "reel", "vlog", "vlogs", "shorts", "short", "tiktok", "olas"];
   
+  // Fetch user's follow list if logged in
+  const { events: followListEvents } = useNostrEvents({
+    filter: {
+      kinds: [3], // NIP-02 follow list
+      authors: currentUserHexPubkey ? [currentUserHexPubkey] : [],
+      limit: 1,
+    },
+    enabled: !!currentUserHexPubkey,
+  });
+
+  // Fetch user's NIP-65 relay list if logged in
+  const { events: nip65Events } = useNostrEvents({
+    filter: {
+      kinds: [10002], // NIP-65 relay list
+      authors: currentUserHexPubkey ? [currentUserHexPubkey] : [],
+      limit: 1,
+    },
+    enabled: !!currentUserHexPubkey,
+  });
+
+  // Extract followed pubkeys
+  const followedPubkeys = useMemo(() => {
+    if (!followListEvents || followListEvents.length === 0) {
+      console.log('No follow list events found');
+      return new Set<string>();
+    }
+    
+    const followList = followListEvents[0];
+    if (!followList) {
+      console.log('No follow list in events');
+      return new Set<string>();
+    }
+    
+    const pubkeys = followList.tags
+      .filter(tag => tag[0] === 'p')
+      .map(tag => tag[1]);
+    
+    console.log('Follow list found:', {
+      totalTags: followList.tags.length,
+      pTags: pubkeys.length,
+      pubkeys: pubkeys.slice(0, 5), // Show first 5 for debugging
+      firstPubkeyLength: pubkeys[0]?.length,
+      firstPubkeyStartsWith: pubkeys[0]?.slice(0, 4)
+    });
+    
+    return new Set(pubkeys);
+  }, [followListEvents]);
+
+  // Extract user's inbox relays from NIP-65
+  const userInboxRelays = useMemo(() => {
+    if (!nip65Events || nip65Events.length === 0) {
+      console.log('No NIP-65 events found');
+      return new Set<string>();
+    }
+    
+    const nip65Event = nip65Events[0];
+    if (!nip65Event) {
+      console.log('No NIP-65 event in events');
+      return new Set<string>();
+    }
+    
+    const inboxRelays = nip65Event.tags
+      .filter(tag => tag[0] === 'r')
+      .filter(tag => {
+        // Include relays marked as 'read' or no permission specified (defaults to both read/write)
+        const permission = tag[2]?.toLowerCase();
+        return !permission || permission.includes('read');
+      })
+      .map(tag => tag[1]);
+    
+    console.log('Inbox relays found:', {
+      totalRTags: nip65Event.tags.filter(tag => tag[0] === 'r').length,
+      inboxRelays: inboxRelays.length,
+      relays: inboxRelays.slice(0, 5) // Show first 5 for debugging
+    });
+    
+    return new Set(inboxRelays);
+  }, [nip65Events]);
+
   // Fetch all events (any kind) to check for videos with reel tags
   const { events: allEvents } = useNostrEvents({
     filter: {
       limit: 100 * loadMoreCounter, // Fetch more events to find videos with tags
     },
   });
+
+
   
   // Fetch NIP-71 kind 22 (short video) events
   const { events: kind22Events } = useNostrEvents({
@@ -75,6 +190,16 @@ const ReelFeed: React.FC = () => {
       limit: 100 * loadMoreCounter,
     },
   });
+
+  // Fetch follow lists from other users to check for mutual follows
+  const { events: otherFollowLists } = useNostrEvents({
+    filter: {
+      kinds: [3], // Follow lists
+      limit: 50 * loadMoreCounter,
+    },
+  });
+
+
 
   // Helper function to check if an event contains a video
   const hasVideo = (event: NostrEvent): boolean => {
@@ -103,6 +228,26 @@ const ReelFeed: React.FC = () => {
           }
         } catch (error) {
           // Invalid URL, continue checking other URLs
+          continue;
+        }
+      }
+    }
+    
+    // Also check for common video hosting platforms
+    const videoPlatforms = [
+      'youtube.com', 'youtu.be', 'vimeo.com', 'dailymotion.com', 
+      'twitch.tv', 'tiktok.com', 'instagram.com', 'facebook.com'
+    ];
+    
+    if (urls) {
+      for (const url of urls) {
+        try {
+          const urlObj = new URL(url);
+          const hostname = urlObj.hostname.toLowerCase();
+          if (videoPlatforms.some(platform => hostname.includes(platform))) {
+            return true;
+          }
+        } catch (error) {
           continue;
         }
       }
@@ -143,9 +288,61 @@ const ReelFeed: React.FC = () => {
     return referencedIds;
   };
 
-  // Combine and filter all events
+  // Helper function to determine priority for a video event
+  const getEventPriority = (event: NostrEvent, allRawEvents: NostrEvent[]): number => {
+    if (!currentUserHexPubkey) return 3; // Default priority for non-logged-in users
+    
+    // Priority 1: Events from followed users or tagged by followed users
+    if (followedPubkeys.has(event.pubkey)) {
+      return 1;
+    }
+    
+    // Check if this event is tagged by a followed user
+    const taggedByFollowed = allRawEvents.some(otherEvent => {
+      if (!followedPubkeys.has(otherEvent.pubkey)) return false;
+      
+      // Check if otherEvent references this event
+      const referencedIds = getReferencedEventIds(otherEvent);
+      return referencedIds.includes(event.id);
+    });
+    
+    if (taggedByFollowed) {
+      return 1;
+    }
+    
+    // Priority 2: Community (content from current user and content tagged by current user)
+    const isFromCurrentUser = event.pubkey === currentUserHexPubkey;
+    
+    // Check if current user has tagged this event (replied, quoted, or reacted to it)
+    const taggedByCurrentUser = allRawEvents.some(otherEvent => {
+      if (otherEvent.pubkey !== currentUserHexPubkey) return false;
+      
+      // Check if otherEvent references this event
+      const referencedIds = getReferencedEventIds(otherEvent);
+      return referencedIds.includes(event.id);
+    });
+    
+    // Check if current user is mentioned in this event
+    const mentionsUser = event.tags.some(tag => tag[0] === 'p' && tag[1] === currentUserHexPubkey);
+    
+    // Check if this event replies to content from current user
+    const repliesToUser = getReferencedEventIds(event).some(id => {
+      const originalEvent = allRawEvents.find(e => e.id === id);
+      return originalEvent && originalEvent.pubkey === currentUserHexPubkey;
+    });
+    
+    // Priority 2: Community (content from current user and content tagged by current user)
+    if (isFromCurrentUser || taggedByCurrentUser || mentionsUser || repliesToUser) {
+      return 2;
+    }
+    
+    // Priority 3: All other events
+    return 3;
+  };
+
+  // Combine and filter all events with priority ordering
   const events = useMemo(() => {
-    const allRawEvents = [...(allEvents || []), ...(kind22Events || []), ...(replyEvents || [])];
+    const allRawEvents = [...(allEvents || []), ...(kind22Events || []), ...(replyEvents || []), ...(otherFollowLists || [])];
     
     // Filter out blacklisted pubkeys
     const filteredEvents = allRawEvents.filter((event: NostrEvent) => {
@@ -156,17 +353,33 @@ const ReelFeed: React.FC = () => {
     // Create a set of event IDs that should be included
     const includedEventIds = new Set<string>();
     
-    // 1. Include all kind 22 events
+    // Debug logging
+    console.log('ReelFeed Debug:', {
+      currentUserPubkey,
+      followedPubkeysCount: followedPubkeys.size,
+      allEventsCount: allEvents?.length || 0,
+      kind22EventsCount: kind22Events?.length || 0,
+      replyEventsCount: replyEvents?.length || 0,
+      totalRawEvents: allRawEvents.length
+    });
+    
+    // 1. Include all kind 22 events (NIP-71 short videos)
     kind22Events?.forEach((event: NostrEvent) => {
       if (!blacklistPubkeys.has(event.pubkey)) {
         includedEventIds.add(event.id);
+        console.log('Including kind 22 event:', event.id, 'from pubkey:', event.pubkey);
       }
     });
     
-    // 2. Include events with videos and reel tags
+    // 2. Include events with videos (include ALL videos, priority will be applied later)
     allEvents?.forEach((event: NostrEvent) => {
-      if (!blacklistPubkeys.has(event.pubkey) && hasVideo(event) && hasReelTags(event)) {
+      if (!blacklistPubkeys.has(event.pubkey) && hasVideo(event)) {
+        // Skip if this is already a kind 22 event (handled above)
+        if (event.kind === 22) return;
+        
+        // Include ALL videos - priority will be determined by getEventPriority
         includedEventIds.add(event.id);
+        console.log('Including video:', event.id, 'from pubkey:', event.pubkey);
       }
     });
     
@@ -179,14 +392,41 @@ const ReelFeed: React.FC = () => {
           const originalEvent = allRawEvents.find(e => e.id === id);
           if (originalEvent && hasVideo(originalEvent)) {
             includedEventIds.add(id);
+            console.log('Including referenced video:', id, 'from pubkey:', originalEvent.pubkey);
           }
         });
       }
     });
     
-    // Return only the events that should be included
-    return filteredEvents.filter((event: NostrEvent) => includedEventIds.has(event.id));
-  }, [allEvents, kind22Events, replyEvents, loadMoreCounter]);
+    // Get the events that should be included
+    const includedEvents = filteredEvents.filter((event: NostrEvent) => includedEventIds.has(event.id));
+    
+    console.log('Final included events:', includedEvents.length);
+    
+    // Sort by priority first, then by creation time (newest first within each priority)
+    const sortedEvents = includedEvents.sort((a, b) => {
+      const priorityA = getEventPriority(a, allRawEvents);
+      const priorityB = getEventPriority(b, allRawEvents);
+      
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB; // Lower priority number = higher priority
+      }
+      
+      // Within same priority, sort by creation time (newest first)
+      return b.created_at - a.created_at;
+    });
+    
+    // Debug priority distribution
+    const priorityCounts = sortedEvents.reduce((acc, event) => {
+      const priority = getEventPriority(event, allRawEvents);
+      acc[priority] = (acc[priority] || 0) + 1;
+      return acc;
+    }, {} as Record<number, number>);
+    
+    console.log('Priority distribution:', priorityCounts);
+    
+    return sortedEvents;
+  }, [allEvents, kind22Events, replyEvents, otherFollowLists, loadMoreCounter, currentUserHexPubkey, followedPubkeys]);
 
   // Load more events if we don't have enough after filtering
   useEffect(() => {
@@ -216,18 +456,14 @@ const ReelFeed: React.FC = () => {
 
   // Update liked status based on fetched reactions
   useEffect(() => {
-    if (!reactions) return;
-    
-    // Check local storage for current user pubkey
-    const storedPubkey = typeof window !== 'undefined' ? localStorage.getItem('pubkey') : null;
-    if (!storedPubkey) return;
+    if (!reactions || !currentUserHexPubkey) return;
     
     // Update liked status for each video
     const likedStatus: Record<string, boolean> = {};
     
     reactions.forEach(reaction => {
       // Only count reactions from the current user
-      if (reaction.pubkey === storedPubkey) {
+      if (reaction.pubkey === currentUserHexPubkey) {
         // Find the target event id
         const eventTag = reaction.tags.find(tag => tag[0] === 'e');
         if (eventTag && eventTag[1]) {
@@ -237,7 +473,7 @@ const ReelFeed: React.FC = () => {
     });
     
     setIsLiked(likedStatus);
-  }, [reactions]);
+  }, [reactions, currentUserHexPubkey]);
 
   // Parse video events from all kinds
   useEffect(() => {
@@ -254,51 +490,55 @@ const ReelFeed: React.FC = () => {
           const durationTag = event.tags.find((tag: string[]) => tag[0] === "duration");
           const duration = durationTag ? parseInt(durationTag[1]) : undefined;
 
-          // Extract video data from imeta tags
-          const imetaTags = event.tags.filter((tag: string[]) => tag[0] === "imeta");
-          if (imetaTags.length === 0) return null;
-          
-          // Find the first valid imeta tag with a video URL
+          // Extract video data from imeta tags or content
           let videoUrl = "";
           let imageUrl = "";
           let dimensions = undefined;
           let mimeType = undefined;
           
-          for (const imeta of imetaTags) {
-            // Parse dimension info
-            const dimInfo = imeta.find((item: string) => item.startsWith("dim "));
-            if (dimInfo) {
-              const [width, height] = dimInfo.replace("dim ", "").split("x").map(Number);
-              dimensions = { width, height };
-            }
-            
-            // Parse mime type
-            const mInfo = imeta.find((item: string) => item.startsWith("m "));
-            if (mInfo) {
-              mimeType = mInfo.replace("m ", "");
-            }
-            
-            // Check if it's a video mime type
-            if (mimeType && mimeType.startsWith("video/")) {
-              // Get video URL
-              const urlInfo = imeta.find((item: string) => item.startsWith("url "));
-              if (urlInfo) {
-                videoUrl = urlInfo.replace("url ", "");
+          // First try to get video data from imeta tags
+          const imetaTags = event.tags.filter((tag: string[]) => tag[0] === "imeta");
+          if (imetaTags.length > 0) {
+            for (const imeta of imetaTags) {
+              // Parse dimension info
+              const dimInfo = imeta.find((item: string) => item.startsWith("dim "));
+              if (dimInfo) {
+                const [width, height] = dimInfo.replace("dim ", "").split("x").map(Number);
+                dimensions = { width, height };
               }
               
-              // Get image preview URL
-              const imageInfo = imeta.find((item: string) => item.startsWith("image "));
-              if (imageInfo) {
-                imageUrl = imageInfo.replace("image ", "");
+              // Parse mime type
+              const mInfo = imeta.find((item: string) => item.startsWith("m "));
+              if (mInfo) {
+                mimeType = mInfo.replace("m ", "");
               }
               
-              if (videoUrl) break; // Found a valid video URL
+              // Check if it's a video mime type
+              if (mimeType && mimeType.startsWith("video/")) {
+                // Get video URL
+                const urlInfo = imeta.find((item: string) => item.startsWith("url "));
+                if (urlInfo) {
+                  videoUrl = urlInfo.replace("url ", "");
+                }
+                
+                // Get image preview URL
+                const imageInfo = imeta.find((item: string) => item.startsWith("image "));
+                if (imageInfo) {
+                  imageUrl = imageInfo.replace("image ", "");
+                }
+                
+                if (videoUrl) break; // Found a valid video URL
+              }
             }
           }
           
           // If no video URL found in imeta tags, try to extract from content
           if (!videoUrl) {
             const videoExtensions = ['mp4', 'webm', 'mov', 'avi', 'm4v', 'mkv', 'm4a'];
+            const videoPlatforms = [
+              'youtube.com', 'youtu.be', 'vimeo.com', 'dailymotion.com', 
+              'twitch.tv', 'tiktok.com', 'instagram.com', 'facebook.com'
+            ];
             const urlRegex = /https?:\/\/[^\s]+/g;
             const urls = event.content.match(urlRegex);
             
@@ -307,8 +547,17 @@ const ReelFeed: React.FC = () => {
                 try {
                   const urlObj = new URL(url);
                   const pathname = urlObj.pathname.toLowerCase();
+                  const hostname = urlObj.hostname.toLowerCase();
                   const extension = pathname.split('.').pop();
+                  
+                  // Check for video file extensions
                   if (extension && videoExtensions.includes(extension)) {
+                    videoUrl = url;
+                    break;
+                  }
+                  
+                  // Check for video platforms
+                  if (videoPlatforms.some(platform => hostname.includes(platform))) {
                     videoUrl = url;
                     break;
                   }
@@ -320,7 +569,29 @@ const ReelFeed: React.FC = () => {
             }
           }
           
+          // If still no video URL, check if this is a kind 22 event (NIP-71 short video)
+          if (!videoUrl && event.kind === 22) {
+            // For kind 22 events, try to extract URL from content
+            const urlRegex = /https?:\/\/[^\s]+/g;
+            const urls = event.content.match(urlRegex);
+            if (urls && urls.length > 0) {
+              videoUrl = urls[0]; // Use the first URL found
+            }
+          }
+          
           if (!videoUrl) return null; // Skip if no valid video URL found
+          
+          const priority = getEventPriority(event, [...(allEvents || []), ...(kind22Events || []), ...(replyEvents || [])]);
+          
+          console.log('Parsed video:', {
+            id: event.id,
+            pubkey: event.pubkey,
+            title,
+            videoUrl,
+            priority,
+            isFollow: followedPubkeys.has(event.pubkey),
+            hasReelTags: hasReelTags(event)
+          });
           
           return {
             id: event.id,
@@ -332,7 +603,8 @@ const ReelFeed: React.FC = () => {
             imageUrl,
             duration,
             dimensions,
-            mimeType
+            mimeType,
+            priority
           };
         } catch (error) {
           console.error("Error parsing video event:", error);
@@ -342,7 +614,7 @@ const ReelFeed: React.FC = () => {
       .filter(Boolean) as VideoEvent[]; // Filter out null values
       
     setVideoEvents(parsedEvents);
-  }, [events]);
+  }, [events, allEvents, kind22Events, replyEvents]);
 
   // Touch handlers for swiping
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -443,7 +715,7 @@ const ReelFeed: React.FC = () => {
     // Check if user is logged in
     const loginType = typeof window !== 'undefined' ? localStorage.getItem('loginType') : null;
     
-    if (!loginType) {
+    if (!loginType || !currentUserHexPubkey) {
       toast({
         title: "Login required",
         description: "Please login to like videos",
@@ -638,7 +910,24 @@ const ReelFeed: React.FC = () => {
   if (videoEvents.length === 0) {
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center text-white">
-        <p>Loading videos...</p>
+        <div className="text-center">
+          <p>Loading videos...</p>
+          {isClient && currentUserPubkey && (
+            <div className="mt-4 text-sm text-gray-400">
+              <p>Debug Info:</p>
+              <p>User: {currentUserPubkey.slice(0, 8)}...</p>
+              <p>User Hex: {currentUserHexPubkey?.slice(0, 8)}...</p>
+              <p>Follows: {followedPubkeys.size}</p>
+              <p>Follow List Events: {followListEvents?.length || 0}</p>
+              <p>Total Events: {events.length}</p>
+              <p>All Events: {allEvents?.length || 0}</p>
+              <p>Kind 22: {kind22Events?.length || 0}</p>
+              {followedPubkeys.size > 0 && (
+                <p>First 3 Follows: {Array.from(followedPubkeys).slice(0, 3).map(p => p.slice(0, 8)).join(', ')}...</p>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -696,39 +985,48 @@ const ReelFeed: React.FC = () => {
           toggleAudioMute={toggleAudioMute}
           increaseVolume={increaseVolume}
           decreaseVolume={decreaseVolume}
+          currentUserPubkey={currentUserPubkey}
+          isClient={isClient}
         />
       ))}
       
       {/* Progress indicators */}
-      <div className="absolute top-4 left-0 right-0 flex justify-center gap-1 px-4 z-30">
+      <div className="absolute top-4 left-0 right-0 flex justify-center gap-1 px-4 z-40">
         {videoEvents.map((_, index) => (
-          <div 
+          <button
             key={index} 
             className={cn(
-              "h-1 rounded-full transition-all",
+              "h-1 rounded-full transition-all cursor-pointer",
               index === currentVideoIndex 
                 ? "bg-white w-6" 
                 : "bg-white/40 w-4"
             )}
+            onClick={() => setCurrentVideoIndex(index)}
           />
         ))}
       </div>
 
-      {/* Keyboard navigation help (desktop only) */}
-      <div className="hidden md:block absolute bottom-20 right-4 text-white/60 text-xs bg-black/20 px-3 py-2 rounded-lg backdrop-blur-sm">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
-            <span>↑↓ Navigate</span>
-            <span>•</span>
-            <span>Space Play/Pause</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span>M Toggle Audio</span>
-            <span>•</span>
-            <span>Ctrl+←→ Volume</span>
+      {/* Priority system info (only show for logged-in users) */}
+      {isClient && currentUserPubkey && (
+        <div className="absolute top-16 right-4 z-30">
+          <div className="flex items-center gap-2 text-white/60 text-xs bg-black/20 px-3 py-2 rounded-lg backdrop-blur-sm">
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+              <span>Follows</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+              <span>Community</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-gray-500"></div>
+              <span>Global</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+
 
       {/* Comment Modal */}
       <Dialog open={commentModalOpen} onOpenChange={setCommentModalOpen}>
@@ -945,6 +1243,8 @@ interface VideoEventDisplayProps {
   toggleAudioMute: () => void;
   increaseVolume: () => void;
   decreaseVolume: () => void;
+  currentUserPubkey: string | null;
+  isClient: boolean;
 }
 
 const VideoEventDisplay: React.FC<VideoEventDisplayProps> = ({ 
@@ -965,7 +1265,9 @@ const VideoEventDisplay: React.FC<VideoEventDisplayProps> = ({
   volume,
   toggleAudioMute,
   increaseVolume,
-  decreaseVolume
+  decreaseVolume,
+  currentUserPubkey,
+  isClient
 }) => {
   const { data: userData } = useProfile({
     pubkey: video.pubkey,
@@ -1001,6 +1303,22 @@ const VideoEventDisplay: React.FC<VideoEventDisplayProps> = ({
         playsInline
         autoPlay={index === currentIndex}
       />
+      
+      {/* Priority indicator */}
+      {isClient && currentUserPubkey && (
+        <div className="absolute top-16 left-4 z-20">
+          <div className={cn(
+            "px-2 py-1 rounded-full text-xs font-medium",
+            video.priority === 1 ? "bg-blue-500 text-white" :
+            video.priority === 2 ? "bg-green-500 text-white" :
+            "bg-gray-500 text-white"
+          )}>
+            {video.priority === 1 ? "Follows" : 
+             video.priority === 2 ? "Community" : 
+             "Global"}
+          </div>
+        </div>
+      )}
       
       {/* Video info overlay */}
       <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/70 to-transparent">
