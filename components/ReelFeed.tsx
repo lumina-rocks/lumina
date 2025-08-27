@@ -1,12 +1,17 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useNostrEvents, useNostr, dateToUnix } from "nostr-react";
-import { ChevronUp, ChevronDown, Heart, MessageCircle, Share2, User } from "lucide-react";
+import { ChevronUp, ChevronDown, Heart, MessageCircle, Share2, User, X, Copy, Check, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { nip19, Event as NostrEvent } from "nostr-tools";
 import { useProfile } from "nostr-react";
 import Link from "next/link";
 import { blacklistPubkeys, signEvent } from "@/utils/utils";
 import { toast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 
 // Define interface for NIP-71 video event
 interface VideoEvent {
@@ -30,6 +35,13 @@ const ReelFeed: React.FC = () => {
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [videoEvents, setVideoEvents] = useState<VideoEvent[]>([]);
   const [loadMoreCounter, setLoadMoreCounter] = useState(1); // Counter to trigger loading more events
+  const [commentModalOpen, setCommentModalOpen] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState<VideoEvent | null>(null);
+  const [commentText, setCommentText] = useState("");
+  const [copiedText, setCopiedText] = useState<string | null>(null);
+  const [commentExpires, setCommentExpires] = useState(true);
+  const [showFeed, setShowFeed] = useState(false);
   const { publish } = useNostr();
   
   // Define reel tags for filtering
@@ -179,11 +191,20 @@ const ReelFeed: React.FC = () => {
     }
   }, [events, allEvents, kind22Events, replyEvents, loadMoreCounter]);
 
-  // Track reactions to update UI accordingly
+  // Track reactions to update UI accordingly - use a stable array to prevent re-fetching
+  const videoEventIds = useMemo(() => videoEvents.map(v => v.id), [videoEvents]);
   const { events: reactions } = useNostrEvents({
     filter: {
       kinds: [7], // Reaction events
-      '#e': videoEvents.map(v => v.id),
+      '#e': videoEventIds,
+    },
+  });
+
+  // Fetch comments (kind 1111) for the videos - use a stable array to prevent re-fetching
+  const { events: comments } = useNostrEvents({
+    filter: {
+      kinds: [1111], // Comment events
+      '#e': videoEventIds,
     },
   });
 
@@ -343,6 +364,39 @@ const ReelFeed: React.FC = () => {
     setTouchEnd(null);
   };
 
+  // Keyboard handlers for desktop navigation
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Only handle arrow keys when feed is not open
+    if (showFeed) return;
+    
+    switch (e.key) {
+      case 'ArrowUp':
+        e.preventDefault();
+        if (currentVideoIndex > 0) {
+          setCurrentVideoIndex(prev => prev - 1);
+        }
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        if (currentVideoIndex < videoEvents.length - 1) {
+          setCurrentVideoIndex(prev => prev + 1);
+        }
+        break;
+      case ' ':
+        e.preventDefault();
+        // Toggle play/pause of current video
+        const currentVideo = videoRefs.current[videoEvents[currentVideoIndex]?.id];
+        if (currentVideo) {
+          if (currentVideo.paused) {
+            currentVideo.play().catch(err => console.error("Error playing video:", err));
+          } else {
+            currentVideo.pause();
+          }
+        }
+        break;
+    }
+  };
+
   // Play current video and pause others
   useEffect(() => {
     if (videoEvents.length === 0) return;
@@ -390,12 +444,7 @@ const ReelFeed: React.FC = () => {
       if (signedEvent) {
         publish(signedEvent);
         
-        // Update UI immediately
-        setIsLiked(prev => ({
-          ...prev,
-          [id]: !prev[id]
-        }));
-        
+        // Don't update UI immediately - let the useEffect handle it after the reaction is published
         toast({
           title: isLiked[id] ? "Unliked" : "Liked",
           description: `Successfully ${isLiked[id] ? 'removed like from' : 'liked'} the video`,
@@ -417,6 +466,116 @@ const ReelFeed: React.FC = () => {
     }
   };
 
+  // Toggle feed display
+  const toggleFeed = () => {
+    setShowFeed(prev => !prev);
+  };
+
+  // Open comment modal
+  const openCommentModal = (video: VideoEvent) => {
+    const loginType = typeof window !== 'undefined' ? localStorage.getItem('loginType') : null;
+    
+    if (!loginType) {
+      toast({
+        title: "Login required",
+        description: "Please login to comment on videos",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setSelectedVideo(video);
+    setCommentModalOpen(true);
+  };
+
+  // Submit comment
+  const submitComment = async () => {
+    if (!selectedVideo || !commentText.trim()) return;
+    
+    const loginType = typeof window !== 'undefined' ? localStorage.getItem('loginType') : null;
+    if (!loginType) return;
+
+    // Create base tags
+    const tags = [
+      ['e', selectedVideo.id], // Reference to the video event
+      ['k', '22'], // Specify that we're commenting on a kind 22 event
+    ];
+
+    // Add expiration tag only if user wants the comment to expire
+    if (commentExpires) {
+      // Calculate expiration time (2 months from now)
+      const expirationTime = Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 60); // 60 days
+      tags.push(['expiration', expirationTime.toString()]);
+    }
+
+    // Create a kind 1111 comment event
+    const eventToSend: Partial<NostrEvent> = {
+      kind: 1111,
+      content: commentText,
+      tags,
+      created_at: dateToUnix(),
+    };
+
+    try {
+      // Sign and publish the event
+      const signedEvent = await signEvent(loginType, eventToSend as NostrEvent);
+      
+      if (signedEvent) {
+        publish(signedEvent);
+        
+        toast({
+          title: "Comment posted",
+          description: "Your comment has been posted successfully",
+        });
+        
+        // Reset form
+        setCommentText("");
+        setCommentExpires(true); // Reset to default (expires)
+        setCommentModalOpen(false);
+        setSelectedVideo(null);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to sign comment event",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error sending comment:", error);
+      toast({
+        title: "Error",
+        description: "Failed to post comment",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Open share modal
+  const openShareModal = (video: VideoEvent) => {
+    setSelectedVideo(video);
+    setShareModalOpen(true);
+  };
+
+  // Copy text to clipboard
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedText(label);
+      toast({
+        title: "Copied!",
+        description: `${label} copied to clipboard`,
+      });
+      setTimeout(() => setCopiedText(null), 2000);
+    } catch (error) {
+      console.error("Failed to copy:", error);
+      toast({
+        title: "Error",
+        description: "Failed to copy to clipboard",
+        variant: "destructive"
+      });
+    }
+  };
+
   if (videoEvents.length === 0) {
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center text-white">
@@ -431,6 +590,8 @@ const ReelFeed: React.FC = () => {
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
     >
       {/* Navigation indicators */}
       <div className="absolute top-1/2 left-6 z-30 transform -translate-y-1/2">
@@ -465,6 +626,12 @@ const ReelFeed: React.FC = () => {
           isLiked={!!isLiked[video.id]}
           toggleLike={() => toggleLike(video.id)}
           reactionCount={countReactionsForEvent(reactions, video.id)}
+          comments={getCommentsForEvent(comments, video.id)}
+          reactions={getReactionsForEvent(reactions, video.id)}
+          onComment={() => openCommentModal(video)}
+          onShare={() => openShareModal(video)}
+          showFeed={showFeed}
+          toggleFeed={toggleFeed}
         />
       ))}
       
@@ -482,6 +649,122 @@ const ReelFeed: React.FC = () => {
           />
         ))}
       </div>
+
+      {/* Keyboard navigation help (desktop only) */}
+      <div className="hidden md:block absolute bottom-20 right-4 text-white/60 text-xs bg-black/20 px-3 py-2 rounded-lg backdrop-blur-sm">
+        <div className="flex items-center gap-2">
+          <span>↑↓ Navigate</span>
+          <span>•</span>
+          <span>Space Play/Pause</span>
+        </div>
+      </div>
+
+      {/* Comment Modal */}
+      <Dialog open={commentModalOpen} onOpenChange={setCommentModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Comment</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="comment">Comment</Label>
+              <Textarea
+                id="comment"
+                placeholder="Write your comment..."
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                className="min-h-[100px]"
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="comment-expires"
+                  checked={commentExpires}
+                  onCheckedChange={setCommentExpires}
+                />
+                <Label htmlFor="comment-expires">
+                  Comment expires in 2 months
+                </Label>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => {
+                setCommentModalOpen(false);
+                setCommentText("");
+                setCommentExpires(true);
+              }}>
+                Cancel
+              </Button>
+              <Button onClick={submitComment} disabled={!commentText.trim()}>
+                Post Comment
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Share Modal */}
+      <Dialog open={shareModalOpen} onOpenChange={setShareModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Share Video</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {selectedVideo && (
+              <>
+                <div>
+                  <Label>Video Event (nevent)</Label>
+                  <div className="flex items-center gap-2 p-2 bg-gray-100 rounded">
+                    <code className="text-sm flex-1 break-all">
+                      {nip19.neventEncode({
+                        id: selectedVideo.id,
+                        relays: []
+                      })}
+                    </code>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => copyToClipboard(
+                        nip19.neventEncode({
+                          id: selectedVideo.id,
+                          relays: []
+                        }),
+                        "nevent"
+                      )}
+                    >
+                      {copiedText === "nevent" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+                <div>
+                  <Label>Author Profile (npub)</Label>
+                  <div className="flex items-center gap-2 p-2 bg-gray-100 rounded">
+                    <code className="text-sm flex-1 break-all">
+                      {nip19.npubEncode(selectedVideo.pubkey)}
+                    </code>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => copyToClipboard(
+                        nip19.npubEncode(selectedVideo.pubkey),
+                        "npub"
+                      )}
+                    >
+                      {copiedText === "npub" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={() => setShareModalOpen(false)}>
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -496,6 +779,82 @@ function countReactionsForEvent(reactions: NostrEvent[], eventId: string): numbe
   }).length;
 }
 
+// Helper function to get comments for a specific event
+function getCommentsForEvent(comments: NostrEvent[], eventId: string): NostrEvent[] {
+  if (!comments) return [];
+  
+  return comments.filter(comment => {
+    const eventTag = comment.tags.find(tag => tag[0] === 'e');
+    return eventTag && eventTag[1] === eventId;
+  }).sort((a, b) => a.created_at - b.created_at); // Sort by creation time
+}
+
+// Helper function to get reactions for a specific event
+function getReactionsForEvent(reactions: NostrEvent[], eventId: string): NostrEvent[] {
+  if (!reactions) return [];
+  
+  return reactions.filter(reaction => {
+    const eventTag = reaction.tags.find(tag => tag[0] === 'e');
+    return eventTag && eventTag[1] === eventId;
+  });
+}
+
+// Component for displaying a single reaction
+const ReactionItem: React.FC<{ reaction: NostrEvent }> = ({ reaction }) => {
+  const { data: reactionUserData } = useProfile({
+    pubkey: reaction.pubkey,
+  });
+  const reactionUsername = reactionUserData?.name || reactionUserData?.display_name || 
+    `${nip19.npubEncode(reaction.pubkey).slice(0, 8)}...`;
+  const reactionProfileImage = reactionUserData?.picture || `https://robohash.org/${reaction.pubkey}`;
+  
+  return (
+    <div className="flex items-center gap-3 p-2 bg-gray-800/50 rounded">
+      <div className="w-8 h-8 rounded-full overflow-hidden">
+        <img src={reactionProfileImage} alt={reactionUsername} className="w-full h-full object-cover" />
+      </div>
+      <div className="flex-1">
+        <p className="text-white text-sm font-medium">{reactionUsername}</p>
+        <p className="text-gray-300 text-xs">
+          {reaction.content === '+' ? '❤️ Liked' : 
+           reaction.content === '-' ? '👎 Disliked' : 
+           `Reacted: ${reaction.content}`}
+        </p>
+      </div>
+      <span className="text-gray-400 text-xs">
+        {new Date(reaction.created_at * 1000).toLocaleDateString()}
+      </span>
+    </div>
+  );
+};
+
+// Component for displaying a single comment
+const CommentItem: React.FC<{ comment: NostrEvent }> = ({ comment }) => {
+  const { data: commentUserData } = useProfile({
+    pubkey: comment.pubkey,
+  });
+  const commentUsername = commentUserData?.name || commentUserData?.display_name || 
+    `${nip19.npubEncode(comment.pubkey).slice(0, 8)}...`;
+  const commentProfileImage = commentUserData?.picture || `https://robohash.org/${comment.pubkey}`;
+  
+  return (
+    <div className="p-2 bg-gray-800/50 rounded">
+      <div className="flex items-center gap-3 mb-2">
+        <div className="w-8 h-8 rounded-full overflow-hidden">
+          <img src={commentProfileImage} alt={commentUsername} className="w-full h-full object-cover" />
+        </div>
+        <div className="flex-1">
+          <p className="text-white text-sm font-medium">{commentUsername}</p>
+          <span className="text-gray-400 text-xs">
+            {new Date(comment.created_at * 1000).toLocaleDateString()}
+          </span>
+        </div>
+      </div>
+      <p className="text-white text-sm ml-11">{comment.content}</p>
+    </div>
+  );
+};
+
 interface VideoEventDisplayProps {
   video: VideoEvent;
   index: number;
@@ -504,6 +863,12 @@ interface VideoEventDisplayProps {
   isLiked: boolean;
   toggleLike: () => void;
   reactionCount: number;
+  comments: NostrEvent[];
+  reactions: NostrEvent[];
+  onComment: () => void;
+  onShare: () => void;
+  showFeed: boolean;
+  toggleFeed: () => void;
 }
 
 const VideoEventDisplay: React.FC<VideoEventDisplayProps> = ({ 
@@ -513,7 +878,13 @@ const VideoEventDisplay: React.FC<VideoEventDisplayProps> = ({
   videoRef,
   isLiked,
   toggleLike,
-  reactionCount
+  reactionCount,
+  comments,
+  reactions,
+  onComment,
+  onShare,
+  showFeed,
+  toggleFeed
 }) => {
   const { data: userData } = useProfile({
     pubkey: video.pubkey,
@@ -543,7 +914,7 @@ const VideoEventDisplay: React.FC<VideoEventDisplayProps> = ({
         ref={videoRef}
         src={video.videoUrl}
         poster={video.imageUrl}
-        className="w-full h-full object-cover"
+        className="w-full h-full object-contain bg-black"
         loop
         muted
         playsInline
@@ -588,17 +959,80 @@ const VideoEventDisplay: React.FC<VideoEventDisplayProps> = ({
               />
               <span className="text-white text-xs mt-1">{likesCount}</span>
             </button>
-            <button className="flex flex-col items-center">
+            <button 
+              className="flex flex-col items-center"
+              onClick={onComment}
+            >
               <MessageCircle className="h-8 w-8 text-white" />
               <span className="text-white text-xs mt-1">{commentsCount}</span>
             </button>
-            <button className="flex flex-col items-center">
+            <button 
+              className="flex flex-col items-center"
+              onClick={toggleFeed}
+            >
+              <Activity className="h-8 w-8 text-white" />
+              <span className="text-white text-xs mt-1">Feed</span>
+            </button>
+            <button 
+              className="flex flex-col items-center"
+              onClick={onShare}
+            >
               <Share2 className="h-8 w-8 text-white" />
               <span className="text-white text-xs mt-1">{sharesCount}</span>
             </button>
           </div>
         </div>
       </div>
+
+      {/* Feed Overlay */}
+      {showFeed && (
+        <div className="absolute inset-0 bg-black/80 flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b border-gray-700">
+            <h3 className="text-white font-semibold">Activity Feed</h3>
+            <button 
+              onClick={toggleFeed}
+              className="text-white hover:text-gray-300"
+            >
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {/* Reactions Section */}
+            {reactions.length > 0 && (
+              <div>
+                <h4 className="text-white font-medium mb-2">Reactions ({reactions.length})</h4>
+                <div className="space-y-2">
+                  {reactions.slice(0, 10).map((reaction, idx) => (
+                    <ReactionItem key={idx} reaction={reaction} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Comments Section */}
+            {comments.length > 0 && (
+              <div>
+                <h4 className="text-white font-medium mb-2">Comments ({comments.length})</h4>
+                <div className="space-y-2">
+                  {comments.slice(0, 10).map((comment, idx) => (
+                    <CommentItem key={idx} comment={comment} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Empty State */}
+            {reactions.length === 0 && comments.length === 0 && (
+              <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                <Activity className="h-12 w-12 mb-4" />
+                <p className="text-center">No activity yet</p>
+                <p className="text-sm text-center">Be the first to react or comment!</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

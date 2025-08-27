@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { useNostrEvents } from "nostr-react";
 import NoteCard from '@/components/NoteCard';
-import CommentsCompontent from "@/components/CommentsCompontent";
+import CommentsCompontent from "@/components/CommentsComponent";
 import KIND20Card from "./KIND20Card";
 import { getImageUrl } from "@/utils/utils";
 
