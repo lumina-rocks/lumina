@@ -2,3 +2,5 @@ node_modules/
 .next/
 .github/
 .DS_Store
+android/
+ios/
