@@ -23,6 +23,8 @@ import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { signEvent } from "@/utils/utils";
 import { nwc } from "@getalby/sdk";
 import { Sparkles, Zap } from "lucide-react";
+import { publishToOutbox } from "@/utils/publishUtils";
+import { useCurrentUserPubkey } from "@/utils/relayHooks";
 
 // NWC connection storage key (same as used in NostrWalletConnect.tsx)
 const NWC_STORAGE_KEY = "lumina-nwc-connection";
@@ -35,6 +37,7 @@ export default function ZapButton({ event }: { event: any }) {
     }
 
     const { connectedRelays } = useNostr();
+    const currentUserPubkey = useCurrentUserPubkey();
 
     const { events, isLoading } = useNostrEvents({
         filter: {
@@ -49,7 +52,7 @@ export default function ZapButton({ event }: { event: any }) {
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
     const [errorMessage, setErrorMessage] = useState<string>("");
     const [paymentComplete, setPaymentComplete] = useState<boolean>(false);
-    const { publish } = useNostr();
+
 
     // NWC state
     const [useNwc, setUseNwc] = useState<boolean>(false);

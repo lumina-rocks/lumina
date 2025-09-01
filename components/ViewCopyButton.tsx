@@ -44,14 +44,19 @@ export default function ViewCopyButton({ event }: ViewCopyButtonProps) {
     
     const handleCopyNoteId = async () => {
         try {
-            await navigator.clipboard.writeText(nip19.noteEncode(event.id));
+            // Create nevent with relay hints
+            const nevent = nip19.neventEncode({
+                id: event.id,
+                relays: []
+            });
+            await navigator.clipboard.writeText(nevent);
             toast({
-                description: 'Note ID copied to clipboard',
+                description: 'Event ID copied to clipboard',
                 title: 'Copied'
             });
         } catch (err) {
             toast({
-                description: 'Error copying Note ID to clipboard',
+                description: 'Error copying Event ID to clipboard',
                 title: 'Error',
                 variant: 'destructive'
             });
@@ -75,8 +80,11 @@ export default function ViewCopyButton({ event }: ViewCopyButtonProps) {
                         <Button variant="outline" onClick={handleCopyLink}>Copy Link</Button>
                     </div>
                     <div className="flex items-center mb-4">
-                        <Input ref={inputRefID} value={nip19.noteEncode(event.id)} disabled className="mr-2" />
-                        <Button variant="outline" onClick={handleCopyNoteId}>Copy Note ID</Button>
+                        <Input ref={inputRefID} value={nip19.neventEncode({
+                            id: event.id,
+                            relays: []
+                        })} disabled className="mr-2" />
+                        <Button variant="outline" onClick={handleCopyNoteId}>Copy Event ID</Button>
                     </div>
                 </div>
                 <DrawerFooter>

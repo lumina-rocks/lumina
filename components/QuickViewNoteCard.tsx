@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useProfile } from "nostr-react";
 import {
   nip19,
@@ -24,6 +24,7 @@ const QuickViewNoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tag
   const { data: userData } = useProfile({
     pubkey,
   });
+  const [imageError, setImageError] = useState(false);
 
   const title = userData?.username || userData?.display_name || userData?.name || userData?.npub || nip19.npubEncode(pubkey);
   text = text.replaceAll('\n', ' ');
@@ -33,7 +34,11 @@ const QuickViewNoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tag
   const createdAt = new Date(event.created_at * 1000);
   const hrefProfile = `/profile/${nip19.npubEncode(pubkey)}`;
   const profileImageSrc = userData?.picture || "https://robohash.org/" + pubkey;
-  const encodedNoteId = nip19.noteEncode(event.id)
+      // Create nevent with relay hints
+    const nevent = nip19.neventEncode({
+        id: event.id,
+        relays: event.relays || []
+    })
 
   const card = (
     <Card>
@@ -50,6 +55,7 @@ const QuickViewNoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tag
                 style={{ maxHeight: '75vh', margin: 'auto' }} 
                 alt={text} 
                 loading="lazy"
+                onError={() => setImageError(true)}
               />
             </div>
           ) : imageSrc && imageSrc.length > 0 ? (
@@ -64,6 +70,7 @@ const QuickViewNoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tag
                 style={{ maxHeight: '75vh', margin: 'auto' }} 
                 alt={text} 
                 loading="lazy"
+                onError={() => setImageError(true)}
               />
             </div>
           ) : videoSrc && videoSrc.length > 0 ? (
@@ -72,6 +79,13 @@ const QuickViewNoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tag
                 <PlayIcon className='absolute w-7 h-7 lg:w-12 lg:h-12' />
               </div>
               <video src={videoSrc[0] + "#t=0.5"} className='rounded lg:rounded-lg' style={{ maxWidth: '100%', maxHeight: '75vh', objectFit: 'contain', margin: 'auto' }} />
+            </div>
+          ) : imageError ? (
+            // Fallback for failed images
+            <div className="w-full h-32 bg-gray-800 rounded-lg flex items-center justify-center">
+              <div className="text-center text-gray-400">
+                <p className="text-sm">Image unavailable</p>
+              </div>
             </div>
           ) : null}
         </div>
@@ -83,7 +97,7 @@ const QuickViewNoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tag
   return (
     <>
       {linkToNote ? (
-        <Link href={`/note/${encodedNoteId}`}>
+        <Link href={`/note/${nevent}`}>
           {card}
         </Link>
       ) : (

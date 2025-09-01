@@ -30,7 +30,7 @@ const FollowerQuickViewFeed: React.FC<FollowerQuickViewFeedProps> = ({ pubkey })
   const { events, isLoading } = useNostrEvents({
     filter: {
       limit: limit,
-      kinds: [20],
+      kinds: [20, 21, 22],
       authors: followingPubkeys,
     },
   });

@@ -1,6 +1,6 @@
 "use client";
 
-import { BellIcon, GlobeIcon, HomeIcon, RowsIcon, UploadIcon } from "@radix-ui/react-icons"
+import { BellIcon, GlobeIcon, HomeIcon, RowsIcon, UploadIcon, PlayIcon } from "@radix-ui/react-icons"
 import Link from "next/link"
 import { FormEvent, JSX, SVGProps, useEffect, useState } from "react"
 import { useRouter, usePathname } from 'next/navigation'
@@ -31,6 +31,10 @@ export default function BottomBar() {
           <GlobeIcon className={`h-6 w-6`} />
           <span className="sr-only">Global</span>
         </Link>
+        <Link className={`flex flex-col items-center justify-center w-full text-xs gap-1 px-4 ${isActive('/reel', pathname)}`} href="/reel">
+          <PlayIcon className={`h-6 w-6`} />
+          <span className="sr-only">Reels</span>
+        </Link>
         <Link className={`flex flex-col items-center justify-center w-full text-xs gap-1 px-4 ${isActive('/search', pathname)}`} href="/search">
           <SearchIcon className={`h-6 w-6`} />
           <span className="sr-only">Search</span>
@@ -54,6 +58,10 @@ export default function BottomBar() {
       <Link className={`flex flex-col items-center justify-center w-full text-xs gap-1 px-4 ${isActive('/global', pathname)}`} href="/global">
         <GlobeIcon className={`h-6 w-6`} />
         <span className="sr-only">Global</span>
+      </Link>
+      <Link className={`flex flex-col items-center justify-center w-full text-xs gap-1 px-4 ${isActive('/reel', pathname)}`} href="/reel">
+        <PlayIcon className={`h-6 w-6`} />
+        <span className="sr-only">Reels</span>
       </Link>
       {pubkey && window.localStorage.getItem('loginType') != 'readOnly_npub' && (
         <Link className={`flex flex-col items-center justify-center w-full text-xs gap-1 px-4 ${isActive('/upload', pathname)}`} href="/upload">

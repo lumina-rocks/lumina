@@ -14,9 +14,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Globe, Image, ImageIcon, BadgeCheck, Zap } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { publishToOutbox } from "@/utils/publishUtils";
+import { useCurrentUserPubkey } from "@/utils/relayHooks";
 
 export function UpdateProfileForm() {
-    const { publish } = useNostr();
+    const currentUserPubkey = useCurrentUserPubkey();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSaved, setIsSaved] = useState(false);
     const [isDataLoaded, setIsDataLoaded] = useState(false);
@@ -143,7 +145,7 @@ export function UpdateProfileForm() {
                 let isGood = verifyEvent(signedEvent);
 
                 if (isGood) {
-                    publish(signedEvent);
+                    await publishToOutbox(signedEvent, currentUserPubkey || undefined);
                     setIsSaved(true);
                     setTimeout(() => {
                         window.location.href = `/profile/${npub}`;

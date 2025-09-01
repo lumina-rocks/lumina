@@ -12,7 +12,7 @@ const GlobalQuickViewFeed: React.FC = () => {
   const { events, isLoading } = useNostrEvents({
     filter: {
       limit: limit,
-      kinds: [20],
+      kinds: [20, 21, 22],
       since: Math.floor((now.current.getTime() - 24 * 60 * 60 * 1000) / 1000), // Last 24 hours
     },
   });

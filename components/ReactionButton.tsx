@@ -1,6 +1,7 @@
-import { useNostr, useNostrEvents } from "nostr-react"
-import type { Event as NostrEvent } from "nostr-tools"
-import { Button } from "@/components/ui/button"
+import React, { useState, useEffect, useMemo } from "react";
+import { useNostrEvents } from "nostr-react";
+import { Event as NostrEvent } from "nostr-tools";
+import { Button } from "@/components/ui/button";
 import {
   Drawer,
   DrawerClose,
@@ -13,13 +14,13 @@ import {
 import { ReloadIcon } from "@radix-ui/react-icons"
 import ReactionButtonReactionList from "./ReactionButtonReactionList"
 import { signEvent } from "@/utils/utils"
-import { useState, useEffect, useMemo } from "react"
+import { publishToOutbox } from "@/utils/publishUtils";
+import { useCurrentUserPubkey } from "@/utils/relayHooks";
 
 export default function ReactionButton({ event }: { event: any }) {
-  const { publish } = useNostr()
-
   const loginType = typeof window !== "undefined" ? window.localStorage.getItem("loginType") : null
   const loggedInUserPublicKey = typeof window !== "undefined" ? window.localStorage.getItem("pubkey") : null
+  const currentUserPubkey = useCurrentUserPubkey()
 
   const [liked, setLiked] = useState(false)
   const [likeIcon, setLikeIcon] = useState("")
@@ -70,7 +71,7 @@ export default function ReactionButton({ event }: { event: any }) {
     const signedEvent = await signEvent(loginType, likeEvent)
 
     if (signedEvent) {
-      publish(signedEvent)
+      await publishToOutbox(signedEvent, currentUserPubkey || undefined)
       setLiked(true)
       setLikeIcon(message)
       filteredEvents.push(signedEvent)

@@ -4,6 +4,7 @@ import { useNostr, useNostrEvents } from "nostr-react"
 import { nip19, type NostrEvent } from "nostr-tools"
 import type React from "react"
 import { type ChangeEvent, type FormEvent, useState, useEffect, useCallback } from "react"
+import { useSearchParams } from "next/navigation"
 import { Button } from "./ui/button"
 import { Textarea } from "./ui/textarea"
 import { ReloadIcon, UploadIcon, ImageIcon } from "@radix-ui/react-icons"
@@ -24,6 +25,254 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useCurrentUserPubkey } from "@/utils/relayHooks";
+import { getWriteRelays, getRelayConfig } from "@/utils/nip65Utils";
+import { SimplePool } from "nostr-tools";
+import { createHash } from "crypto";
+
+// File type detection functions
+const getFileTypeFromUrl = (url: string): string | null => {
+  try {
+    const urlObj = new URL(url)
+    const pathname = urlObj.pathname.toLowerCase()
+    const extension = pathname.split('.').pop()
+    
+    if (!extension) return null
+    
+    // Image extensions
+    const imageExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'apng', 'avif']
+    if (imageExtensions.includes(extension)) {
+      return 'image'
+    }
+    
+    // Video extensions
+    const videoExtensions = ['mp4', 'webm', 'mov', 'avi', 'm4v', 'mkv', 'm4a']
+    if (videoExtensions.includes(extension)) {
+      return 'video'
+    }
+    
+    return null
+  } catch {
+    return null
+  }
+}
+
+const getFileTypeFromFile = (file: File): string => {
+  if (file.type.startsWith('image/')) {
+    return 'image'
+  } else if (file.type.startsWith('video/') || file.type.startsWith('audio/')) {
+    return 'video'
+  }
+  return 'unknown'
+}
+
+const getKindFromFileType = (fileType: string): string => {
+  switch (fileType) {
+    case 'image':
+      return '20'
+    case 'video':
+      return '21' // Default to normal video, user can change to 22 if needed
+    default:
+      return '20' // Default fallback
+  }
+}
+
+const isValidKindForFileType = (kind: string, fileType: string): boolean => {
+  if (fileType === 'image') {
+    return kind === '20'
+  } else if (fileType === 'video') {
+    return kind === '21' || kind === '22'
+  }
+  return false
+}
+
+// Reference validation functions
+const isValidHexId = (value: string): boolean => {
+  return /^[a-fA-F0-9]{64}$/.test(value)
+}
+
+const isValidNoteId = (value: string): boolean => {
+  return value.startsWith('note') && value.length > 5
+}
+
+const isValidNEvent = (value: string): boolean => {
+  return value.startsWith('nevent') && value.length > 7
+}
+
+const isValidNAddr = (value: string): boolean => {
+  return value.startsWith('naddr') && value.length > 6
+}
+
+const isValidUrl = (value: string): boolean => {
+  try {
+    new URL(value)
+    return true
+  } catch {
+    return false
+  }
+}
+
+const validateReference = (type: "e" | "a" | "u", value: string): { isValid: boolean; error?: string } => {
+  if (!value.trim()) {
+    return { isValid: true } // Empty is valid (optional field)
+  }
+
+  // Remove "nostr:" prefix for validation
+  let valueToValidate = value.trim()
+  if (valueToValidate.startsWith('nostr:')) {
+    valueToValidate = valueToValidate.substring(6)
+  }
+
+  switch (type) {
+    case "e":
+      // Accept hex IDs, note..., nevent..., or URLs containing them
+      if (isValidHexId(valueToValidate) || isValidNoteId(valueToValidate) || isValidNEvent(valueToValidate) || 
+          valueToValidate.includes('note') || valueToValidate.includes('nevent') || /^[a-fA-F0-9]{64}$/.test(valueToValidate)) {
+        return { isValid: true }
+      }
+      return { 
+        isValid: false, 
+        error: "Invalid event reference. Must be a 64-character hex ID, note..., nevent..., or URL containing them" 
+      }
+    
+    case "a":
+      // Accept naddr... or URLs containing them
+      if (isValidNAddr(valueToValidate) || valueToValidate.includes('naddr')) {
+        return { isValid: true }
+      }
+      return { 
+        isValid: false, 
+        error: "Invalid address reference. Must be an naddr... or URL containing it" 
+      }
+    
+    case "u":
+      if (isValidUrl(value)) {
+        return { isValid: true }
+      }
+      return { 
+        isValid: false, 
+        error: "Invalid URL. Must be a valid URL starting with http:// or https://" 
+      }
+    
+    default:
+      return { isValid: false, error: "Unknown reference type" }
+  }
+}
+
+// Normalization functions
+const normalizeEventReference = (value: string): string => {
+  // Remove "nostr:" prefix if present
+  let trimmed = value.trim()
+  if (trimmed.startsWith('nostr:')) {
+    trimmed = trimmed.substring(6)
+  }
+  
+  // If it's already a hex ID, return as is
+  if (isValidHexId(trimmed)) {
+    return trimmed.toLowerCase()
+  }
+  
+  // If it's a note..., extract the hex ID
+  if (isValidNoteId(trimmed)) {
+    try {
+      const decoded = nip19.decode(trimmed)
+      if (decoded.type === 'note' && typeof decoded.data === 'object' && decoded.data !== null && 'id' in decoded.data) {
+        return (decoded.data as { id: string }).id
+      }
+    } catch {
+      // If decoding fails, return as is
+      return trimmed
+    }
+  }
+  
+  // If it's a nevent..., extract the hex ID
+  if (isValidNEvent(trimmed)) {
+    try {
+      const decoded = nip19.decode(trimmed)
+      if (decoded.type === 'nevent' && typeof decoded.data === 'object' && decoded.data !== null && 'id' in decoded.data) {
+        return (decoded.data as { id: string }).id
+      }
+    } catch {
+      // If decoding fails, return as is
+      return trimmed
+    }
+  }
+  
+  // If it's a URL that might contain a note ID, try to extract it
+  if (trimmed.includes('note') || trimmed.includes('nevent')) {
+    const noteMatch = trimmed.match(/(note[a-zA-Z0-9]+)/)
+    const neventMatch = trimmed.match(/(nevent[a-zA-Z0-9]+)/)
+    
+    if (noteMatch) {
+      return normalizeEventReference(noteMatch[1])
+    }
+    if (neventMatch) {
+      return normalizeEventReference(neventMatch[1])
+    }
+  }
+  
+  // If it's a hex ID but with different casing, normalize to lowercase
+  if (/^[a-fA-F0-9]{64}$/.test(trimmed)) {
+    return trimmed.toLowerCase()
+  }
+  
+  return trimmed
+}
+
+const normalizeAddressReference = (value: string): string => {
+  // Remove "nostr:" prefix if present
+  let trimmed = value.trim()
+  if (trimmed.startsWith('nostr:')) {
+    trimmed = trimmed.substring(6)
+  }
+  
+  // If it's already an naddr..., return as is
+  if (isValidNAddr(trimmed)) {
+    return trimmed
+  }
+  
+  // If it's a URL that might contain an naddr, try to extract it
+  if (trimmed.includes('naddr')) {
+    const naddrMatch = trimmed.match(/(naddr[a-zA-Z0-9]+)/)
+    if (naddrMatch) {
+      return naddrMatch[1]
+    }
+  }
+  
+  return trimmed
+}
+
+const normalizeUrl = (value: string): string => {
+  const trimmed = value.trim()
+  
+  try {
+    const url = new URL(trimmed)
+    // Normalize to lowercase protocol and hostname
+    url.protocol = url.protocol.toLowerCase()
+    url.hostname = url.hostname.toLowerCase()
+    // Remove trailing slash from pathname if it's just a slash
+    if (url.pathname === '/') {
+      url.pathname = ''
+    }
+    return url.toString()
+  } catch {
+    return trimmed
+  }
+}
+
+const normalizeReference = (type: "e" | "a" | "u", value: string): string => {
+  switch (type) {
+    case "e":
+      return normalizeEventReference(value)
+    case "a":
+      return normalizeAddressReference(value)
+    case "u":
+      return normalizeUrl(value)
+    default:
+      return value
+  }
+}
 
 // Function to strip metadata from image files
 async function stripImageMetadata(file: File): Promise<File> {
@@ -99,27 +348,45 @@ async function calculateBlurhash(file: File): Promise<string> {
 }
 
 const UploadComponent: React.FC = () => {
+  const searchParams = useSearchParams()
+  const currentUserPubkey = useCurrentUserPubkey()
   const { publish } = useNostr()
-  const { createHash } = require("crypto")
-  const loginType = typeof window !== "undefined" ? window.localStorage.getItem("loginType") : null
   const [previewUrl, setPreviewUrl] = useState("")
-
+  const [imageUrl, setImageUrl] = useState("")
+  const [title, setTitle] = useState("")
+  const [selectedKind, setSelectedKind] = useState("20")
+  const [serverChoice, setServerChoice] = useState("blossom.band")
+  const [enableNip89, setEnableNip89] = useState(false)
+  const [referenceType, setReferenceType] = useState<"e" | "a" | "u">("e")
+  const [referenceValue, setReferenceValue] = useState("")
+  const [detectedFileType, setDetectedFileType] = useState<string | null>(null)
+  const [uploadMethod, setUploadMethod] = useState<"file" | "url">("file")
+  const [thumbnailUrl, setThumbnailUrl] = useState("") // New state for video thumbnails
   const [isLoading, setIsLoading] = useState(false)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [uploadedNoteId, setUploadedNoteId] = useState("")
   const [retryCount, setRetryCount] = useState(0)
   const [shouldFetch, setShouldFetch] = useState(false)
-  const [serverChoice, setServerChoice] = useState("blossom.band")
-  const [enableNip89, setEnableNip89] = useState(false)
+  
+  // Add state for client-side authentication info
+  const [loginType, setLoginType] = useState<string | null>(null)
+  const [isClient, setIsClient] = useState(false)
+
+  // Use useEffect to handle client-side localStorage access
+  useEffect(() => {
+    setIsClient(true)
+    const storedLoginType = window.localStorage.getItem("loginType")
+    setLoginType(storedLoginType)
+  }, [])
 
   const { events, isLoading: isNoteLoading } = useNostrEvents({
     filter: shouldFetch
       ? {
           ids: uploadedNoteId ? [uploadedNoteId] : [],
-          kinds: [20],
+          kinds: [parseInt(selectedKind)],
           limit: 1,
         }
-      : { ids: [], kinds: [20], limit: 1 },
+      : { ids: [], kinds: [parseInt(selectedKind)], limit: 1 },
     enabled: shouldFetch,
   })
 
@@ -161,8 +428,36 @@ const UploadComponent: React.FC = () => {
         setPreviewUrl(url)
       }
 
+      // Detect file type and auto-select kind
+      const fileType = getFileTypeFromFile(file)
+      setDetectedFileType(fileType)
+      
+      if (fileType !== 'unknown') {
+        const suggestedKind = getKindFromFileType(fileType)
+        setSelectedKind(suggestedKind)
+      }
+
       // Optional: Bereinigung alter URLs
       return () => URL.revokeObjectURL(url)
+    }
+  }
+
+  const handleUrlChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const url = event.target.value
+    setImageUrl(url)
+    setPreviewUrl(url)
+    
+    // Detect file type from URL and auto-select kind
+    if (url) {
+      const fileType = getFileTypeFromUrl(url)
+      setDetectedFileType(fileType)
+      
+      if (fileType) {
+        const suggestedKind = getKindFromFileType(fileType)
+        setSelectedKind(suggestedKind)
+      }
+    } else {
+      setDetectedFileType(null)
     }
   }
 
@@ -172,10 +467,10 @@ const UploadComponent: React.FC = () => {
     // Replace links only if they contain https://lumina.rocks
     let updatedValue = value;
     
-    // Replace https://lumina.rocks/profile/npub1... with "nostr:npub1..."
+    // Replace https://lumina.rocks/profile/npub... with "nostr:npub..."
     updatedValue = updatedValue.replace(/https:\/\/lumina\.rocks\/profile\/(npub[1-9a-zA-Z]{0,64})/g, "nostr:$1");
     
-    // Replace https://lumina.rocks/note/note1... with "nostr:note1..."
+    // Replace https://lumina.rocks/note/note... with "nostr:note..."
     updatedValue = updatedValue.replace(/https:\/\/lumina\.rocks\/note\/(note[1-9a-zA-Z]{0,64})/g, "nostr:$1");
     
     // Update the textarea with the modified value
@@ -188,22 +483,88 @@ const UploadComponent: React.FC = () => {
     setServerChoice(value)
   }
 
+  const handleKindChange = (value: string) => {
+    // Validate that the selected kind is compatible with the detected file type
+    if (detectedFileType && !isValidKindForFileType(value, detectedFileType)) {
+      alert(`Invalid kind selection: Kind ${value} is not compatible with ${detectedFileType} files.`)
+      return
+    }
+    setSelectedKind(value)
+  }
+
+  const handleTitleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setTitle(event.target.value)
+  }
+
+  const handleReferenceTypeChange = (value: string) => {
+    setReferenceType(value as "e" | "a" | "u")
+    setReferenceValue("") // Clear the value when type changes
+  }
+
+  const handleReferenceValueChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setReferenceValue(event.target.value)
+  }
+
+  const handleThumbnailUrlChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setThumbnailUrl(event.target.value)
+  }
+
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    
+    // Ensure client is ready
+    if (!isClient) {
+      alert("Please wait for the page to load completely before uploading.")
+      return
+    }
+    
     setIsLoading(true)
+
+    // Check if user is authenticated first
+    const pubkey = window.localStorage.getItem("pubkey")
+    
+    console.log("Authentication check:", { pubkey, loginType })
+    
+    if (!loginType || !pubkey) {
+      alert("You must be logged in to upload files. Please log in and try again.")
+      setIsLoading(false)
+      return
+    }
 
     const formData = new FormData(event.currentTarget)
     const desc = formData.get("description") as string
+    const title = formData.get("title") as string
     let file = formData.get("file") as File
     let sha256 = ""
     let finalNoteContent = desc
     let finalFileUrl = ""
     console.log("File:", file)
+    console.log("File type:", typeof file)
+    console.log("File is null:", file === null)
+    console.log("File is undefined:", file === undefined)
 
-    if (!desc && !file.size) {
-      alert("Please enter a description and/or upload a file")
+    const hasFile = file && file.size && file.size > 0
+    if (!desc && !hasFile && !imageUrl) {
+      alert("Please enter a description and/or upload a file or provide an image URL")
       setIsLoading(false)
       return
+    }
+
+    // Validate kind and file type compatibility
+    if (detectedFileType && !isValidKindForFileType(selectedKind, detectedFileType)) {
+      alert(`Invalid combination: Kind ${selectedKind} cannot be used with ${detectedFileType} files.`)
+      setIsLoading(false)
+      return
+    }
+
+    // Validate reference if provided
+    if (referenceValue.trim()) {
+      const validation = validateReference(referenceType, referenceValue)
+      if (!validation.isValid) {
+        alert(validation.error)
+        setIsLoading(false)
+        return
+      }
     }
 
     // get every hashtag in desc and cut off the # symbol
@@ -228,7 +589,7 @@ const UploadComponent: React.FC = () => {
         file = await stripImageMetadata(file)
 
         const arrayBuffer = await readFileAsArrayBuffer(file)
-        const hashBuffer = createHash("sha256").update(Buffer.from(arrayBuffer)).digest()
+        const hashBuffer = createHash("sha256").update(new Uint8Array(arrayBuffer)).digest()
         sha256 = hashBuffer.toString("hex")
 
         const unixNow = () => Math.floor(Date.now() / 1000)
@@ -257,11 +618,26 @@ const UploadComponent: React.FC = () => {
         }
 
         console.log(authEvent)
+        console.log("Login type:", loginType)
+        console.log("Pubkey from localStorage:", pubkey)
 
         // Sign auth event
-        const authEventSigned = (await signEvent(loginType, authEvent)) as NostrEvent
+        let authEventSigned: NostrEvent
+        try {
+          const signedEvent = await signEvent(loginType, authEvent)
+          if (!signedEvent) {
+            throw new Error("Failed to sign event - no signed event returned")
+          }
+          authEventSigned = signedEvent
+        } catch (error) {
+          console.error("Error signing event:", error)
+          alert(`Authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}. Please check your login and try again.`)
+          setIsLoading(false)
+          return
+        }
+        
         // authEventSigned as base64 encoded string
-        const authString = Buffer.from(JSON.stringify(authEventSigned)).toString("base64")
+        const authString = btoa(JSON.stringify(authEventSigned))
 
         const blossomServer = "https://" + serverChoice
 
@@ -277,10 +653,14 @@ const UploadComponent: React.FC = () => {
             finalFileUrl = responseJson.url
             sha256 = responseJson.sha256
 
-            const noteTags = hashtags.map((tag) => ["t", tag])
+            const noteTags = [
+              ...(title ? [["title", title]] : []),
+              ...hashtags.map((tag) => ["t", tag]),
+              ...(referenceValue.trim() ? [[referenceType, normalizeReference(referenceType, referenceValue)]] : [])
+            ]
 
             let blurhash = ""
-            if (file && file.type.startsWith("image/")) {
+            if (selectedKind === "20" && file && file.type.startsWith("image/")) {
               try {
                 blurhash = await calculateBlurhash(file)
               } catch (error) {
@@ -296,15 +676,38 @@ const UploadComponent: React.FC = () => {
               })
 
               finalNoteContent = desc
-              noteTags.push([
-                "imeta",
-                "url " + finalFileUrl,
-                "m " + file.type,
-                "x " + sha256,
-                "blurhash " + blurhash,
-                `dim ${image.width}x${image.height}`,
-              ])
-              noteTags.push(["x", sha256])
+              
+              // Add imeta tag based on kind
+              if (selectedKind === "20") {
+                // Picture event - use imeta with image-specific properties
+                noteTags.push([
+                  "imeta",
+                  "url " + finalFileUrl,
+                  "m " + file.type,
+                  "x " + sha256,
+                  "blurhash " + blurhash,
+                  `dim ${image.width}x${image.height}`,
+                ])
+                noteTags.push(["x", sha256])
+                noteTags.push(["m", file.type])
+              } else if (selectedKind === "21" || selectedKind === "22") {
+                // Video events - use imeta with video-specific properties
+                const videoImetaTags = [
+                  "imeta",
+                  `dim ${image.width}x${image.height}`,
+                  "url " + finalFileUrl,
+                  "x " + sha256,
+                  "m " + file.type,
+                ]
+                
+                // Add thumbnail URL as image field if provided
+                if (thumbnailUrl) {
+                  videoImetaTags.push("image " + thumbnailUrl)
+                }
+                
+                noteTags.push(videoImetaTags)
+                noteTags.push(["x", sha256])
+              }
             }
 
             const createdAt = Math.floor(Date.now() / 1000)
@@ -320,7 +723,7 @@ const UploadComponent: React.FC = () => {
 
             // Create the actual note
             const noteEvent: NostrEvent = {
-              kind: 20,
+              kind: parseInt(selectedKind),
               content: finalNoteContent,
               created_at: createdAt,
               tags: noteTags,
@@ -329,17 +732,52 @@ const UploadComponent: React.FC = () => {
               sig: "", // Add a placeholder for sig
             }
 
+            console.log("Created note event:", {
+              kind: noteEvent.kind,
+              content: noteEvent.content,
+              tags: noteEvent.tags,
+              created_at: noteEvent.created_at
+            })
+
             let signedEvent: NostrEvent | null = null
 
             // Sign the actual note
-            signedEvent = (await signEvent(loginType, noteEvent)) as NostrEvent
+            try {
+              const signedNoteEvent = await signEvent(loginType, noteEvent)
+              if (!signedNoteEvent) {
+                throw new Error("Failed to sign note event - no signed event returned")
+              }
+              signedEvent = signedNoteEvent
+            } catch (error) {
+              console.error("Error signing note event:", error)
+              // Don't show alert for this error since the auth event already succeeded
+              // Just log it and continue if possible
+              console.warn("Note signing failed, but continuing...")
+            }
 
             // If we got a signed event, publish it to nostr
             if (signedEvent) {
               console.log("final Event: ")
               console.log(signedEvent)
-              publish(signedEvent)
+              
+              try {
+                // Publish using NostrProvider
+                console.log("Publishing using NostrProvider...")
+                console.log("Current user pubkey:", currentUserPubkey)
+                publish(signedEvent);
+                console.log("Successfully published using NostrProvider")
+              } catch (publishError) {
+                console.error("Error publishing:", publishError)
+                alert(`Failed to publish to relays: ${publishError instanceof Error ? publishError.message : 'Unknown error'}`)
+                setIsLoading(false)
+                return
+              }
               // alert(JSON.stringify(signedEvent))
+            } else {
+              console.error("No signed event available for publishing")
+              alert("Failed to sign the event. Please check your login and try again.")
+              setIsLoading(false)
+              return
             }
 
             setIsLoading(false)
@@ -359,6 +797,114 @@ const UploadComponent: React.FC = () => {
         console.error("Error reading file:", error)
         setIsLoading(false)
       }
+    } else if (imageUrl) {
+      // Handle image URL upload
+      try {
+        const createdAt = Math.floor(Date.now() / 1000)
+        const noteTags = [
+          ...(title ? [["title", title]] : []),
+          ...hashtags.map((tag) => ["t", tag]),
+          ...(referenceValue.trim() ? [[referenceType, normalizeReference(referenceType, referenceValue)]] : [])
+        ]
+
+        // Add the image URL directly to the note
+        finalNoteContent = desc
+        
+        // Add imeta tag based on kind
+        if (selectedKind === "20") {
+          // Picture event - use imeta with image-specific properties
+          noteTags.push(["imeta", "url " + imageUrl])
+        } else if (selectedKind === "21" || selectedKind === "22") {
+          // Video events - use imeta with video-specific properties
+          const videoImetaTags = ["imeta", "url " + imageUrl]
+          
+          // Add thumbnail URL as image field if provided
+          if (thumbnailUrl) {
+            videoImetaTags.push("image " + thumbnailUrl)
+          }
+          
+          noteTags.push(videoImetaTags)
+        }
+
+        // NIP-89 client tagging (optional)
+        if (enableNip89) {
+          noteTags.push([
+            "client",
+            "lumina",
+            "31990:" + "ff363e4afc398b7dd8ceb0b2e73e96fe9621ababc22ab150ffbb1aa0f34df8b2" + ":" + createdAt,
+          ])
+        }
+
+        // Create the actual note
+        const noteEvent: NostrEvent = {
+          kind: parseInt(selectedKind),
+          content: finalNoteContent,
+          created_at: createdAt,
+          tags: noteTags,
+          pubkey: "", // Add a placeholder for pubkey
+          id: "", // Add a placeholder for id
+          sig: "", // Add a placeholder for sig
+        }
+
+        console.log("Created note event (image URL):", {
+          kind: noteEvent.kind,
+          content: noteEvent.content,
+          tags: noteEvent.tags,
+          created_at: noteEvent.created_at
+        })
+
+        let signedEvent: NostrEvent | null = null
+
+        // Sign the actual note
+        try {
+          const signedNoteEvent = await signEvent(loginType, noteEvent)
+          if (!signedNoteEvent) {
+            throw new Error("Failed to sign note event - no signed event returned")
+          }
+          signedEvent = signedNoteEvent
+        } catch (error) {
+          console.error("Error signing note event:", error)
+          // Don't show alert for this error since the auth event already succeeded
+          // Just log it and continue if possible
+          console.warn("Note signing failed, but continuing...")
+        }
+
+        // If we got a signed event, publish it to nostr
+        if (signedEvent) {
+          console.log("final Event: ")
+          console.log(signedEvent)
+          
+          try {
+            // Publish using NostrProvider
+            console.log("Publishing using NostrProvider...")
+            console.log("Current user pubkey:", currentUserPubkey)
+            publish(signedEvent);
+            console.log("Successfully published using NostrProvider")
+          } catch (publishError) {
+            console.error("Error publishing:", publishError)
+            alert(`Failed to publish to relays: ${publishError instanceof Error ? publishError.message : 'Unknown error'}`)
+            setIsLoading(false)
+            return
+          }
+        } else {
+          console.error("No signed event available for publishing")
+          alert("Failed to sign the event. Please check your login and try again.")
+          setIsLoading(false)
+          return
+        }
+
+        setIsLoading(false)
+        if (signedEvent != null) {
+          setUploadedNoteId(signedEvent.id)
+          setIsDrawerOpen(true)
+          setShouldFetch(true)
+          setRetryCount(0)
+        }
+      } catch (error) {
+        alert(error)
+        console.error("Error processing image URL:", error)
+        setIsLoading(false)
+      }
     }
   }
 
@@ -367,10 +913,89 @@ const UploadComponent: React.FC = () => {
       <Card className="w-full max-w-2xl mx-auto shadow-md">
         <CardHeader>
           <CardTitle>Share Content</CardTitle>
-          <CardDescription>Upload an image with your description to the Nostr network</CardDescription>
+          <CardDescription>
+            {detectedFileType 
+              ? `${detectedFileType === 'image' 
+                  ? 'Upload an image' 
+                  : 'Upload a video'} with your description to the Nostr network (Kind ${selectedKind})`
+              : selectedKind === "20" 
+                ? "Upload an image with your description to the Nostr network"
+                : selectedKind === "21"
+                ? "Upload a normal video with your description to the Nostr network"
+                : "Upload a short video with your description to the Nostr network"
+            }
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="space-y-6" onSubmit={onSubmit}>
+          {/* Debug section - only show in development */}
+          {process.env.NODE_ENV === 'development' && isClient && (
+            <div className="mb-4 p-3 bg-gray-100 rounded text-xs">
+              <div className="font-bold mb-2">Debug Info:</div>
+              <div>Login Type: {loginType || 'Not logged in'}</div>
+              <div>Pubkey: {currentUserPubkey ? `${currentUserPubkey.slice(0, 10)}...` : 'None'}</div>
+              <div>Write Relays: {isClient ? getWriteRelays(currentUserPubkey || undefined).length : 0}</div>
+              <button 
+                onClick={() => {
+                  console.log("Current relay config:", getRelayConfig())
+                  console.log("Write relays:", getWriteRelays(currentUserPubkey || undefined))
+                }}
+                className="text-blue-600 underline"
+              >
+                Log relay config to console
+              </button>
+              <button 
+                onClick={async () => {
+                  const relays = getWriteRelays(currentUserPubkey || undefined)
+                  console.log("Testing relay connections...")
+                  for (const relay of relays) {
+                    try {
+                      const pool = new SimplePool()
+                      const testEvent = {
+                        kind: 1,
+                        content: "Test message",
+                        created_at: Math.floor(Date.now() / 1000),
+                        tags: [],
+                        pubkey: "test",
+                        id: "test",
+                        sig: "test"
+                      }
+                      await pool.publish([relay], testEvent)
+                      console.log(`✅ ${relay} - Connected`)
+                      pool.close([relay])
+                    } catch (error) {
+                      console.log(`❌ ${relay} - Failed:`, error)
+                    }
+                  }
+                }}
+                className="text-blue-600 underline ml-2"
+              >
+                Test relay connections
+              </button>
+            </div>
+          )}
+          
+          {!isClient ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="flex items-center space-x-2">
+                <ReloadIcon className="h-4 w-4 animate-spin" />
+                <span>Loading...</span>
+              </div>
+            </div>
+          ) : (
+            <form className="space-y-6" onSubmit={onSubmit}>
+            <div className="space-y-2">
+              <Label htmlFor="title">Title</Label>
+              <Input
+                name="title"
+                placeholder="Enter a title for your post"
+                id="title"
+                className="w-full"
+                value={title}
+                onChange={handleTitleChange}
+
+              />
+            </div>
+            
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
               <Textarea
@@ -384,51 +1009,168 @@ const UploadComponent: React.FC = () => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="file">Image</Label>
-              <div className="border-2 border-dashed rounded-lg p-6 transition-colors hover:border-primary/50 hover:bg-muted/50">
-                <div className="flex flex-col items-center space-y-4 text-center">
-                  {previewUrl ? (
-                    <div className="w-full rounded-md">
-                      <img 
-                        src={previewUrl} 
-                        alt="Preview"  
-                      />
-                    </div>
-                  ) : (
-                    <ImageIcon className="h-10 w-10 text-muted-foreground" />
-                  )}
-                  
-                  <div className="space-y-2">
-                    <div className="text-sm font-medium">
-                      {previewUrl ? "Replace image" : "Add image"}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      Supported formats: JPEG, PNG, WebP
+              <Label>{selectedKind === "20" ? "Image" : "Video"}</Label>
+              <Tabs defaultValue="file" searchParam="upload-method">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="file">Upload File</TabsTrigger>
+                  <TabsTrigger value="url">Media URL</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="file" className="space-y-4">
+                  <div className="border-2 border-dashed rounded-lg p-6 transition-colors hover:border-primary/50 hover:bg-muted/50">
+                    <div className="flex flex-col items-center space-y-4 text-center">
+                      {previewUrl ? (
+                        <div className="w-full rounded-md">
+                          {selectedKind === "20" ? (
+                            <img 
+                              src={previewUrl} 
+                              alt="Preview"  
+                            />
+                          ) : (
+                            <video 
+                              src={previewUrl} 
+                              controls
+                              className="w-full rounded-md"
+                            />
+                          )}
+                        </div>
+                      ) : (
+                        <ImageIcon className="h-10 w-10 text-muted-foreground" />
+                      )}
+                      
+                      <div className="space-y-2">
+                        <div className="text-sm font-medium">
+                          {previewUrl 
+                            ? `Replace ${selectedKind === "20" ? "image" : "video"}` 
+                            : `Add ${selectedKind === "20" ? "image" : "video"}`
+                          }
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {selectedKind === "20" 
+                            ? "Supported formats: JPEG, PNG, WebP, GIF, APNG, AVIF" 
+                            : "Supported formats: MP4, WebM, MOV, AVI, M4V, MKV, M4A"
+                          }
+                        </div>
+                      </div>
+                      
+                      <label 
+                        htmlFor="file" 
+                        className={`relative cursor-pointer rounded-md px-4 py-2 text-sm font-medium ring-offset-background transition-colors 
+                          ${previewUrl ? 'bg-muted hover:bg-muted/80' : 'bg-primary text-primary-foreground hover:bg-primary/90'}`}
+                      >
+                        {previewUrl ? "Change file" : `Select ${selectedKind === "20" ? "image" : "video"}`}
+                        <Input
+                          id="file"
+                          name="file"
+                          type="file"
+                          accept={selectedKind === "20" 
+                            ? "image/jpeg,image/png,image/webp,image/gif,image/apng,image/avif"
+                            : "video/mp4,video/webm,video/quicktime,video/x-msvideo,video/x-m4v,video/x-matroska,audio/mp4"
+                          }
+                          onChange={handleFileChange}
+                          className="sr-only"
+                        />
+                      </label>
                     </div>
                   </div>
-                  
-                  <label 
-                    htmlFor="file" 
-                    className={`relative cursor-pointer rounded-md px-4 py-2 text-sm font-medium ring-offset-background transition-colors 
-                      ${previewUrl ? 'bg-muted hover:bg-muted/80' : 'bg-primary text-primary-foreground hover:bg-primary/90'}`}
-                  >
-                    {previewUrl ? "Change file" : "Select file"}
+                </TabsContent>
+                
+                <TabsContent value="url" className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="image-url">{selectedKind === "20" ? "Image URL" : "Video URL"}</Label>
                     <Input
-                      id="file"
-                      name="file"
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={handleFileChange}
-                      className="sr-only"
+                      id="image-url"
+                      name="image-url"
+                      type="url"
+                      placeholder={selectedKind === "20" 
+                        ? "https://example.com/image.jpg" 
+                        : "https://example.com/video.mp4"
+                      }
+                      value={imageUrl}
+                      onChange={handleUrlChange}
+                      className="w-full"
                     />
-                  </label>
-                </div>
-              </div>
+                  </div>
+                  
+                  {previewUrl && (
+                    <div className="border rounded-lg p-4">
+                      <div className="text-sm font-medium mb-2">Preview:</div>
+                      {selectedKind === "20" ? (
+                        <img 
+                          src={previewUrl} 
+                          alt="Preview" 
+                          className="w-full rounded-md"
+                          onError={() => setPreviewUrl("")}
+                        />
+                      ) : (
+                        <video 
+                          src={previewUrl} 
+                          controls
+                          className="w-full rounded-md"
+                          onError={() => setPreviewUrl("")}
+                        />
+                      )}
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
             </div>
 
             <Separator className="my-4" />
             
+            {/* Thumbnail URL field for video events */}
+            {(selectedKind === "21" || selectedKind === "22") && (
+              <div className="space-y-2">
+                <Label htmlFor="thumbnail-url">Video Thumbnail Image URL (Optional)</Label>
+                <Input
+                  id="thumbnail-url"
+                  name="thumbnail-url"
+                  type="url"
+                  placeholder="https://example.com/thumbnail.jpg"
+                  value={thumbnailUrl}
+                  onChange={handleThumbnailUrlChange}
+                  className="w-full"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Provide an image URL to use as a thumbnail/preview for your video. This will be displayed in galleries and feeds.
+                </p>
+              </div>
+            )}
+            
             <div className="space-y-4">
+              <div className="flex flex-row items-center justify-between">
+                <div className="flex flex-col space-y-1">
+                  <Label htmlFor="kind-choice">Note Kind</Label>
+                  <p className="text-xs text-muted-foreground">
+                    {detectedFileType 
+                      ? `Detected: ${detectedFileType} file - ${detectedFileType === 'image' ? 'Use Kind 20 for images' : 'Use Kind 21/22 for videos'}`
+                      : "Choose the type of note to publish"
+                    }
+                    {detectedFileType && (
+                      <span className="ml-1 text-xs text-green-600 font-medium">
+                        (Auto-selected)
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <Select onValueChange={handleKindChange} value={selectedKind}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder={selectedKind} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="20" disabled={detectedFileType === 'video'}>
+                      Kind 20 - Picture Event
+                    </SelectItem>
+                    <SelectItem value="21" disabled={detectedFileType === 'image'}>
+                      Kind 21 - Normal Video
+                    </SelectItem>
+                    <SelectItem value="22" disabled={detectedFileType === 'image'}>
+                      Kind 22 - Short Video
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
               <div className="flex flex-row items-center justify-between">
                 <div className="flex flex-col space-y-1">
                   <Label htmlFor="server-choice">Upload destination</Label>
@@ -452,22 +1194,106 @@ const UploadComponent: React.FC = () => {
                 </div>
                 <Switch id="nip89-toggle" checked={enableNip89} onCheckedChange={setEnableNip89} />
               </div>
+              
+              <div className="space-y-3">
+                <div className="flex flex-row items-center justify-between">
+                  <div className="flex flex-col space-y-1">
+                    <Label htmlFor="reference-type">Reference Type</Label>
+                    <p className="text-xs text-muted-foreground">Add a reference to another event, address, or URL</p>
+                  </div>
+                  <Select onValueChange={handleReferenceTypeChange} value={referenceType}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder={referenceType} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="e">Event (e)</SelectItem>
+                      <SelectItem value="a">Address (a)</SelectItem>
+                      <SelectItem value="u">URL (u)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="reference-value">
+                    Reference Value
+                    {referenceType === "e" && " (nostr:note..., note..., nevent..., hex ID, or URL)"}
+                    {referenceType === "a" && " (nostr:naddr..., naddr..., or URL)"}
+                    {referenceType === "u" && " (URL)"}
+                  </Label>
+                  <Input
+                    id="reference-value"
+                    name="reference-value"
+                    type="text"
+                    placeholder={
+                      referenceType === "e" 
+                        ? "nostr:note... or note... or nevent... or hex ID or URL"
+                        : referenceType === "a"
+                        ? "nostr:naddr... or naddr... or URL containing naddr"
+                        : "https://example.com"
+                    }
+                    value={referenceValue}
+                    onChange={handleReferenceValueChange}
+                    className="w-full"
+                  />
+                  {referenceValue.trim() && (
+                    <div className="space-y-1">
+                      <p className={`text-xs ${validateReference(referenceType, referenceValue).isValid ? 'text-green-600' : 'text-red-600'}`}>
+                        {validateReference(referenceType, referenceValue).isValid 
+                          ? "✓ Valid reference" 
+                          : validateReference(referenceType, referenceValue).error
+                        }
+                      </p>
+                      {validateReference(referenceType, referenceValue).isValid && (
+                        <p className="text-xs text-blue-600">
+                          Will be stored as: {normalizeReference(referenceType, referenceValue)}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
             
-            <div className="pt-4">
+            <div className="pt-4 space-y-2">
               {isLoading ? (
                 <Button className="w-full" disabled>
                   <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
-                  Uploading...
+                  {uploadMethod === "file" ? "Uploading..." : "Publishing..."}
+                </Button>
+              ) : !isClient ? (
+                <Button className="w-full" disabled>
+                  <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
+                  Loading...
                 </Button>
               ) : (
-                <Button type="submit" className="w-full">
-                  <UploadIcon className="mr-2 h-4 w-4" />
-                  Share to Nostr
-                </Button>
+                <>
+                  <Button type="submit" className="w-full">
+                    <UploadIcon className="mr-2 h-4 w-4" />
+                    Share to Nostr
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => {
+                      // Reset form and close modal
+                      setTitle("")
+                      setImageUrl("")
+                      setPreviewUrl("")
+                      setDetectedFileType(null)
+                      setSelectedKind("20")
+                      setReferenceType("e")
+                      setReferenceValue("")
+                      setIsLoading(false)
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </>
               )}
             </div>
           </form>
+        )}
         </CardContent>
       </Card>
       
@@ -477,13 +1303,13 @@ const UploadComponent: React.FC = () => {
             <DrawerTitle>Upload Status</DrawerTitle>
             <DrawerDescription>
               {isNoteLoading ? (
-                <div className="flex items-center space-x-2">
+                <span className="flex items-center space-x-2">
                   <Spinner />
                   <span>Checking note status...</span>
-                </div>
+                </span>
               ) : events.length > 0 ? (
-                <div
-                  className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative"
+                <span
+                  className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative block"
                   role="alert"
                 >
                   <strong className="font-bold">Success!</strong>
@@ -491,9 +1317,9 @@ const UploadComponent: React.FC = () => {
                   <span className="block sm:inline font-mono">
                     {`${events[0].id.slice(0, 5)}...${events[0].id.slice(-3)}`}
                   </span>
-                </div>
+                </span>
               ) : (
-                <p>Note not found. It may take a moment to propagate.</p>
+                <span>Note not found. It may take a moment to propagate.</span>
               )}
             </DrawerDescription>
           </DrawerHeader>
@@ -504,7 +1330,10 @@ const UploadComponent: React.FC = () => {
               </Button>
             )}
             <Button asChild className="w-full">
-              <a href={`/note/${nip19.noteEncode(uploadedNoteId)}`}>View Note</a>
+              <a href={`/note/${nip19.neventEncode({
+                id: uploadedNoteId,
+                relays: []
+              })}`}>View Note</a>
             </Button>
             <Button variant="outline" onClick={() => setIsDrawerOpen(false)} className="w-full">
               Close

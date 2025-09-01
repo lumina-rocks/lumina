@@ -11,11 +11,52 @@ export function hasNsfwContent(tags: string[][]): boolean {
 }
 
 export function getImageUrl(tags: string[][]): string {
-  const imetaTag = tags.find(tag => tag[0] === 'imeta');
-  if (imetaTag) {
+  const imetaTags = tags.filter(tag => tag[0] === 'imeta');
+  
+  // First, check for 'image' fields (thumbnails for videos)
+  for (const imetaTag of imetaTags) {
+    const imageItem = imetaTag.find(item => item.startsWith('image '));
+    if (imageItem) {
+      return imageItem.split(' ')[1];
+    }
+  }
+  
+  // Then, check for 'url' fields that point to images
+  for (const imetaTag of imetaTags) {
     const urlItem = imetaTag.find(item => item.startsWith('url '));
+    const mimeItem = imetaTag.find(item => item.startsWith('m '));
+    
+    if (urlItem) {
+      const url = urlItem.split(' ')[1];
+      // If this imeta tag has an image mime type, use it
+      if (mimeItem && mimeItem.startsWith('m image/')) {
+        return url;
+      }
+      // If the URL looks like an image, use it
+      if (url.match(/\.(jpg|jpeg|png|webp|gif|apng|avif)$/i)) {
+        return url;
+      }
+    }
+  }
+  
+  // Fallback: return the first URL found
+  const firstImetaTag = imetaTags[0];
+  if (firstImetaTag) {
+    const urlItem = firstImetaTag.find(item => item.startsWith('url '));
     if (urlItem) {
       return urlItem.split(' ')[1];
+    }
+  }
+  
+  return '';
+}
+
+export function getThumbnailUrl(tags: string[][]): string {
+  const imetaTag = tags.find(tag => tag[0] === 'imeta');
+  if (imetaTag) {
+    const imageItem = imetaTag.find(item => item.startsWith('image '));
+    if (imageItem) {
+      return imageItem.split(' ')[1];
     }
   }
   return '';
@@ -34,33 +75,66 @@ export function extractDimensions(event: NostrEvent): { width: number; height: n
 }
 
 export async function signEvent(loginType: string | null, event: NostrEvent): Promise<NostrEvent | null> {
+    console.log("signEvent called with loginType:", loginType)
+    console.log("Event to sign:", { kind: event.kind, content: event.content?.substring(0, 100) + "..." })
+    
     // Sign event
   let eventSigned: NostrEvent = { ...event, sig: '' };
   if (loginType === 'extension') {
-    eventSigned = await window.nostr.signEvent(event);
+    try {
+      console.log("Signing with extension...")
+      eventSigned = await window.nostr.signEvent(event);
+      console.log("Extension signing successful:", eventSigned.id)
+    } catch (error) {
+      console.error("Extension signing failed:", error)
+      throw error
+    }
   } else if (loginType === 'amber') {
     // TODO: Sign event with amber
     alert('Signing with Amber is not implemented yet, sorry!');
     return null;
   } else if (loginType === 'bunker') {
     // Sign with bunker (NIP-46)
-    const signedWithBunker = await signEventWithBunker(event);
-    if (signedWithBunker) {
-      return signedWithBunker;
-    } else {
-      alert('Failed to sign with bunker. Please check your connection and try again.');
+    try {
+      console.log("Signing with bunker...")
+      const signedWithBunker = await signEventWithBunker(event);
+      if (signedWithBunker) {
+        console.log("Bunker signing successful:", signedWithBunker.id)
+        return signedWithBunker;
+      } else {
+        console.error("Bunker signing returned null")
+        alert('Failed to sign with bunker. Please check your connection and try again.');
+        return null;
+      }
+    } catch (error) {
+      console.error("Bunker signing failed:", error)
+      alert(`Failed to sign with bunker: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return null;
     }
   } else if (loginType === 'raw_nsec') {
     if (typeof window !== 'undefined') {
-      let nsecStr = null;
-      nsecStr = window.localStorage.getItem('nsec');
-      if (nsecStr != null) {
-        eventSigned = finalizeEvent(event, hexToBytes(nsecStr));
+      try {
+        console.log("Signing with raw nsec...")
+        let nsecStr = null;
+        nsecStr = window.localStorage.getItem('nsec');
+        if (nsecStr != null) {
+          eventSigned = finalizeEvent(event, hexToBytes(nsecStr));
+          console.log("Raw nsec signing successful:", eventSigned.id)
+        } else {
+          console.error("No nsec found in localStorage")
+          throw new Error("No private key found")
+        }
+      } catch (error) {
+        console.error("Raw nsec signing failed:", error)
+        throw error
       }
     }
+  } else {
+    console.error("Unknown login type:", loginType)
+    throw new Error(`Unknown login type: ${loginType}`)
   }
-  console.log(eventSigned);
+  
+  console.log("Final signed event:", eventSigned);
   return eventSigned;
 }
 
@@ -78,3 +152,14 @@ export const getProxiedImageUrl = (url: string, width: number, height: number) =
     return url;
   }
 }
+
+
+
+// Blacklist annoying pubkeys
+
+export const blacklistPubkeys = new Set([
+  "0403c86a1bb4cfbc34c8a493fbd1f0d158d42dd06d03eaa3720882a066d3a378",
+  "7444faae22d4d4939c815819dca3c4822c209758bf86afc66365db5f79f67ddb",
+  "3ffac3a6c859eaaa8cdddb2c7002a6e10b33efeb92d025b14ead6f8a2d656657",
+  "5943c88f3c60cd9edb125a668e2911ad419fc04e94549ed96a721901dd958372",
+]);

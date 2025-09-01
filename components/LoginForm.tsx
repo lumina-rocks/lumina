@@ -60,7 +60,8 @@ export function LoginForm() {
         "wss://relay.nostr.band",
         "wss://relay.damus.io",
         "wss://nos.lol",
-        "wss://relay.nostr.ch"
+        "wss://relay.nostr.ch",
+        "wss://profiles.nostr1.com"
     ];
 
     // Helper function to load NIP-65 relays for a user
@@ -296,7 +297,7 @@ export function LoginForm() {
                 let input = npubInput.current.value;
                 let npub = null;
                 let pubkey = null;
-                if(input.startsWith("npub1")) {
+                if(input.startsWith("npub")) {
                     npub = input;
                     pubkey = nip19.decode(input).data.toString();
                 } else {
@@ -411,7 +412,7 @@ export function LoginForm() {
                                 <div className="grid gap-2">
                                     <Label htmlFor="npub">npub</Label>
                                     <Input 
-                                        placeholder="npub1..." 
+                                        placeholder="npub..." 
                                         id="npub" 
                                         ref={npubInput} 
                                         type="text" 

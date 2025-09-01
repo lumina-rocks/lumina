@@ -27,9 +27,11 @@ import {
     TooltipTrigger 
 } from "@/components/ui/tooltip";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { publishToOutbox } from "@/utils/publishUtils";
+import { useCurrentUserPubkey } from "@/utils/relayHooks";
 
 export function CreateProfileForm() {
-    const { publish } = useNostr();
+    const currentUserPubkey = useCurrentUserPubkey();
 
     // Local state for form inputs
     const [username, setUsername] = useState("");
@@ -173,8 +175,8 @@ export function CreateProfileForm() {
             const isGood = verifyEvent(signedEvent);
 
             if (isGood) {
-                // Publish to relays
-                publish(signedEvent);
+                // Publish to outbox relays
+                await publishToOutbox(signedEvent, currentUserPubkey || undefined);
                 
                 // Redirect to profile page
                 window.location.href = `/profile/${npub}`;

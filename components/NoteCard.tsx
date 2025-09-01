@@ -24,13 +24,73 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel"
 import ReactionButton from '@/components/ReactionButton';
-import { Avatar, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import ViewNoteButton from './ViewNoteButton';
 import Link from 'next/link';
 import { Event as NostrEvent } from "nostr-tools";
 import ZapButton from './ZapButton';
 import CardOptionsDropdown from './CardOptionsDropdown';
 import { renderTextWithLinkedTags } from '@/utils/textUtils';
+import { PinIcon } from "lucide-react";
+
+// Function to extract video URL from imeta tags
+const getVideoUrl = (tags: string[][]): string | null => {
+  for (const tag of tags) {
+    if (tag[0] === 'imeta') {
+      for (let i = 1; i < tag.length; i++) {
+        if (tag[i].startsWith('url ')) {
+          return tag[i].substring(4);
+        }
+      }
+    }
+  }
+  return null;
+};
+
+// Function to check if an event has reference tags (e, a, u)
+const hasReferenceTags = (tags: string[][]): boolean => {
+  return tags.some(tag => ['e', 'a', 'u'].includes(tag[0]));
+};
+
+// Function to get the first reference tag for opening source
+const getFirstReferenceTag = (tags: string[][]): { type: string; value: string; relays?: string[] } | null => {
+  for (const tag of tags) {
+    if (tag[0] === 'e') {
+      return { type: 'e', value: tag[1], relays: tag.slice(2) };
+    }
+    if (tag[0] === 'a') {
+      return { type: 'a', value: tag[1], relays: tag.slice(2) };
+    }
+    if (tag[0] === 'u') {
+      return { type: 'u', value: tag[1] };
+    }
+  }
+  return null;
+};
+
+
+
+// Component for the purple pin icon
+const PinButton: React.FC<{ 
+  referenceTag: { type: string; value: string; relays?: string[] };
+  onPinClick?: (referenceTag: { type: string; value: string; relays?: string[] }) => void;
+}> = ({ referenceTag, onPinClick }) => {
+  return (
+    <button
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (onPinClick) {
+          onPinClick(referenceTag);
+        }
+      }}
+      className="absolute top-3 right-3 z-10 bg-purple-600 hover:bg-purple-700 text-white rounded-full p-1.5 shadow-lg transition-colors duration-200"
+      title="Open source"
+    >
+      <PinIcon className="w-3 h-3" />
+    </button>
+  );
+};
 
 interface NoteCardProps {
   pubkey: string;
@@ -39,9 +99,10 @@ interface NoteCardProps {
   tags: string[][];
   event: NostrEvent;
   showViewNoteCardButton: boolean;
+  onPinClick?: (referenceTag: { type: string; value: string; relays?: string[] }) => void;
 }
 
-const NoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tags, event, showViewNoteCardButton }) => {
+const NoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tags, event, showViewNoteCardButton, onPinClick }) => {
   const { data: userData } = useProfile({
     pubkey,
   });
@@ -49,16 +110,34 @@ const NoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tags, event,
   const title = userData?.username || userData?.display_name || userData?.name || userData?.npub || nip19.npubEncode(pubkey);
   // text = text.replaceAll('\n', '<br />');
   text = text.replaceAll('\n', ' ');
+  
+  // Extract video URL from imeta tags for video events (kind 21 or 22)
+  const imetaVideoUrl = (event.kind === 21 || event.kind === 22) ? getVideoUrl(tags) : null;
+  
+  // Combine text-based video detection with imeta-based detection
+  const textVideoSrc = text.match(/https?:\/\/[^ ]*\.(mp4|webm|mov)/g);
+  const videoSrc = imetaVideoUrl ? [imetaVideoUrl] : textVideoSrc;
+  
   const imageSrc = text.match(/https?:\/\/[^ ]*\.(png|jpg|gif|jpeg)/g);
-  const videoSrc = text.match(/https?:\/\/[^ ]*\.(mp4|webm|mov)/g);
   const textWithoutImage = text.replace(/https?:\/\/.*\.(?:png|jpg|gif|mp4|webm|mov|jpeg)/g, '');
   const createdAt = new Date(event.created_at * 1000);
   const hrefProfile = `/profile/${nip19.npubEncode(pubkey)}`;
   const profileImageSrc = userData?.picture || "https://robohash.org/" + pubkey;
 
+  // Check for reference tags and gallery tags
+  const hasReferences = hasReferenceTags(tags);
+  const referenceTag = getFirstReferenceTag(tags);
+  const isGalleryTagged = text.includes('#gallery') || tags.some((tag: string[]) => tag[0] === 't' && tag[1] === 'gallery');
+
   return (
     <>
-      <Card>
+      <Card className="relative">
+        {(hasReferences && referenceTag) || isGalleryTagged ? (
+          <PinButton 
+            referenceTag={referenceTag || { type: 'gallery', value: 'gallery' }} 
+            onPinClick={onPinClick}
+          />
+        ) : null}
         <CardHeader className="flex flex-row items-center space-y-0">
           <CardTitle className="flex-1">
             <Link href={hrefProfile} style={{ textDecoration: 'none' }}>
@@ -68,6 +147,7 @@ const NoteCard: React.FC<NoteCardProps> = ({ pubkey, text, eventId, tags, event,
                     <div style={{ display: 'flex', alignItems: 'center' }}>
                       <Avatar>
                         <AvatarImage src={profileImageSrc} />
+                        <AvatarFallback>{title.charAt(0).toUpperCase()}</AvatarFallback>
                       </Avatar>
                       <span className='break-all' style={{ marginLeft: '10px' }}>{title}</span>
                     </div>
