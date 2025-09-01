@@ -13,6 +13,7 @@ A modern, decentralized social media platform for images and pictures built on t
 - **React and engage** - Like, comment, and interact with content
 - **Lightning Network integration** - For tipping and monetization
 - **Responsive design** - Optimized for mobile and desktop experiences
+- **Native Android app** - Install as a native mobile app via Capacitor
 
 ## 🚀 Getting Started
 
@@ -20,6 +21,7 @@ A modern, decentralized social media platform for images and pictures built on t
 
 - [Node.js](https://nodejs.org/) (v18 or newer)
 - [Docker](https://www.docker.com/) (optional, for containerized deployment)
+- [Android Studio](https://developer.android.com/studio) (optional, for Android app development)
 
 ### Local Development
 
@@ -40,6 +42,23 @@ bun dev
 ```
 
 Your application will be available at http://localhost:3000.
+
+## 📱 Android App
+
+LUMINA is available as a native Android app built with Capacitor. See [CAPACITOR.md](CAPACITOR.md) for detailed build instructions.
+
+### Quick Start
+
+```bash
+# Install dependencies
+npm install
+
+# Sync Capacitor
+npm run cap:sync
+
+# Run on Android (requires Android Studio)
+npm run cap:run:android
+```
 
 ## 🐳 Docker Deployment
 

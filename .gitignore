@@ -42,3 +42,9 @@ next-env.d.ts
 /public/sw.js.map
 /public/workbox-*.js
 /public/workbox-*.js.map
+
+# Capacitor
+/android/app/build/
+/android/build/
+/android/.gradle/
+/android/app/src/main/assets/public/
