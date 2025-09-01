@@ -107,6 +107,77 @@ Umami analytics is disabled by default. To enable:
 - **Frontend**: Next.js, React, TypeScript, Tailwind CSS
 - **UI Components**: Radix UI, Lucide icons, shadcn/ui
 - **Protocols**: Nostr, Lightning Network
+- **Mobile Apps**: Capacitor for Android and iOS
+
+## 📱 Mobile Apps with Capacitor
+
+LUMINA can be built as native mobile applications for Android and iOS using Capacitor.
+
+### Prerequisites
+
+- **For Android:**
+  - [Android Studio](https://developer.android.com/studio) installed
+  - Android SDK installed (via Android Studio)
+  - Java Development Kit (JDK) 11 or newer
+
+- **For iOS:**
+  - macOS operating system
+  - [Xcode](https://apps.apple.com/us/app/xcode/id497799835) installed
+  - [CocoaPods](https://cocoapods.org/) installed (`sudo gem install cocoapods`)
+
+### Building the Mobile Apps
+
+1. **Setup the project:**
+   ```bash
+   # Install dependencies
+   npm install
+   # or
+   bun install
+   ```
+
+2. **Sync the web app with Capacitor:**
+   ```bash
+   npm run cap:sync
+   # or 
+   npx cap sync
+   ```
+
+3. **Build and run Android app:**
+   ```bash
+   npm run cap:build:android
+   # or
+   npx cap open android
+   ```
+   This opens Android Studio where you can build and run the app on an emulator or physical device.
+
+4. **Build and run iOS app:**
+   ```bash
+   # Make sure Xcode command line tools are properly configured
+   sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+   
+   # Open the iOS project
+   npm run cap:build:ios
+   # or
+   npx cap open ios
+   ```
+   This opens Xcode where you can build and run the app on a simulator or physical device.
+
+### Configuration
+
+The mobile app is configured to load the web app from https://lumina.rocks. To modify this:
+
+1. Edit `capacitor.config.ts`:
+   ```typescript
+   server: {
+     url: 'https://your-custom-url.com',
+     cleartext: true
+   }
+   ```
+
+2. Sync changes to native projects:
+   ```bash
+   npx cap sync
+   ```
 
 ## ⚡ Support LUMINA
 
