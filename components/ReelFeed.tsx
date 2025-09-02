@@ -75,7 +75,7 @@ const ReelFeed: React.FC = () => {
     filter: {
       kinds: [21, 22],
       authors: followedPubkeys,
-      limit: 50,
+      limit: 5,
     },
     enabled: followedPubkeys.length > 0,
   });
@@ -84,7 +84,7 @@ const ReelFeed: React.FC = () => {
   const { events: globalVideos } = useNostrEvents({
     filter: {
       kinds: [21, 22],
-      limit: 50,
+      limit: 5,
     },
   });
 
@@ -94,7 +94,7 @@ const ReelFeed: React.FC = () => {
     filter: {
       kinds: [1],
       "#t": reelTags,
-      limit: 100,
+      limit: 5,
     },
   });
 
@@ -103,7 +103,7 @@ const ReelFeed: React.FC = () => {
     filter: {
       kinds: [1],
       "#t": reelTags,
-      limit: 100,
+      limit: 5,
     },
   });
 
@@ -118,7 +118,7 @@ const ReelFeed: React.FC = () => {
     filter: {
       kinds: [1],
       ids: repliedToEventIds,
-      limit: 100,
+      limit: 5,
     },
     enabled: repliedToEventIds.length > 0,
   });
