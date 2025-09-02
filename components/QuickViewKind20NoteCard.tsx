@@ -10,7 +10,7 @@ import {
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Eye, Play } from 'lucide-react';
+import { Eye, Play, PlayCircle } from 'lucide-react';
 import { extractDimensions, getProxiedImageUrl, hasNsfwContent, getThumbnailUrl } from '@/utils/utils';
 
 // Function to extract video URL from imeta tags
@@ -19,7 +19,7 @@ const getVideoUrl = (tags: string[][]): string | null => {
     if (tag[0] === 'imeta') {
       for (let i = 1; i < tag.length; i++) {
         if (tag[i].startsWith('url ')) {
-          return tag[i].substring(4);
+          return tag[i].substring(4).trim();
         }
       }
     }
@@ -105,31 +105,24 @@ const QuickViewKind20NoteCard: React.FC<QuickViewKind20NoteCardProps> = ({ pubke
             ) : (
               <>
                 {isVideo ? (
-                  // For videos, show thumbnail if available, otherwise show placeholder
-                  thumbnailUrl ? (
-                    // Show thumbnail with play button overlay
-                    <img 
-                      src={processedImage} 
-                      alt={displayText}
-                      className={`w-full h-full rounded-lg object-cover ${isNsfwContent && !showSensitiveContent ? 'blur-xl' : ''}`}
-                      loading="lazy"
-                      onError={() => {
-                        if (tryWithoutProxy) {
-                          setImageError(true);
-                        } else {
-                          setTryWithoutProxy(true);
-                        }
-                      }}
-                      style={{ objectPosition: 'center' }}
-                    />
-                  ) : (
-                    // Show placeholder with play button
-                    <div className="w-full h-full bg-gray-800 rounded-lg flex items-center justify-center">
-                      <div className="bg-white bg-opacity-80 rounded-full p-3">
-                        <Play className="h-6 w-6 text-black" />
-                      </div>
-                    </div>
-                  )
+                  // For videos, use the video element to show the first frame
+                  <video 
+                    src={videoUrl || ''} 
+                    className={`w-full h-full rounded-lg object-cover ${isNsfwContent && !showSensitiveContent ? 'blur-xl' : ''}`}
+                    preload="metadata"
+                    playsInline
+                    muted
+                    // If we have a thumbnail, use it as poster
+                    poster={thumbnailUrl ? processedImage : undefined}
+                    onError={() => {
+                      if (tryWithoutProxy) {
+                        setImageError(true);
+                      } else {
+                        setTryWithoutProxy(true);
+                      }
+                    }}
+                    style={{ objectPosition: 'center' }}
+                  />
                 ) : (
                   // For images, show the actual image
                   <img 
