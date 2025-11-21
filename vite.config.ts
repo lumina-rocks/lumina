@@ -4,7 +4,8 @@ import react from "@vitejs/plugin-react-swc";
 import { defineConfig } from "vitest/config";
 
 // https://vitejs.dev/config/
-export default defineConfig(() => ({
+export default defineConfig(({ mode }) => ({
+  base: mode === 'production' && process.env.GITHUB_ACTIONS ? '/mkstack-onboarding-tool/' : '/',
   server: {
     host: "::",
     port: 8080,
