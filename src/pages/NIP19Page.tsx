@@ -1,5 +1,6 @@
 import { nip19 } from 'nostr-tools';
 import { useParams } from 'react-router-dom';
+import { Layout } from '@/components/Layout';
 import NotFound from './NotFound';
 
 export function NIP19Page() {
@@ -22,19 +23,51 @@ export function NIP19Page() {
     case 'npub':
     case 'nprofile':
       // AI agent should implement profile view here
-      return <div>Profile placeholder</div>;
+      return (
+        <Layout>
+          <div className="container py-8">
+            <div className="max-w-2xl mx-auto">
+              Profile placeholder
+            </div>
+          </div>
+        </Layout>
+      );
 
     case 'note':
       // AI agent should implement note view here
-      return <div>Note placeholder</div>;
+      return (
+        <Layout>
+          <div className="container py-8">
+            <div className="max-w-2xl mx-auto">
+              Note placeholder
+            </div>
+          </div>
+        </Layout>
+      );
 
     case 'nevent':
       // AI agent should implement event view here
-      return <div>Event placeholder</div>;
+      return (
+        <Layout>
+          <div className="container py-8">
+            <div className="max-w-2xl mx-auto">
+              Event placeholder
+            </div>
+          </div>
+        </Layout>
+      );
 
     case 'naddr':
       // AI agent should implement addressable event view here
-      return <div>Addressable event placeholder</div>;
+      return (
+        <Layout>
+          <div className="container py-8">
+            <div className="max-w-2xl mx-auto">
+              Addressable event placeholder
+            </div>
+          </div>
+        </Layout>
+      );
 
     default:
       return <NotFound />;

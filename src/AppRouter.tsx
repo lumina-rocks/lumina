@@ -3,6 +3,11 @@ import { ScrollToTop } from "./components/ScrollToTop";
 
 import Index from "./pages/Index";
 import { NIP19Page } from "./pages/NIP19Page";
+import { Upload } from "./pages/Upload";
+import { Hashtags } from "./pages/Hashtags";
+import { SearchPage } from "./pages/Search";
+import { Notifications } from "./pages/Notifications";
+import Messages from "./pages/Messages";
 import NotFound from "./pages/NotFound";
 
 export function AppRouter() {
@@ -11,6 +16,11 @@ export function AppRouter() {
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<Index />} />
+        <Route path="/upload" element={<Upload />} />
+        <Route path="/hashtags" element={<Hashtags />} />
+        <Route path="/search" element={<SearchPage />} />
+        <Route path="/notifications" element={<Notifications />} />
+        <Route path="/messages" element={<Messages />} />
         {/* NIP-19 route for npub1, note1, naddr1, nevent1, nprofile1 */}
         <Route path="/:nip19" element={<NIP19Page />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
