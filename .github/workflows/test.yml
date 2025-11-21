@@ -23,7 +23,7 @@ jobs:
           
       - name: Clean install dependencies
         run: |
-          rm -rf node_modules package-lock.json
+          rm -rf node_modules
           npm install
           
       - name: Run tests
