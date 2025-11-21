@@ -8,6 +8,7 @@ import { Hashtags } from "./pages/Hashtags";
 import { SearchPage } from "./pages/Search";
 import { Notifications } from "./pages/Notifications";
 import Messages from "./pages/Messages";
+import { Settings } from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 export function AppRouter() {
@@ -21,6 +22,7 @@ export function AppRouter() {
         <Route path="/search" element={<SearchPage />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/messages" element={<Messages />} />
+        <Route path="/settings" element={<Settings />} />
         {/* NIP-19 route for npub1, note1, naddr1, nevent1, nprofile1 */}
         <Route path="/:nip19" element={<NIP19Page />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Upload, Hash, Search, Bell } from 'lucide-react';
+import { Home, Upload, Hash, Search, Bell, Settings } from 'lucide-react';
 import { LoginArea } from './auth/LoginArea';
 import { Button } from './ui/button';
 import { useTheme } from '@/hooks/useTheme';
@@ -50,6 +50,16 @@ export function Layout({ children }: LayoutProps) {
               ) : (
                 <Sun className="h-5 w-5" />
               )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              asChild
+              aria-label="Settings"
+            >
+              <Link to="/settings">
+                <Settings className="h-5 w-5" />
+              </Link>
             </Button>
             <LoginArea className="max-w-60" />
           </div>
