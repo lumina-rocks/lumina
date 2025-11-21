@@ -10,7 +10,7 @@ const Messages = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto p-4 h-full flex flex-col">
+      <div className="container mx-auto p-4 h-[calc(100vh-10rem)] flex flex-col">
         <DMMessagingInterface className="flex-1" />
       </div>
     </Layout>
