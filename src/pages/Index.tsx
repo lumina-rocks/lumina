@@ -34,7 +34,7 @@ const Index = () => {
 
   return (
     <Layout>
-      <div className="container max-w-2xl mx-auto px-4 py-6">
+      <div className="container mx-auto px-4 py-6">
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">Picture Feed</h1>
           <p className="text-muted-foreground">
@@ -42,10 +42,10 @@ const Index = () => {
           </p>
         </div>
 
-        <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {isLoading ? (
             // Loading skeletons
-            Array.from({ length: 3 }).map((_, i) => (
+            Array.from({ length: 6 }).map((_, i) => (
               <Card key={i} className="overflow-hidden">
                 <div className="p-4 flex items-center gap-3">
                   <Skeleton className="h-10 w-10 rounded-full" />
@@ -64,15 +64,17 @@ const Index = () => {
             ))
           ) : pictures.length === 0 ? (
             // Empty state
-            <Card className="border-dashed">
-              <CardContent className="py-12 px-8 text-center">
-                <div className="max-w-sm mx-auto space-y-4">
-                  <p className="text-muted-foreground">
-                    No pictures found yet. Try checking your relay connections or wait a moment for content to load.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="col-span-full">
+              <Card className="border-dashed">
+                <CardContent className="py-12 px-8 text-center">
+                  <div className="max-w-sm mx-auto space-y-4">
+                    <p className="text-muted-foreground">
+                      No pictures found yet. Try checking your relay connections or wait a moment for content to load.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           ) : (
             // Picture feed
             <>
@@ -82,23 +84,27 @@ const Index = () => {
 
               {/* Infinite scroll trigger */}
               {hasNextPage && (
-                <div ref={ref} className="py-4">
+                <div ref={ref} className="col-span-full py-4">
                   {isFetchingNextPage && (
-                    <Card className="overflow-hidden">
-                      <div className="p-4 flex items-center gap-3">
-                        <Skeleton className="h-10 w-10 rounded-full" />
-                        <div className="space-y-2">
-                          <Skeleton className="h-4 w-32" />
-                          <Skeleton className="h-3 w-20" />
-                        </div>
-                      </div>
-                      <Skeleton className="w-full aspect-square" />
-                      <div className="p-4 space-y-2">
-                        <Skeleton className="h-5 w-3/4" />
-                        <Skeleton className="h-4 w-full" />
-                        <Skeleton className="h-4 w-2/3" />
-                      </div>
-                    </Card>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {Array.from({ length: 3 }).map((_, i) => (
+                        <Card key={i} className="overflow-hidden">
+                          <div className="p-4 flex items-center gap-3">
+                            <Skeleton className="h-10 w-10 rounded-full" />
+                            <div className="space-y-2">
+                              <Skeleton className="h-4 w-32" />
+                              <Skeleton className="h-3 w-20" />
+                            </div>
+                          </div>
+                          <Skeleton className="w-full aspect-square" />
+                          <div className="p-4 space-y-2">
+                            <Skeleton className="h-5 w-3/4" />
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-2/3" />
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
                   )}
                 </div>
               )}
