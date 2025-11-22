@@ -1,7 +1,7 @@
 {
-  "name": "Lumina",
-  "short_name": "Lumina",
-  "description": "A modern Nostr client application",
+  "name": "LUMINA",
+  "short_name": "LUMINA",
+  "description": "Decentralized social networking powered by Nostr.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
