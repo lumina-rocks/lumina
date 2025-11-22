@@ -13,6 +13,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar.tsx'
 import { WalletModal } from '@/components/WalletModal';
 import { useLoggedInAccounts, type Account } from '@/hooks/useLoggedInAccounts';
 import { genUserName } from '@/lib/genUserName';
+import { useNavigate } from 'react-router-dom';
+import { nip19 } from 'nostr-tools';
 
 interface AccountSwitcherProps {
   onAddAccountClick: () => void;
@@ -20,7 +22,8 @@ interface AccountSwitcherProps {
 
 export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
   const { currentUser, otherUsers, setLogin, removeLogin } = useLoggedInAccounts();
-
+  const navigate = useNavigate();
+  
   if (!currentUser) return null;
 
   const getDisplayName = (account: Account): string => {
@@ -42,6 +45,20 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className='w-56 p-2 animate-scale-in'>
+        {/* Profile quick link */}
+        <DropdownMenuItem
+          className='flex items-center gap-2 cursor-pointer p-2 rounded-md'
+          onSelect={() => navigate(`/${nip19.npubEncode(currentUser.pubkey)}`)}
+        >
+          <Avatar className='w-8 h-8'>
+            <AvatarImage src={currentUser.metadata.picture} alt={getDisplayName(currentUser)} />
+            <AvatarFallback>{getDisplayName(currentUser).charAt(0)}</AvatarFallback>
+          </Avatar>
+          <div className='flex-1 truncate'>
+            <p className='text-sm font-medium truncate'>{getDisplayName(currentUser)}</p>
+          </div>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
         <div className='font-medium text-sm px-2 py-1.5'>Switch Account</div>
         {otherUsers.map((user) => (
           <DropdownMenuItem
