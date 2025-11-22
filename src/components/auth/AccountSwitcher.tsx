@@ -58,8 +58,12 @@ export function AccountSwitcher({ onAddAccountClick }: AccountSwitcherProps) {
             <p className='text-sm font-medium truncate'>{getDisplayName(currentUser)}</p>
           </div>
         </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <div className='font-medium text-sm px-2 py-1.5'>Switch Account</div>
+        {otherUsers.length > 0 && (
+        <>
+          <DropdownMenuSeparator />
+          <div className='font-medium text-sm px-2 py-1.5'>Switch Account</div>
+        </>
+        )}
         {otherUsers.map((user) => (
           <DropdownMenuItem
             key={user.id}
