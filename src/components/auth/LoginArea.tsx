@@ -36,13 +36,6 @@ export function LoginArea({ className }: LoginAreaProps) {
           >
             <User className='w-4 h-4' />
             <span className='truncate'>Log in</span>
-          </Button><Button
-            onClick={() => setSignupDialogOpen(true)}
-            variant="outline"
-            className="flex items-center gap-2 px-4 py-2 rounded-full font-medium transition-all"
-          >
-            <UserPlus className="w-4 h-4" />
-            <span>Sign Up</span>
           </Button>
         </div>
       )}
