@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
+import { nip19 } from 'nostr-tools';
 
 interface PictureCardProps {
   event: NostrEvent;
@@ -56,6 +58,7 @@ export function PictureCard({ event }: PictureCardProps) {
   const author = useAuthor(event.pubkey);
   const metadata: NostrMetadata | undefined = author.data?.metadata;
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const navigate = useNavigate();
 
   const displayName = metadata?.display_name || metadata?.name || genUserName(event.pubkey);
   const profileImage = metadata?.picture;
@@ -71,6 +74,11 @@ export function PictureCard({ event }: PictureCardProps) {
     setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
+  const goToProfile = () => {
+    const npub = nip19.npubEncode(event.pubkey);
+    navigate(`/${npub}`);
+  };
+
   if (images.length === 0) {
     return null;
   }
@@ -79,12 +87,17 @@ export function PictureCard({ event }: PictureCardProps) {
     <Card className="overflow-hidden">
       <CardHeader className="pb-3">
         <div className="flex items-center gap-3">
-          <Avatar className="h-10 w-10">
+          <Avatar className="h-10 w-10 cursor-pointer hover:opacity-80 transition-opacity" onClick={goToProfile}>
             <AvatarImage src={profileImage} alt={displayName} />
             <AvatarFallback>{displayName[0]?.toUpperCase()}</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <CardTitle className="text-base truncate">{displayName}</CardTitle>
+            <CardTitle 
+              className="text-base truncate cursor-pointer hover:underline" 
+              onClick={goToProfile}
+            >
+              {displayName}
+            </CardTitle>
             <CardDescription className="text-xs">
               {new Date(event.created_at * 1000).toLocaleDateString()}
             </CardDescription>
