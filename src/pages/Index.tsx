@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 
 const Index = () => {
   useSeoMeta({
-    title: 'Picture Feed - LUMINA',
+    title: 'LUMINA',
     description: 'Discover amazing pictures shared on Nostr.',
   });
 
