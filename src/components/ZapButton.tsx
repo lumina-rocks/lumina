@@ -3,13 +3,15 @@ import { useZaps } from '@/hooks/useZaps';
 import { useWallet } from '@/hooks/useWallet';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useAuthor } from '@/hooks/useAuthor';
-import { Zap } from 'lucide-react';
+import { Loader2Icon, Zap } from 'lucide-react';
 import type { Event } from 'nostr-tools';
+import { Button } from './ui/button';
 
 interface ZapButtonProps {
   target: Event;
   className?: string;
   showCount?: boolean;
+  buttonVariant?: 'default' | 'outline' | 'ghost' | 'link' | 'destructive';
   zapData?: { count: number; totalSats: number; isLoading?: boolean };
 }
 
@@ -17,6 +19,7 @@ export function ZapButton({
   target,
   className = "text-xs ml-1",
   showCount = true,
+  buttonVariant = "outline",
   zapData: externalZapData
 }: ZapButtonProps) {
   const { user } = useCurrentUser();
@@ -41,18 +44,18 @@ export function ZapButton({
 
   return (
     <ZapDialog target={target}>
-      <div className={`flex items-center gap-1 ${className}`}>
-        <Zap className="h-4 w-4" />
-        <span className="text-xs">
-          {showLoading ? (
-            '...'
-          ) : showCount && totalSats > 0 ? (
-            `${totalSats.toLocaleString()}`
-          ) : (
-            'Zap'
-          )}
-        </span>
-      </div>
+      <Button variant={buttonVariant} className={`flex items-center gap-1 ${className}`}>
+          <Zap className="h-4 w-4" />
+          <span className="text-xs">
+            {showLoading ? (
+              <Loader2Icon className="h-4 w-4 animate-spin" />
+            ) : showCount && totalSats > 0 ? (
+              `${totalSats.toLocaleString()}`
+            ) : (
+              'Zap'
+            )}
+          </span>
+      </Button>
     </ZapDialog>
   );
 }
