@@ -86,7 +86,7 @@ export function PictureCard({ event }: PictureCardProps) {
   }
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden flex flex-col">
       <CardHeader className="pb-3">
         <div className="flex items-center gap-3">
           <Avatar className="h-10 w-10 cursor-pointer hover:opacity-80 transition-opacity" onClick={goToProfile}>
@@ -107,7 +107,7 @@ export function PictureCard({ event }: PictureCardProps) {
         </div>
       </CardHeader>
 
-      <CardContent className="p-0">
+      <CardContent className="p-0 flex flex-col flex-1">
         {/* Image carousel */}
         <div className="relative">
           <AspectRatio ratio={1}>
@@ -159,29 +159,31 @@ export function PictureCard({ event }: PictureCardProps) {
         </div>
 
         {/* Content section */}
-        <div className="p-4 space-y-3">
-          {title && (
-            <h3 className="font-semibold text-lg leading-tight">{title}</h3>
-          )}
+        <div className="p-4 space-y-3 flex-1 flex flex-col">
+          <div className="flex-1">
+            {title && (
+              <h3 className="font-semibold text-lg leading-tight">{title}</h3>
+            )}
 
-          {/* {event.content && (
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">
-              {event.content}
-            </p>
-          )} */}
+            {/* {event.content && (
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">
+                {event.content}
+              </p>
+            )} */}
 
-          {hashtags.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {hashtags.map((tag) => (
-                <Badge key={tag} variant="secondary" className="text-xs">
-                  #{tag}
-                </Badge>
-              ))}
-            </div>
-          )}
+            {hashtags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                {hashtags.map((tag) => (
+                  <Badge key={tag} variant="secondary" className="text-xs">
+                    #{tag}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
 
-          {/* Interaction buttons */}
-          <div className="flex items-center gap-2 pt-2">
+          {/* Interaction buttons - always at bottom */}
+          <div className="flex items-center gap-2 pt-3 mt-auto border-t">
             <ReactionButton target={event} showCount buttonVariant="ghost" />
             <ZapButton target={event} showCount buttonVariant="ghost" />
           </div>
