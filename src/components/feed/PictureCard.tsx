@@ -10,6 +10,8 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
+import { ReactionButton } from '@/components/ReactionButton';
+import { ZapButton } from '@/components/ZapButton';
 
 interface PictureCardProps {
   event: NostrEvent;
@@ -162,11 +164,11 @@ export function PictureCard({ event }: PictureCardProps) {
             <h3 className="font-semibold text-lg leading-tight">{title}</h3>
           )}
 
-          {event.content && (
+          {/* {event.content && (
             <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">
               {event.content}
             </p>
-          )}
+          )} */}
 
           {hashtags.length > 0 && (
             <div className="flex flex-wrap gap-2">
@@ -177,6 +179,12 @@ export function PictureCard({ event }: PictureCardProps) {
               ))}
             </div>
           )}
+
+          {/* Interaction buttons */}
+          <div className="flex items-center gap-2 pt-2">
+            <ReactionButton target={event} showCount buttonVariant="ghost" />
+            <ZapButton target={event} showCount buttonVariant="ghost" />
+          </div>
         </div>
       </CardContent>
     </Card>
