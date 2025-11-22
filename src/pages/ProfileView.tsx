@@ -1,23 +1,28 @@
 import { useAuthor } from '@/hooks/useAuthor';
 import { useUserPictures } from '@/hooks/useUserPictures';
+import { useUserNotes } from '@/hooks/useUserNotes';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Grid3x3, LayoutGrid, FileText } from 'lucide-react';
 import { ProfileHeader } from '@/components/profile/ProfileHeader';
 import { MinimalPictureCard } from '@/components/feed/MinimalPictureCard';
+import { PictureCard } from '@/components/feed/PictureCard';
+import { NoteCard } from '@/components/feed/NoteCard';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useState } from 'react';
 
 export function ProfileView({ pubkey }: { pubkey: string }) {
+  const [activeTab, setActiveTab] = useState('minimal');
   const author = useAuthor(pubkey);
-  const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isLoading,
-  } = useUserPictures(pubkey);
+  
+  const minimalPictures = useUserPictures(pubkey);
+  const fullPictures = useUserPictures(pubkey);
+  const notes = useUserNotes(pubkey);
 
-  const pictures = data?.pages.flat() || [];
+  const minimalPicturesData = minimalPictures.data?.pages.flat() || [];
+  const fullPicturesData = fullPictures.data?.pages.flat() || [];
+  const notesData = notes.data?.pages.flat() || [];
 
   return (
     <div className="container py-8">
@@ -29,54 +34,182 @@ export function ProfileView({ pubkey }: { pubkey: string }) {
           isLoading={author.isLoading}
         />
 
-        {/* Pictures Section */}
-        <div>
-          <h2 className="text-2xl font-bold mb-4">Pictures</h2>
-          
-          {isLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {[...Array(8)].map((_, i) => (
-                <Skeleton key={i} className="aspect-square rounded-lg" />
-              ))}
-            </div>
-          ) : pictures.length === 0 ? (
-            <Card className="border-dashed">
-              <CardContent className="py-12 px-8 text-center">
-                <p className="text-muted-foreground">
-                  No pictures found for this user.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <>
+        {/* Tabbed Content */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="minimal" className="flex items-center justify-center">
+              <Grid3x3 className="h-5 w-5" />
+            </TabsTrigger>
+            <TabsTrigger value="full" className="flex items-center justify-center">
+              <LayoutGrid className="h-5 w-5" />
+            </TabsTrigger>
+            <TabsTrigger value="notes" className="flex items-center justify-center">
+              <FileText className="h-5 w-5" />
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Minimal Pictures Tab */}
+          <TabsContent value="minimal" className="mt-6">
+            {minimalPictures.isLoading ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {pictures.map((event) => (
-                  <MinimalPictureCard key={event.id} event={event} />
+                {[...Array(8)].map((_, i) => (
+                  <Skeleton key={i} className="aspect-square rounded-lg" />
                 ))}
               </div>
-
-              {hasNextPage && (
-                <div className="flex justify-center mt-8">
-                  <Button
-                    onClick={() => fetchNextPage()}
-                    disabled={isFetchingNextPage}
-                    variant="outline"
-                    size="lg"
-                  >
-                    {isFetchingNextPage ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Loading...
-                      </>
-                    ) : (
-                      'Load More'
-                    )}
-                  </Button>
+            ) : minimalPicturesData.length === 0 ? (
+              <Card className="border-dashed">
+                <CardContent className="py-12 px-8 text-center">
+                  <p className="text-muted-foreground">
+                    No pictures found for this user.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {minimalPicturesData.map((event) => (
+                    <MinimalPictureCard key={event.id} event={event} />
+                  ))}
                 </div>
-              )}
-            </>
-          )}
-        </div>
+
+                {minimalPictures.hasNextPage && (
+                  <div className="flex justify-center mt-8">
+                    <Button
+                      onClick={() => minimalPictures.fetchNextPage()}
+                      disabled={minimalPictures.isFetchingNextPage}
+                      variant="outline"
+                      size="lg"
+                    >
+                      {minimalPictures.isFetchingNextPage ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Loading...
+                        </>
+                      ) : (
+                        'Load More'
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+          </TabsContent>
+
+          {/* Full Pictures Tab */}
+          <TabsContent value="full" className="mt-6">
+            {fullPictures.isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[...Array(6)].map((_, i) => (
+                  <Card key={i}>
+                    <Skeleton className="aspect-square rounded-t-lg" />
+                    <div className="p-4 space-y-2">
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-3 w-1/2" />
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            ) : fullPicturesData.length === 0 ? (
+              <Card className="border-dashed">
+                <CardContent className="py-12 px-8 text-center">
+                  <p className="text-muted-foreground">
+                    No pictures found for this user.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {fullPicturesData.map((event) => (
+                    <PictureCard key={event.id} event={event} />
+                  ))}
+                </div>
+
+                {fullPictures.hasNextPage && (
+                  <div className="flex justify-center mt-8">
+                    <Button
+                      onClick={() => fullPictures.fetchNextPage()}
+                      disabled={fullPictures.isFetchingNextPage}
+                      variant="outline"
+                      size="lg"
+                    >
+                      {fullPictures.isFetchingNextPage ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Loading...
+                        </>
+                      ) : (
+                        'Load More'
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+          </TabsContent>
+
+          {/* Notes Tab */}
+          <TabsContent value="notes" className="mt-6">
+            {notes.isLoading ? (
+              <div className="space-y-4">
+                {[...Array(5)].map((_, i) => (
+                  <Card key={i}>
+                    <div className="p-6 space-y-4">
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-10 w-10 rounded-full" />
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-24" />
+                          <Skeleton className="h-3 w-16" />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-5/6" />
+                        <Skeleton className="h-4 w-4/6" />
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            ) : notesData.length === 0 ? (
+              <Card className="border-dashed">
+                <CardContent className="py-12 px-8 text-center">
+                  <p className="text-muted-foreground">
+                    No notes found for this user.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                <div className="space-y-4">
+                  {notesData.map((event) => (
+                    <NoteCard key={event.id} event={event} />
+                  ))}
+                </div>
+
+                {notes.hasNextPage && (
+                  <div className="flex justify-center mt-8">
+                    <Button
+                      onClick={() => notes.fetchNextPage()}
+                      disabled={notes.isFetchingNextPage}
+                      variant="outline"
+                      size="lg"
+                    >
+                      {notes.isFetchingNextPage ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Loading...
+                        </>
+                      ) : (
+                        'Load More'
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
