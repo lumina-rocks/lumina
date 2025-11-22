@@ -74,7 +74,7 @@ export function ProfileHeader({ pubkey, metadata, isLoading }: ProfileHeaderProp
 
             {/* About */}
             {about && (
-              <p className="text-muted-foreground whitespace-pre-wrap break-words">
+              <p className="text-muted-foreground whitespace-pre-wrap break-all">
                 {about}
               </p>
             )}
