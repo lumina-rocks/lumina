@@ -67,6 +67,7 @@ export function PictureCard({ event }: PictureCardProps) {
   const title = event.tags.find(([name]) => name === 'title')?.[1] || '';
   const images = parseImetaTags(event);
   const hashtags = event.tags.filter(([name]) => name === 't').map(([, tag]) => tag);
+  const noteId = nip19.noteEncode(event.id);
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % images.length);
@@ -79,6 +80,10 @@ export function PictureCard({ event }: PictureCardProps) {
   const goToProfile = () => {
     const npub = nip19.npubEncode(event.pubkey);
     navigate(`/${npub}`);
+  };
+
+  const goToDetails = () => {
+    navigate(`/${noteId}`);
   };
 
   if (images.length === 0) {
@@ -109,12 +114,12 @@ export function PictureCard({ event }: PictureCardProps) {
 
       <CardContent className="p-0 flex flex-col flex-1">
         {/* Image carousel */}
-        <div className="relative">
+        <div className="relative cursor-pointer group" onClick={goToDetails}>
           <AspectRatio ratio={1}>
             <img
               src={images[currentImageIndex].url}
               alt={images[currentImageIndex].alt || title || 'Picture'}
-              className="object-cover w-full h-full"
+              className="object-cover w-full h-full transition-transform group-hover:scale-[1.02]"
               loading="lazy"
             />
           </AspectRatio>
@@ -126,7 +131,10 @@ export function PictureCard({ event }: PictureCardProps) {
                 variant="ghost"
                 size="icon"
                 className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full"
-                onClick={prevImage}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  prevImage();
+                }}
                 aria-label="Previous image"
               >
                 <ChevronLeft className="h-6 w-6" />
@@ -135,7 +143,10 @@ export function PictureCard({ event }: PictureCardProps) {
                 variant="ghost"
                 size="icon"
                 className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full"
-                onClick={nextImage}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  nextImage();
+                }}
                 aria-label="Next image"
               >
                 <ChevronRight className="h-6 w-6" />

@@ -1,5 +1,6 @@
 import type { NostrEvent } from '@nostrify/nostrify';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { nip19 } from 'nostr-tools';
 
 interface MinimalPictureCardProps {
   event: NostrEvent;
@@ -45,17 +46,21 @@ export function MinimalPictureCard({ event }: MinimalPictureCardProps) {
 
   // Use the first image only
   const firstImage = images[0];
+  const noteId = nip19.noteEncode(event.id);
 
   return (
-    <div className="overflow-hidden rounded-lg">
+    <a 
+      href={`/${noteId}`}
+      className="overflow-hidden rounded-lg block cursor-pointer group"
+    >
       <AspectRatio ratio={1}>
         <img
           src={firstImage.url}
           alt={firstImage.alt || title || 'Picture'}
-          className="object-cover w-full h-full"
+          className="object-cover w-full h-full transition-transform group-hover:scale-105"
           loading="lazy"
         />
       </AspectRatio>
-    </div>
+    </a>
   );
 }

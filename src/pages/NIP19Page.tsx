@@ -2,6 +2,7 @@ import { nip19 } from 'nostr-tools';
 import { useParams } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { ProfileView } from './ProfileView';
+import { PictureDetails } from './PictureDetails';
 import NotFound from './NotFound';
 
 export function NIP19Page() {
@@ -34,25 +35,21 @@ export function NIP19Page() {
     }
 
     case 'note':
-      // AI agent should implement note view here
+      // Handle note1 identifiers (hex event IDs)
       return (
         <Layout>
           <div className="container py-8">
-            <div className="max-w-2xl mx-auto">
-              Note placeholder
-            </div>
+            <PictureDetails eventId={data as string} />
           </div>
         </Layout>
       );
 
     case 'nevent':
-      // AI agent should implement event view here
+      // Handle nevent1 identifiers (event with metadata)
       return (
         <Layout>
           <div className="container py-8">
-            <div className="max-w-2xl mx-auto">
-              Event placeholder
-            </div>
+            <PictureDetails eventId={(data as { id: string }).id} />
           </div>
         </Layout>
       );
