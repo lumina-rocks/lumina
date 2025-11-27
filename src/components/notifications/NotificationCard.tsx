@@ -42,7 +42,7 @@ export function NotificationCard({ notification }: NotificationCardProps) {
           label: 'commented on your picture',
           color: 'text-blue-500'
         };
-      case 'zap':
+      case 'zap': {
         // Extract amount from zap
         const bolt11Tag = notification.tags.find(([name]) => name === 'bolt11')?.[1];
         let amount = '';
@@ -59,6 +59,7 @@ export function NotificationCard({ notification }: NotificationCardProps) {
           label: `zapped your picture${amount}`,
           color: 'text-yellow-500'
         };
+      }
       case 'mention':
         return {
           icon: <AtSign className="h-4 w-4 text-purple-500" />,
