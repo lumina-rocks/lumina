@@ -34,6 +34,17 @@ export async function verifyAndGetPubkey(nip05: string): Promise<string | null> 
 }
 
 /**
+ * Verify that a NIP-05 identifier matches the given pubkey
+ */
+export async function verifyNIP05(nip05: string, pubkey: string): Promise<boolean> {
+  const verifiedPubkey = await verifyAndGetPubkey(nip05);
+  if (!verifiedPubkey) {
+    return false;
+  }
+  return verifiedPubkey.toLowerCase() === pubkey.toLowerCase();
+}
+
+/**
  * Check if a string looks like a NIP-05 identifier
  */
 export function isNIP05Format(input: string): boolean {

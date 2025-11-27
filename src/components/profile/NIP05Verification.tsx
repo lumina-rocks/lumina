@@ -1,43 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { verifyNIP05 } from '@/lib/nip05';
 
 interface NIP05VerificationProps {
   nip05: string;
   pubkey: string;
-}
-
-async function verifyNIP05(nip05: string, pubkey: string): Promise<boolean> {
-  try {
-    // Parse the NIP-05 identifier (name@domain.com)
-    const [name, domain] = nip05.split('@');
-    if (!name || !domain) {
-      return false;
-    }
-
-    // Fetch the .well-known/nostr.json file
-    const url = `https://${domain}/.well-known/nostr.json?name=${encodeURIComponent(name)}`;
-    const response = await fetch(url, {
-      signal: AbortSignal.timeout(5000),
-    });
-
-    if (!response.ok) {
-      return false;
-    }
-
-    const data = await response.json();
-
-    // Check if the pubkey matches
-    const verifiedPubkey = data.names?.[name];
-    if (!verifiedPubkey) {
-      return false;
-    }
-
-    // Compare pubkeys
-    return verifiedPubkey.toLowerCase() === pubkey.toLowerCase();
-  } catch {
-    return false;
-  }
 }
 
 export function NIP05Verification({ nip05, pubkey }: NIP05VerificationProps) {
