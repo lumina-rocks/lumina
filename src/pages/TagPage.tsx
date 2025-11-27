@@ -71,10 +71,10 @@ export function TagPage() {
               variant="ghost"
               size="sm"
               className="mb-4"
-              onClick={() => navigate('/hashtags')}
+              onClick={() => navigate(-1)}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Hashtags
+              Back
             </Button>
             <div className="flex items-center gap-3 mb-2">
               <Hash className="w-8 h-8 text-primary" />
