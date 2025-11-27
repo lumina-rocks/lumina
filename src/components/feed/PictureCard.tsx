@@ -12,7 +12,6 @@ import { useNavigate } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
 import { ReactionButton } from '@/components/ReactionButton';
 import { ZapButton } from '@/components/ZapButton';
-import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 interface PictureCardProps {
   event: NostrEvent;
@@ -62,7 +61,6 @@ export function PictureCard({ event }: PictureCardProps) {
   const metadata: NostrMetadata | undefined = author.data?.metadata;
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const navigate = useNavigate();
-  const { user } = useCurrentUser();
 
   const displayName = metadata?.display_name || metadata?.name || genUserName(event.pubkey);
   const profileImage = metadata?.picture;
@@ -196,12 +194,12 @@ export function PictureCard({ event }: PictureCardProps) {
           </div>
 
           {/* Interaction buttons - only show when logged in */}
-          {user && (
-            <div className="flex items-center gap-2 pt-3 mt-auto border-t">
+          {/* {user && ( */}
+            <div className="flex items-center gap-2 pt-3 mt-auto">
               <ReactionButton target={event} showCount buttonVariant="ghost" />
               <ZapButton target={event} showCount buttonVariant="ghost" />
             </div>
-          )}
+          {/* )} */}
         </div>
       </CardContent>
     </Card>

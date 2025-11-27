@@ -31,9 +31,9 @@ export function ReactionButton({
   );
 
   // Don't show reaction button if user is not logged in
-  if (!user || !target) {
-    return null;
-  }
+  // if (!user || !target) {
+  //   return null;
+  // }
 
   // Use external data if provided, otherwise use fetched data
   const reactionCount = externalReactionData?.count ?? fetchedCount;
