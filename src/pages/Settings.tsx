@@ -7,6 +7,7 @@ import { RelayListManager } from '@/components/RelayListManager';
 import { useTheme } from '@/hooks/useTheme';
 import { useAppContext } from '@/hooks/useAppContext';
 import { Moon, Sun, LayoutGrid } from 'lucide-react';
+import packageJson from '../../package.json';
 
 export function Settings() {
   const { theme, setTheme } = useTheme();
@@ -94,6 +95,11 @@ export function Settings() {
             <RelayListManager />
           </CardContent>
         </Card>
+
+        {/* Version Info */}
+        <div className="text-center text-sm text-muted-foreground py-4">
+          Version {packageJson.version}
+        </div>
       </div>
     </Layout>
   );
