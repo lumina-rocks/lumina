@@ -4,24 +4,21 @@ import { useUserNotes } from '@/hooks/useUserNotes';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, Grid3x3, LayoutGrid, FileText } from 'lucide-react';
+import { Loader2, Image, FileText } from 'lucide-react';
 import { ProfileHeader } from '@/components/profile/ProfileHeader';
-import { MinimalPictureCard } from '@/components/feed/MinimalPictureCard';
-import { PictureCard } from '@/components/feed/PictureCard';
+import { AdaptivePictureCard } from '@/components/feed/AdaptivePictureCard';
 import { NoteCard } from '@/components/feed/NoteCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useState } from 'react';
 
 export function ProfileView({ pubkey }: { pubkey: string }) {
-  const [activeTab, setActiveTab] = useState('minimal');
+  const [activeTab, setActiveTab] = useState('pictures');
   const author = useAuthor(pubkey);
   
-  const minimalPictures = useUserPictures(pubkey);
-  const fullPictures = useUserPictures(pubkey);
+  const pictures = useUserPictures(pubkey);
   const notes = useUserNotes(pubkey);
 
-  const minimalPicturesData = minimalPictures.data?.pages.flat() || [];
-  const fullPicturesData = fullPictures.data?.pages.flat() || [];
+  const picturesData = pictures.data?.pages.flat() || [];
   const notesData = notes.data?.pages.flat() || [];
 
   return (
@@ -36,68 +33,20 @@ export function ProfileView({ pubkey }: { pubkey: string }) {
 
         {/* Tabbed Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="minimal" className="flex items-center justify-center">
-              <Grid3x3 className="h-5 w-5" />
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="pictures" className="flex items-center justify-center gap-2">
+              <Image className="h-5 w-5" />
+              <span className="hidden sm:inline">Pictures</span>
             </TabsTrigger>
-            <TabsTrigger value="full" className="flex items-center justify-center">
-              <LayoutGrid className="h-5 w-5" />
-            </TabsTrigger>
-            <TabsTrigger value="notes" className="flex items-center justify-center">
+            <TabsTrigger value="notes" className="flex items-center justify-center gap-2">
               <FileText className="h-5 w-5" />
+              <span className="hidden sm:inline">Notes</span>
             </TabsTrigger>
           </TabsList>
 
-          {/* Minimal Pictures Tab */}
-          <TabsContent value="minimal" className="mt-6">
-            {minimalPictures.isLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {[...Array(8)].map((_, i) => (
-                  <Skeleton key={i} className="aspect-square rounded-lg" />
-                ))}
-              </div>
-            ) : minimalPicturesData.length === 0 ? (
-              <Card className="border-dashed">
-                <CardContent className="py-12 px-8 text-center">
-                  <p className="text-muted-foreground">
-                    No pictures found for this user.
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {minimalPicturesData.map((event) => (
-                    <MinimalPictureCard key={event.id} event={event} />
-                  ))}
-                </div>
-
-                {minimalPictures.hasNextPage && (
-                  <div className="flex justify-center mt-8">
-                    <Button
-                      onClick={() => minimalPictures.fetchNextPage()}
-                      disabled={minimalPictures.isFetchingNextPage}
-                      variant="outline"
-                      size="lg"
-                    >
-                      {minimalPictures.isFetchingNextPage ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Loading...
-                        </>
-                      ) : (
-                        'Load More'
-                      )}
-                    </Button>
-                  </div>
-                )}
-              </>
-            )}
-          </TabsContent>
-
-          {/* Full Pictures Tab */}
-          <TabsContent value="full" className="mt-6">
-            {fullPictures.isLoading ? (
+          {/* Pictures Tab */}
+          <TabsContent value="pictures" className="mt-6">
+            {pictures.isLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[...Array(6)].map((_, i) => (
                   <Card key={i}>
@@ -109,7 +58,7 @@ export function ProfileView({ pubkey }: { pubkey: string }) {
                   </Card>
                 ))}
               </div>
-            ) : fullPicturesData.length === 0 ? (
+            ) : picturesData.length === 0 ? (
               <Card className="border-dashed">
                 <CardContent className="py-12 px-8 text-center">
                   <p className="text-muted-foreground">
@@ -120,20 +69,20 @@ export function ProfileView({ pubkey }: { pubkey: string }) {
             ) : (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {fullPicturesData.map((event) => (
-                    <PictureCard key={event.id} event={event} />
+                  {picturesData.map((event) => (
+                    <AdaptivePictureCard key={event.id} event={event} />
                   ))}
                 </div>
 
-                {fullPictures.hasNextPage && (
+                {pictures.hasNextPage && (
                   <div className="flex justify-center mt-8">
                     <Button
-                      onClick={() => fullPictures.fetchNextPage()}
-                      disabled={fullPictures.isFetchingNextPage}
+                      onClick={() => pictures.fetchNextPage()}
+                      disabled={pictures.isFetchingNextPage}
                       variant="outline"
                       size="lg"
                     >
-                      {fullPictures.isFetchingNextPage ? (
+                      {pictures.isFetchingNextPage ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Loading...

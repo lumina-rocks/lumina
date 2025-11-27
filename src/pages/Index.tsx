@@ -2,13 +2,11 @@ import { useSeoMeta } from '@unhead/react';
 import { Layout } from '@/components/Layout';
 import { usePictureFeed } from '@/hooks/usePictureFeed';
 import { useFollowerPictureFeed } from '@/hooks/useFollowerPictureFeed';
-import { PictureCard } from '@/components/feed/PictureCard';
-import { MinimalPictureCard } from '@/components/feed/MinimalPictureCard';
+import { AdaptivePictureCard } from '@/components/feed/AdaptivePictureCard';
 import { useInView } from 'react-intersection-observer';
 import { useEffect, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
-import { useAppContext } from '@/hooks/useAppContext';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 const Index = () => {
@@ -17,7 +15,6 @@ const Index = () => {
     description: 'Discover amazing pictures shared on Nostr.',
   });
 
-  const { config } = useAppContext();
   const { user } = useCurrentUser();
   
   // Use follower feed for logged-in users, global feed for logged-out users
@@ -83,11 +80,7 @@ const Index = () => {
             // Picture feed
             <>
               {pictures.map((picture) => (
-                config.preferMinimalCards ? (
-                  <MinimalPictureCard key={picture.id} event={picture} />
-                ) : (
-                  <PictureCard key={picture.id} event={picture} />
-                )
+                <AdaptivePictureCard key={picture.id} event={picture} />
               ))}
 
               {/* Infinite scroll trigger */}

@@ -5,6 +5,7 @@ import Index from "./pages/Index";
 import { NIP19Page } from "./pages/NIP19Page";
 import { Upload } from "./pages/Upload";
 import { Hashtags } from "./pages/Hashtags";
+import { TagPage } from "./pages/TagPage";
 import { SearchPage } from "./pages/Search";
 import { Notifications } from "./pages/Notifications";
 import Messages from "./pages/Messages";
@@ -19,6 +20,7 @@ export function AppRouter() {
         <Route path="/" element={<Index />} />
         <Route path="/upload" element={<Upload />} />
         <Route path="/hashtags" element={<Hashtags />} />
+        <Route path="/tag/:tag" element={<TagPage />} />
         <Route path="/search" element={<SearchPage />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/messages" element={<Messages />} />
