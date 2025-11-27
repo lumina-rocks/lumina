@@ -1,7 +1,8 @@
-version: '3'
 services:
   lumina:
     build: .
-    # image: ghcr.io/lumina-rocks/lumina:latest
     ports:
-      - "8080:3000"
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
