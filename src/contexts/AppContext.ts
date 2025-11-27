@@ -14,6 +14,8 @@ export interface AppConfig {
   theme: Theme;
   /** NIP-65 relay list metadata */
   relayMetadata: RelayMetadata;
+  /** Prefer minimal picture cards in the feed */
+  preferMinimalCards: boolean;
 }
 
 export interface AppContextType {

@@ -5,10 +5,12 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { RelayListManager } from '@/components/RelayListManager';
 import { useTheme } from '@/hooks/useTheme';
-import { Moon, Sun } from 'lucide-react';
+import { useAppContext } from '@/hooks/useAppContext';
+import { Moon, Sun, LayoutGrid } from 'lucide-react';
 
 export function Settings() {
   const { theme, setTheme } = useTheme();
+  const { config, updateConfig } = useAppContext();
 
   useSeoMeta({
     title: 'Settings - Lumina',
@@ -33,7 +35,7 @@ export function Settings() {
               Customize how the app looks and feels
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {theme === 'light' ? (
@@ -54,6 +56,27 @@ export function Settings() {
                 id="theme-toggle"
                 checked={theme === 'dark'}
                 onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
+              />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <LayoutGrid className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <Label htmlFor="minimal-cards-toggle" className="text-base cursor-pointer">
+                    Minimal Cards
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Show compact picture-only cards in feed
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="minimal-cards-toggle"
+                checked={config.preferMinimalCards}
+                onCheckedChange={(checked) => 
+                  updateConfig((current) => ({ ...current, preferMinimalCards: checked }))
+                }
               />
             </div>
           </CardContent>

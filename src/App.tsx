@@ -42,6 +42,7 @@ const defaultConfig: AppConfig = {
     ],
     updatedAt: 0,
   },
+  preferMinimalCards: false,
 };
 
 export function App() {

@@ -2,10 +2,12 @@ import { useSeoMeta } from '@unhead/react';
 import { Layout } from '@/components/Layout';
 import { usePictureFeed } from '@/hooks/usePictureFeed';
 import { PictureCard } from '@/components/feed/PictureCard';
+import { MinimalPictureCard } from '@/components/feed/MinimalPictureCard';
 import { useInView } from 'react-intersection-observer';
 import { useEffect, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
+import { useAppContext } from '@/hooks/useAppContext';
 
 const Index = () => {
   useSeoMeta({
@@ -13,6 +15,7 @@ const Index = () => {
     description: 'Discover amazing pictures shared on Nostr.',
   });
 
+  const { config } = useAppContext();
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = usePictureFeed();
   const { ref, inView } = useInView();
 
@@ -72,7 +75,11 @@ const Index = () => {
             // Picture feed
             <>
               {pictures.map((picture) => (
-                <PictureCard key={picture.id} event={picture} />
+                config.preferMinimalCards ? (
+                  <MinimalPictureCard key={picture.id} event={picture} />
+                ) : (
+                  <PictureCard key={picture.id} event={picture} />
+                )
               ))}
 
               {/* Infinite scroll trigger */}
