@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Upload, Hash, Search, Bell, Settings } from 'lucide-react';
+import { Home, Upload, Hash, Search, MessageCircle, Settings } from 'lucide-react';
 import { LoginArea } from './auth/LoginArea';
 import { Button } from './ui/button';
 import { useTheme } from '@/hooks/useTheme';
@@ -18,7 +18,7 @@ export function Layout({ children }: LayoutProps) {
     { path: '/upload', icon: Upload, label: 'Upload' },
     { path: '/hashtags', icon: Hash, label: 'Hashtags' },
     { path: '/search', icon: Search, label: 'Search' },
-    { path: '/notifications', icon: Bell, label: 'Notifications' },
+    { path: '/messages', icon: MessageCircle, label: 'Messages' },
   ];
 
   const isActive = (path: string) => {
