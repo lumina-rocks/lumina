@@ -6,13 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useUploadFile } from '@/hooks/useUploadFile';
 import { useNostrPublish } from '@/hooks/useNostrPublish';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useToast } from '@/hooks/useToast';
 import { useNavigate } from 'react-router-dom';
 import { LoginArea } from '@/components/auth/LoginArea';
-import { ImageIcon, X, Loader2 } from 'lucide-react';
+import { ImageIcon, X, Loader2, ChevronDown } from 'lucide-react';
 
 export function Upload() {
   useSeoMeta({
@@ -32,6 +33,7 @@ export function Upload() {
   const [location, setLocation] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -328,17 +330,33 @@ export function Upload() {
                   </p>
                 </div>
 
-                {/* Location */}
-                <div className="space-y-2">
-                  <Label htmlFor="location">Location</Label>
-                  <Input
-                    id="location"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    placeholder="San José, Costa Rica"
-                    disabled={isLoading}
-                  />
-                </div>
+                {/* Advanced Options */}
+                <Collapsible open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen}>
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-full justify-between"
+                      disabled={isLoading}
+                    >
+                      <span>Advanced Options</span>
+                      <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isAdvancedOpen ? 'rotate-180' : ''}`} />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-4 pt-4">
+                    {/* Location */}
+                    <div className="space-y-2">
+                      <Label htmlFor="location">Location</Label>
+                      <Input
+                        id="location"
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                        placeholder="San José, Costa Rica"
+                        disabled={isLoading}
+                      />
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
 
                 {/* Submit Button */}
                 <div className="flex gap-4">
