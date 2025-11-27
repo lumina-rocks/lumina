@@ -1,6 +1,7 @@
 import { useSeoMeta } from '@unhead/react';
 import { Layout } from '@/components/Layout';
 import { usePictureFeed } from '@/hooks/usePictureFeed';
+import { useFollowerPictureFeed } from '@/hooks/useFollowerPictureFeed';
 import { PictureCard } from '@/components/feed/PictureCard';
 import { MinimalPictureCard } from '@/components/feed/MinimalPictureCard';
 import { useInView } from 'react-intersection-observer';
@@ -8,6 +9,7 @@ import { useEffect, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAppContext } from '@/hooks/useAppContext';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 const Index = () => {
   useSeoMeta({
@@ -16,7 +18,13 @@ const Index = () => {
   });
 
   const { config } = useAppContext();
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = usePictureFeed();
+  const { user } = useCurrentUser();
+  
+  // Use follower feed for logged-in users, global feed for logged-out users
+  const globalFeed = usePictureFeed();
+  const followerFeed = useFollowerPictureFeed();
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = user ? followerFeed : globalFeed;
+  
   const { ref, inView } = useInView();
 
   useEffect(() => {
