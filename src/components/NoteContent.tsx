@@ -83,7 +83,7 @@ export function NoteContent({
         parts.push(
           <Link 
             key={`hashtag-${keyCounter++}`}
-            to={`/t/${tag}`}
+            to={`/tag/${tag}`}
             className="text-blue-500 hover:underline"
           >
             {hashtag}

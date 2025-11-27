@@ -8,13 +8,18 @@ import type { NostrEvent } from '@nostrify/nostrify';
 export function useHashtagFeed(hashtag: string) {
   const { nostr } = useNostr();
   const normalizedTag = hashtag.toLowerCase();
+  
+  // Search for both normalized and original tag if they differ
+  const tagsToSearch = normalizedTag === hashtag 
+    ? [normalizedTag] 
+    : [normalizedTag, hashtag];
 
   return useInfiniteQuery({
     queryKey: ['hashtag-feed', normalizedTag],
     queryFn: async ({ pageParam, signal }) => {
       const filter = pageParam
-        ? { kinds: [20], '#t': [normalizedTag], limit: 20, until: pageParam as number }
-        : { kinds: [20], '#t': [normalizedTag], limit: 20 };
+        ? { kinds: [20], '#t': tagsToSearch, limit: 20, until: pageParam as number }
+        : { kinds: [20], '#t': tagsToSearch, limit: 20 };
 
       const events = await nostr.query([filter], {
         signal: AbortSignal.any([signal, AbortSignal.timeout(1500)])
