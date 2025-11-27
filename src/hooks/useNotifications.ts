@@ -83,7 +83,7 @@ export function useNotifications() {
             targetEventId = event.tags.find(([name]) => name === 'e')?.[1];
           } else if (event.kind === 1) {
             // Check if it's a mention or a reply
-            const pTags = event.tags.filter(([name]) => name === 'p');
+            // const pTags = event.tags.filter(([name]) => name === 'p');
             const eTags = event.tags.filter(([name]) => name === 'e');
             
             // If it has e-tags, it might be a reply to user's content
