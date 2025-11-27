@@ -185,7 +185,12 @@ function PictureDetailsContent({ event }: { event: NostrEvent }) {
             {hashtags.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {hashtags.map((tag) => (
-                  <Badge key={tag} variant="secondary" className="text-sm">
+                  <Badge 
+                    key={tag} 
+                    variant="secondary" 
+                    className="text-sm cursor-pointer hover:bg-secondary/80 transition-colors"
+                    onClick={() => navigate(`/tag/${tag}`)}
+                  >
                     #{tag}
                   </Badge>
                 ))}

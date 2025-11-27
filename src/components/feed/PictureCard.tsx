@@ -185,7 +185,15 @@ export function PictureCard({ event }: PictureCardProps) {
             {hashtags.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-3">
                 {hashtags.map((tag) => (
-                  <Badge key={tag} variant="secondary" className="text-xs">
+                  <Badge 
+                    key={tag} 
+                    variant="secondary" 
+                    className="text-xs cursor-pointer hover:bg-secondary/80 transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/tag/${tag}`);
+                    }}
+                  >
                     #{tag}
                   </Badge>
                 ))}
